@@ -73,7 +73,8 @@
                 },
                 events: {
                     'onReady': (event) => {
-                        event.target.seekTo(currentVideoStartTime, true);
+                        // Force the player to seek to the correct start time
+                        event.target.seekTo(currentVideoStartTime);
                         event.target.playVideo();
                     },
                     'onStateChange': onPlayerStateChange
