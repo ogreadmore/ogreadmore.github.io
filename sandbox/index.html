@@ -28,7 +28,7 @@
     </style>
 </head>
 <body>
-    <h1>Sa Science & Tech Daily Stream</h1>
+    <h1>Science & Tech Daily Stream</h1>
     <iframe id="videoPlayer" src="" frameborder="0" allowfullscreen></iframe>
     <script>
         let currentIndex = 0;
@@ -52,19 +52,23 @@
         function playVideo(index) {
             const videoPlayer = document.getElementById('videoPlayer');
             videoPlayer.src = videoLinks[index] + '?autoplay=1&mute=1';
+            monitorVideoEnd();
+        }
 
-            // Listen for when the video ends to load the next one
-            videoPlayer.addEventListener('load', function() {
+        function monitorVideoEnd() {
+            const checkInterval = 1000; // Check every second
+            const videoPlayer = document.getElementById('videoPlayer');
+
+            const checkVideoEnd = setInterval(() => {
                 const iframeDoc = videoPlayer.contentDocument || videoPlayer.contentWindow.document;
                 const videoElem = iframeDoc.getElementsByTagName('video')[0];
 
-                if (videoElem) {
-                    videoElem.onended = function() {
-                        currentIndex = (currentIndex + 1) % videoLinks.length;
-                        playVideo(currentIndex);
-                    };
+                if (videoElem && videoElem.ended) {
+                    clearInterval(checkVideoEnd);
+                    currentIndex = (currentIndex + 1) % videoLinks.length;
+                    playVideo(currentIndex);
                 }
-            });
+            }, checkInterval);
         }
 
         // Load the playlist on page load
