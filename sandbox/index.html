@@ -50,10 +50,10 @@
                         const videoPlayer = document.getElementById('videoPlayer');
                         videoPlayer.src = videoLinks[currentVideoIndex] + '?start=' + Math.floor((now - currentVideoStartTime) / 1000);
 
-                        // Automatically switch to the next video when the current one ends
-                        setTimeout(() => {
-                            loadPlaylist();  // Reload the playlist instead of the entire page
-                        }, (videoDuration - ((now - currentVideoStartTime) / 1000)) * 1000);
+                        // Switch to the next video after the current one finishes
+                        setTimeout(loadPlaylist, (videoDuration - ((now - currentVideoStartTime) / 1000)) * 1000);
+                    } else {
+                        console.error('Playlist is empty or cannot be parsed.');
                     }
                 })
                 .catch(error => console.error('Error loading playlist:', error));
