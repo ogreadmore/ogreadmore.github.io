@@ -54,13 +54,16 @@
             const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const secondsSinceStartOfDay = Math.floor((now - startOfDay) / 1000);
 
-            const videoDuration = 3600; // Each video is 1 hour (in seconds)
+            // Calculate total duration of the playlist
+            const videoDuration = 3600; // Assuming each video is 1 hour long
             const totalDuration = videoDuration * videoLinks.length;
             const elapsedTime = secondsSinceStartOfDay % totalDuration;
 
+            // Determine the correct video index and start time within that video
             currentIndex = Math.floor(elapsedTime / videoDuration);
-            const currentVideoStartTime = elapsedTime % videoDuration;
+            let currentVideoStartTime = elapsedTime % videoDuration;
 
+            // Load the video, adjusting the start time if necessary
             loadVideoWithRetry(videoLinks[currentIndex], currentVideoStartTime);
         }
 
