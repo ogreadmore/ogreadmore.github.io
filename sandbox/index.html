@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Science & Tech Video Stream</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        #videoPlayer {
+            width: 80%;
+            max-width: 800px;
+            height: 450px;
+            border: 2px solid #ccc;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Science & Tech Daily Stream</h1>
+    <iframe id="videoPlayer" src="" frameborder="0" allowfullscreen></iframe>
+    <script>
+        const videoDuration = 3600; // Each video is 1 hour (in seconds). Adjust as needed.
+
+        function loadPlaylist() {
+            fetch('playlist.csv')
+                .then(response => response.text())
+                .then(data => {
+                    const videoLinks = data.split('\n').filter(Boolean);
+
+                    if (videoLinks.length > 0) {
+                        const now = new Date();
+                        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                        const secondsSinceStartOfDay = (now - startOfDay) / 1000;
+
+                        const currentVideoIndex = Math.floor(secondsSinceStartOfDay / videoDuration) % videoLinks.length;
+                        const currentVideoStartTime = startOfDay.getTime() + (currentVideoIndex * videoDuration * 1000);
+
+                        const videoPlayer = document.getElementById('videoPlayer');
+                        videoPlayer.src = videoLinks[currentVideoIndex] + '?start=' + Math.floor((now - currentVideoStartTime) / 1000);
+
+                        // Automatically switch to the next video when the current one ends
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, (videoDuration - ((now - currentVideoStartTime) / 1000)) * 1000);
+                    }
+                });
+        }
+
+        // Load the playlist on page load
+        window.onload = loadPlaylist;
+    </script>
+</body>
+</html>
