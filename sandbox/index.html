@@ -40,7 +40,6 @@
                 .then(response => response.text())
                 .then(data => {
                     videoLinks = data.split('\n').filter(Boolean);
-
                     if (videoLinks.length > 0) {
                         initializePlayer();
                     } else {
@@ -55,30 +54,51 @@
             const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const secondsSinceStartOfDay = Math.floor((now - startOfDay) / 1000);
 
-            const videoDuration = 3600; // Assume each video is 1 hour (in seconds)
+            const videoDuration = 3600; // Each video is 1 hour (in seconds)
             const totalDuration = videoDuration * videoLinks.length;
             const elapsedTime = secondsSinceStartOfDay % totalDuration;
 
             currentIndex = Math.floor(elapsedTime / videoDuration);
             const currentVideoStartTime = elapsedTime % videoDuration;
 
+            loadVideoWithRetry(videoLinks[currentIndex], currentVideoStartTime);
+        }
+
+        function loadVideoWithRetry(videoUrl, startTime) {
+            const videoId = extractVideoID(videoUrl);
+
+            if (!videoId) {
+                // If the video ID is invalid, move to the next video
+                handleNextVideo();
+                return;
+            }
+
             player = new YT.Player('player', {
                 height: '450',
                 width: '800',
-                videoId: extractVideoID(videoLinks[currentIndex]),
+                videoId: videoId,
                 playerVars: {
                     'autoplay': 1,
                     'controls': 1,
+                    'start': startTime,
                     'mute': 1
                 },
                 events: {
                     'onReady': function(event) {
-                        event.target.seekTo(currentVideoStartTime, true);
                         event.target.playVideo();
+                    },
+                    'onError': function() {
+                        // Handle error by loading the next video
+                        handleNextVideo();
                     },
                     'onStateChange': onPlayerStateChange
                 }
             });
+        }
+
+        function handleNextVideo() {
+            currentIndex = (currentIndex + 1) % videoLinks.length;
+            loadVideoWithRetry(videoLinks[currentIndex], 0);
         }
 
         function extractVideoID(url) {
@@ -88,18 +108,16 @@
 
         function onPlayerStateChange(event) {
             if (event.data === YT.PlayerState.ENDED) {
-                currentIndex = (currentIndex + 1) % videoLinks.length;
-                player.loadVideoById({
-                    videoId: extractVideoID(videoLinks[currentIndex]),
-                    startSeconds: 0
-                });
+                handleNextVideo();
             }
         }
 
+        // Load YouTube IFrame API
         function onYouTubeIframeAPIReady() {
             loadPlaylist();
         }
 
+        // Load the IFrame Player API code asynchronously.
         const tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         const firstScriptTag = document.getElementsByTagName('script')[0];
