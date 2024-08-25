@@ -33,6 +33,7 @@
     <script>
         let videoLinks = [];
         let currentIndex = 0;
+        let player;
 
         function loadPlaylist() {
             fetch('playlist7.csv')
@@ -41,7 +42,7 @@
                     videoLinks = data.split('\n').filter(Boolean);
 
                     if (videoLinks.length > 0) {
-                        playLiveVideo();
+                        initializePlayer();
                     } else {
                         console.error('Playlist is empty or cannot be parsed.');
                     }
@@ -49,7 +50,7 @@
                 .catch(error => console.error('Error loading playlist:', error));
         }
 
-        function playLiveVideo() {
+        function initializePlayer() {
             const now = new Date();
             const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const secondsSinceStartOfDay = Math.floor((now - startOfDay) / 1000);
@@ -62,8 +63,7 @@
             currentIndex = Math.floor(elapsedTime / videoDuration);
             const currentVideoStartTime = elapsedTime % videoDuration;
 
-            // Initialize YouTube Player with the correct video and start time
-            new YT.Player('player', {
+            player = new YT.Player('player', {
                 height: '450',
                 width: '800',
                 videoId: extractVideoID(videoLinks[currentIndex]),
@@ -91,23 +91,11 @@
 
         function onPlayerStateChange(event) {
             if (event.data === YT.PlayerState.ENDED) {
-                // Play the next video when the current one ends
+                // Move to the next video in the playlist
                 currentIndex = (currentIndex + 1) % videoLinks.length;
-                const videoDuration = 3600; // Each video is 1 hour (in seconds)
-                new YT.Player('player', {
-                    height: '450',
-                    width: '800',
+                player.loadVideoById({
                     videoId: extractVideoID(videoLinks[currentIndex]),
-                    playerVars: {
-                        'autoplay': 1,
-                        'controls': 1,
-                        'start': 0,
-                        'mute': 1
-                    },
-                    events: {
-                        'onReady': onPlayerReady,
-                        'onStateChange': onPlayerStateChange
-                    }
+                    startSeconds: 0
                 });
             }
         }
