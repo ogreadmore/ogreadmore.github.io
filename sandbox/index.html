@@ -31,17 +31,17 @@
     <h1>Science & Tech Daily Stream</h1>
     <iframe id="videoPlayer" src="" frameborder="0" allowfullscreen></iframe>
     <script>
-        let currentIndex = 0;
+        const videoDuration = 3600; // Each video is 1 hour (in seconds). Adjust as needed.
         let videoLinks = [];
 
         function loadPlaylist() {
-            fetch('playlist2.csv')
+            fetch('playlist.csv')
                 .then(response => response.text())
                 .then(data => {
                     videoLinks = data.split('\n').filter(Boolean);
 
                     if (videoLinks.length > 0) {
-                        playVideo(currentIndex);
+                        playLiveVideo();
                     } else {
                         console.error('Playlist is empty or cannot be parsed.');
                     }
@@ -49,26 +49,25 @@
                 .catch(error => console.error('Error loading playlist:', error));
         }
 
-        function playVideo(index) {
+        function playLiveVideo() {
+            const now = new Date();
+            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const secondsSinceStartOfDay = Math.floor((now - startOfDay) / 1000);
+
+            // Calculate which video should be playing and the start time within that video
+            const totalDuration = videoDuration * videoLinks.length;
+            const elapsedTime = secondsSinceStartOfDay % totalDuration;
+
+            const currentVideoIndex = Math.floor(elapsedTime / videoDuration);
+            const currentVideoStartTime = elapsedTime % videoDuration;
+
             const videoPlayer = document.getElementById('videoPlayer');
-            videoPlayer.src = videoLinks[index] + '?autoplay=1&mute=1';
-            monitorVideoEnd();
-        }
+            videoPlayer.src = videoLinks[currentVideoIndex] + `?autoplay=1&start=${currentVideoStartTime}`;
 
-        function monitorVideoEnd() {
-            const checkInterval = 1000; // Check every second
-            const videoPlayer = document.getElementById('videoPlayer');
-
-            const checkVideoEnd = setInterval(() => {
-                const iframeDoc = videoPlayer.contentDocument || videoPlayer.contentWindow.document;
-                const videoElem = iframeDoc.getElementsByTagName('video')[0];
-
-                if (videoElem && videoElem.ended) {
-                    clearInterval(checkVideoEnd);
-                    currentIndex = (currentIndex + 1) % videoLinks.length;
-                    playVideo(currentIndex);
-                }
-            }, checkInterval);
+            // Automatically switch to the next video when the current one ends
+            setTimeout(() => {
+                playLiveVideo();
+            }, (videoDuration - currentVideoStartTime) * 1000);
         }
 
         // Load the playlist on page load
