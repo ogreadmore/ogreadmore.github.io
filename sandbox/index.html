@@ -69,11 +69,13 @@
                 playerVars: {
                     'autoplay': 1,
                     'controls': 1,
-                    'start': currentVideoStartTime,
                     'mute': 1
                 },
                 events: {
-                    'onReady': onPlayerReady,
+                    'onReady': (event) => {
+                        event.target.seekTo(currentVideoStartTime, true);
+                        event.target.playVideo();
+                    },
                     'onStateChange': onPlayerStateChange
                 }
             });
@@ -82,10 +84,6 @@
         function extractVideoID(url) {
             const match = url.match(/(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([a-zA-Z0-9_-]+)/);
             return match ? match[1] : null;
-        }
-
-        function onPlayerReady(event) {
-            event.target.playVideo();
         }
 
         function onPlayerStateChange(event) {
