@@ -55,7 +55,6 @@
             const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const secondsSinceStartOfDay = Math.floor((now - startOfDay) / 1000);
 
-            // Calculate which video should be playing and the start time within that video
             const videoDuration = 3600; // Each video is 1 hour (in seconds)
             const totalDuration = videoDuration * videoLinks.length;
             const elapsedTime = secondsSinceStartOfDay % totalDuration;
