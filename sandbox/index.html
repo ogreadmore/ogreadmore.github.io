@@ -52,10 +52,11 @@
 
                         // Automatically switch to the next video when the current one ends
                         setTimeout(() => {
-                            window.location.reload();
+                            loadPlaylist();  // Reload the playlist instead of the entire page
                         }, (videoDuration - ((now - currentVideoStartTime) / 1000)) * 1000);
                     }
-                });
+                })
+                .catch(error => console.error('Error loading playlist:', error));
         }
 
         // Load the playlist on page load
