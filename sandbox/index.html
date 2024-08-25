@@ -55,74 +55,30 @@
         <ul id="playlist"></ul>
     </div>
     <script>
-        let videoLinks = [];
-        let videoDetails = [];
+        let videoLinks = [
+            "https://www.youtube.com/embed/69hJ9zN4t3g",
+            "https://www.youtube.com/embed/XgpdInYDs-U",
+            "https://www.youtube.com/embed/Vl6VhCAeEfQ",
+            "https://www.youtube.com/embed/K6rSVoAakQ8",
+            "https://www.youtube.com/embed/QpzykxnCtvM"
+        ];
+
         let currentIndex = 0;
         let player;
 
         function loadPlaylist() {
-            fetch('playlist9.csv')
-                .then(response => response.text())
-                .then(data => {
-                    videoLinks = data.split('\n').filter(Boolean);
-                    return Promise.all(videoLinks.map(fetchVideoDetails));
-                })
-                .then(details => {
-                    videoDetails = details;
-                    if (videoLinks.length > 0) {
-                        createPlaylistInterface();
-                        playLiveVideo();
-                    } else {
-                        console.error('Playlist is empty or cannot be parsed.');
-                    }
-                })
-                .catch(error => console.error('Error loading playlist:', error));
-        }
-
-        function fetchVideoDetails(videoUrl) {
-            const videoId = extractVideoID(videoUrl);
-            return fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`)
-                .then(response => response.json())
-                .then(data => ({
-                    title: data.title,
-                    channel: data.author_name,
-                    duration: 3600 // Default to 1 hour if duration isn't available
-                }))
-                .catch(() => ({
-                    title: 'Unknown Title',
-                    channel: 'Unknown Channel',
-                    duration: 3600
-                }));
+            createPlaylistInterface();
+            playLiveVideo();
         }
 
         function playLiveVideo() {
-            const now = new Date();
-            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            const secondsSinceStartOfDay = Math.floor((now - startOfDay) / 1000);
-
-            const totalDuration = videoDetails.reduce((acc, video) => acc + video.duration, 0);
-            const elapsedTime = secondsSinceStartOfDay % totalDuration;
-
-            let accumulatedDuration = 0;
-            for (let i = 0; i < videoDetails.length; i++) {
-                if (accumulatedDuration + videoDetails[i].duration > elapsedTime) {
-                    currentIndex = i;
-                    const currentVideoStartTime = elapsedTime - accumulatedDuration;
-                    loadVideoWithStart(videoLinks[currentIndex], currentVideoStartTime);
-                    updatePlaylistUI();
-                    break;
-                }
-                accumulatedDuration += videoDetails[i].duration;
-            }
+            const videoUrl = videoLinks[currentIndex];
+            loadVideo(videoUrl, 0);
+            updatePlaylistUI();
         }
 
-        function loadVideoWithStart(videoUrl, startTime) {
+        function loadVideo(videoUrl, startTime) {
             const videoId = extractVideoID(videoUrl);
-
-            if (!videoId) {
-                handleNextVideo();
-                return;
-            }
 
             if (player) {
                 player.loadVideoById({
@@ -145,19 +101,10 @@
                         'onReady': function(event) {
                             event.target.playVideo();
                         },
-                        'onError': function() {
-                            handleNextVideo();
-                        },
                         'onStateChange': onPlayerStateChange
                     }
                 });
             }
-        }
-
-        function handleNextVideo() {
-            currentIndex = (currentIndex + 1) % videoLinks.length;
-            loadVideoWithStart(videoLinks[currentIndex], 0);
-            updatePlaylistUI();
         }
 
         function extractVideoID(url) {
@@ -171,17 +118,21 @@
             }
         }
 
+        function handleNextVideo() {
+            currentIndex = (currentIndex + 1) % videoLinks.length;
+            playLiveVideo();
+        }
+
         function createPlaylistInterface() {
             const playlistEl = document.getElementById('playlist');
             playlistEl.innerHTML = '';
 
-            videoDetails.forEach((detail, index) => {
+            videoLinks.forEach((link, index) => {
                 const listItem = document.createElement('li');
-                listItem.textContent = `${detail.title} - ${detail.channel}`;
+                listItem.textContent = `Video ${index + 1}`;
                 listItem.addEventListener('click', () => {
                     currentIndex = index;
-                    loadVideoWithStart(videoLinks[currentIndex], 0);
-                    updatePlaylistUI();
+                    playLiveVideo();
                 });
                 playlistEl.appendChild(listItem);
             });
