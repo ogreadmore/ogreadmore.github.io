@@ -28,30 +28,22 @@
     </style>
 </head>
 <body>
-    <h1>Sa Sa Sa Science & Tech Daily Stream</h1>
+    <h1>Science & Tech Daily Stream</h1>
     <iframe id="videoPlayer" src="" frameborder="0" allowfullscreen></iframe>
     <script>
-        const videoDuration = 3600; // Each video is 1 hour (in seconds). Adjust as needed.
-
         function loadPlaylist() {
-            fetch('playlist1.csv')
+            fetch('playlist.csv')
                 .then(response => response.text())
                 .then(data => {
                     const videoLinks = data.split('\n').filter(Boolean);
 
                     if (videoLinks.length > 0) {
-                        const now = new Date();
-                        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                        const secondsSinceStartOfDay = (now - startOfDay) / 1000;
-
-                        const currentVideoIndex = Math.floor(secondsSinceStartOfDay / videoDuration) % videoLinks.length;
-                        const currentVideoStartTime = startOfDay.getTime() + (currentVideoIndex * videoDuration * 1000);
-
                         const videoPlayer = document.getElementById('videoPlayer');
-                        videoPlayer.src = videoLinks[currentVideoIndex] + '?start=' + Math.floor((now - currentVideoStartTime) / 1000);
+                        // Add autoplay=1 and mute=1 to the URL to try and force autoplay
+                        videoPlayer.src = videoLinks[0] + '?autoplay=1&mute=1'; 
 
-                        // Switch to the next video after the current one finishes
-                        setTimeout(loadPlaylist, (videoDuration - ((now - currentVideoStartTime) / 1000)) * 1000);
+                        // Reload the playlist or switch to the next video after 1 hour (for example)
+                        setTimeout(loadPlaylist, 3600000); // 3600000 ms = 1 hour
                     } else {
                         console.error('Playlist is empty or cannot be parsed.');
                     }
