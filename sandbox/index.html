@@ -31,24 +31,40 @@
     <h1>Science & Tech Daily Stream</h1>
     <iframe id="videoPlayer" src="" frameborder="0" allowfullscreen></iframe>
     <script>
+        let currentIndex = 0;
+        let videoLinks = [];
+
         function loadPlaylist() {
-            fetch('playlist2.csv')
+            fetch('playlist.csv')
                 .then(response => response.text())
                 .then(data => {
-                    const videoLinks = data.split('\n').filter(Boolean);
+                    videoLinks = data.split('\n').filter(Boolean);
 
                     if (videoLinks.length > 0) {
-                        const videoPlayer = document.getElementById('videoPlayer');
-                        // Add autoplay=1 and mute=1 to the URL to try and force autoplay
-                        videoPlayer.src = videoLinks[0] + '?autoplay=1&mute=1'; 
-
-                        // Reload the playlist or switch to the next video after 1 hour (for example)
-                        setTimeout(loadPlaylist, 3600000); // 3600000 ms = 1 hour
+                        playVideo(currentIndex);
                     } else {
                         console.error('Playlist is empty or cannot be parsed.');
                     }
                 })
                 .catch(error => console.error('Error loading playlist:', error));
+        }
+
+        function playVideo(index) {
+            const videoPlayer = document.getElementById('videoPlayer');
+            videoPlayer.src = videoLinks[index] + '?autoplay=1&mute=1';
+
+            // Listen for when the video ends to load the next one
+            videoPlayer.addEventListener('load', function() {
+                const iframeDoc = videoPlayer.contentDocument || videoPlayer.contentWindow.document;
+                const videoElem = iframeDoc.getElementsByTagName('video')[0];
+
+                if (videoElem) {
+                    videoElem.onended = function() {
+                        currentIndex = (currentIndex + 1) % videoLinks.length;
+                        playVideo(currentIndex);
+                    };
+                }
+            });
         }
 
         // Load the playlist on page load
