@@ -18,7 +18,7 @@
         h1 {
             margin-bottom: 20px;
         }
-        #videoPlayer {
+        #player {
             width: 80%;
             max-width: 800px;
             height: 450px;
@@ -55,7 +55,7 @@
             const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const secondsSinceStartOfDay = Math.floor((now - startOfDay) / 1000);
 
-            const videoDuration = 3600; // Each video is 1 hour (in seconds)
+            const videoDuration = 3600; // Assume each video is 1 hour (in seconds)
             const totalDuration = videoDuration * videoLinks.length;
             const elapsedTime = secondsSinceStartOfDay % totalDuration;
 
@@ -72,9 +72,8 @@
                     'mute': 1
                 },
                 events: {
-                    'onReady': (event) => {
-                        // Force the player to seek to the correct start time
-                        event.target.seekTo(currentVideoStartTime);
+                    'onReady': function(event) {
+                        event.target.seekTo(currentVideoStartTime, true);
                         event.target.playVideo();
                     },
                     'onStateChange': onPlayerStateChange
@@ -89,7 +88,6 @@
 
         function onPlayerStateChange(event) {
             if (event.data === YT.PlayerState.ENDED) {
-                // Move to the next video in the playlist
                 currentIndex = (currentIndex + 1) % videoLinks.length;
                 player.loadVideoById({
                     videoId: extractVideoID(videoLinks[currentIndex]),
@@ -98,12 +96,10 @@
             }
         }
 
-        // Load YouTube IFrame API
         function onYouTubeIframeAPIReady() {
             loadPlaylist();
         }
 
-        // Load the IFrame Player API code asynchronously.
         const tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         const firstScriptTag = document.getElementsByTagName('script')[0];
