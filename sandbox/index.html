@@ -34,7 +34,7 @@
         const videoDuration = 3600; // Each video is 1 hour (in seconds). Adjust as needed.
 
         function loadPlaylist() {
-            fetch('playlist.csv')
+            fetch('playlist1.csv')
                 .then(response => response.text())
                 .then(data => {
                     const videoLinks = data.split('\n').filter(Boolean);
