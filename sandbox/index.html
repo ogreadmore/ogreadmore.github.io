@@ -18,7 +18,7 @@
         h1 {
             margin-bottom: 20px;
         }
-        #player {
+        #videoPlayer {
             width: 80%;
             max-width: 800px;
             height: 450px;
@@ -33,15 +33,15 @@
     <script>
         let videoLinks = [];
         let currentIndex = 0;
-        let player;
 
         function loadPlaylist() {
             fetch('playlist7.csv')
                 .then(response => response.text())
                 .then(data => {
                     videoLinks = data.split('\n').filter(Boolean);
+
                     if (videoLinks.length > 0) {
-                        initializePlayer();
+                        playLiveVideo();
                     } else {
                         console.error('Playlist is empty or cannot be parsed.');
                     }
@@ -49,58 +49,35 @@
                 .catch(error => console.error('Error loading playlist:', error));
         }
 
-        function initializePlayer() {
+        function playLiveVideo() {
             const now = new Date();
             const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const secondsSinceStartOfDay = Math.floor((now - startOfDay) / 1000);
 
-            const totalVideoDuration = 3600; // Assuming each video is 1 hour long
-            const totalDuration = totalVideoDuration * videoLinks.length;
-
+            // Calculate which video should be playing and the start time within that video
+            const videoDuration = 3600; // Each video is 1 hour (in seconds)
+            const totalDuration = videoDuration * videoLinks.length;
             const elapsedTime = secondsSinceStartOfDay % totalDuration;
 
-            currentIndex = Math.floor(elapsedTime / totalVideoDuration);
-            let currentVideoStartTime = elapsedTime % totalVideoDuration;
+            currentIndex = Math.floor(elapsedTime / videoDuration);
+            const currentVideoStartTime = elapsedTime % videoDuration;
 
-            // Ensure the start time is within the video's duration
-            currentVideoStartTime = Math.min(currentVideoStartTime, totalVideoDuration - 1);
-
-            loadVideoWithRetry(videoLinks[currentIndex], currentVideoStartTime);
-        }
-
-        function loadVideoWithRetry(videoUrl, startTime) {
-            const videoId = extractVideoID(videoUrl);
-
-            if (!videoId) {
-                handleNextVideo();
-                return;
-            }
-
-            player = new YT.Player('player', {
+            // Initialize YouTube Player with the correct video and start time
+            new YT.Player('player', {
                 height: '450',
                 width: '800',
-                videoId: videoId,
+                videoId: extractVideoID(videoLinks[currentIndex]),
                 playerVars: {
                     'autoplay': 1,
                     'controls': 1,
-                    'start': startTime,
+                    'start': currentVideoStartTime,
                     'mute': 1
                 },
                 events: {
-                    'onReady': function(event) {
-                        event.target.playVideo();
-                    },
-                    'onError': function() {
-                        handleNextVideo();
-                    },
+                    'onReady': onPlayerReady,
                     'onStateChange': onPlayerStateChange
                 }
             });
-        }
-
-        function handleNextVideo() {
-            currentIndex = (currentIndex + 1) % videoLinks.length;
-            loadVideoWithRetry(videoLinks[currentIndex], 0);
         }
 
         function extractVideoID(url) {
@@ -108,16 +85,39 @@
             return match ? match[1] : null;
         }
 
+        function onPlayerReady(event) {
+            event.target.playVideo();
+        }
+
         function onPlayerStateChange(event) {
             if (event.data === YT.PlayerState.ENDED) {
-                handleNextVideo();
+                // Play the next video when the current one ends
+                currentIndex = (currentIndex + 1) % videoLinks.length;
+                const videoDuration = 3600; // Each video is 1 hour (in seconds)
+                new YT.Player('player', {
+                    height: '450',
+                    width: '800',
+                    videoId: extractVideoID(videoLinks[currentIndex]),
+                    playerVars: {
+                        'autoplay': 1,
+                        'controls': 1,
+                        'start': 0,
+                        'mute': 1
+                    },
+                    events: {
+                        'onReady': onPlayerReady,
+                        'onStateChange': onPlayerStateChange
+                    }
+                });
             }
         }
 
+        // Load YouTube IFrame API
         function onYouTubeIframeAPIReady() {
             loadPlaylist();
         }
 
+        // Load the IFrame Player API code asynchronously.
         const tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         const firstScriptTag = document.getElementsByTagName('script')[0];
