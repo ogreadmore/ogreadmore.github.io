@@ -28,7 +28,7 @@
         #playlistContainer {
             width: 80%;
             max-width: 800px;
-            height: 200px; /* Adjust the height as needed */
+            height: 200px;
             overflow-y: scroll;
             border: 1px solid #ccc;
             background-color: #fff;
@@ -65,7 +65,7 @@
                 .then(response => response.text())
                 .then(data => {
                     videoLinks = data.split('\n').filter(Boolean);
-                    return Promise.all(videoLinks.map(fetchVideoDetails));
+                    return Promise.all(videoLinks.map(fetchVideoTitleFromUrl));
                 })
                 .then(details => {
                     videoDetails = details;
@@ -79,17 +79,14 @@
                 .catch(error => console.error('Error loading playlist:', error));
         }
 
-        function fetchVideoDetails(videoUrl) {
+        function fetchVideoTitleFromUrl(videoUrl) {
             const videoId = extractVideoID(videoUrl);
-            return fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet&key=YOUR_API_KEY`)
+            return fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`)
                 .then(response => response.json())
-                .then(data => {
-                    const videoInfo = data.items[0].snippet;
-                    return {
-                        title: videoInfo.title,
-                        channel: videoInfo.channelTitle
-                    };
-                })
+                .then(data => ({
+                    title: data.title,
+                    channel: data.author_name
+                }))
                 .catch(() => ({
                     title: 'Unknown Title',
                     channel: 'Unknown Channel'
