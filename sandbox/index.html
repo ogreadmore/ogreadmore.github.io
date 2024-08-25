@@ -54,8 +54,12 @@
         let player;
 
         function loadPlaylist() {
+            console.log('Loading playlist...');
             fetch('playlist7.csv')
-                .then(response => response.text())
+                .then(response => {
+                    console.log('Playlist loaded successfully');
+                    return response.text();
+                })
                 .then(data => {
                     const lines = data.split('\n').filter(Boolean);
 
@@ -66,6 +70,7 @@
                     });
 
                     if (videoLinks.length > 0) {
+                        console.log('Creating playlist interface...');
                         createPlaylistInterface();
                         playLiveVideo();
                     } else {
@@ -76,6 +81,7 @@
         }
 
         function playLiveVideo() {
+            console.log('Calculating live video time...');
             const now = new Date();
             const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const secondsSinceStartOfDay = Math.floor((now - startOfDay) / 1000);
@@ -87,6 +93,7 @@
             currentIndex = Math.floor(elapsedTime / videoDuration);
             const currentVideoStartTime = elapsedTime % videoDuration;
 
+            console.log('Loading video with index:', currentIndex);
             loadVideoWithStart(videoLinks[currentIndex], currentVideoStartTime);
             updatePlaylistUI();
         }
@@ -95,10 +102,12 @@
             const videoId = extractVideoID(videoUrl);
 
             if (!videoId) {
+                console.error('Invalid video URL:', videoUrl);
                 handleNextVideo();
                 return;
             }
 
+            console.log('Initializing player with video ID:', videoId);
             if (player) {
                 player.loadVideoById({
                     videoId: videoId,
@@ -118,9 +127,11 @@
                     },
                     events: {
                         'onReady': function(event) {
+                            console.log('Player ready, starting video...');
                             event.target.playVideo();
                         },
                         'onError': function() {
+                            console.error('Error loading video:', videoUrl);
                             handleNextVideo();
                         },
                         'onStateChange': onPlayerStateChange
