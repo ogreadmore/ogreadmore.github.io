@@ -56,6 +56,7 @@
     </div>
     <script>
         let videoLinks = [];
+        let videoDetails = [];
         let currentIndex = 0;
         let player;
 
@@ -64,7 +65,10 @@
                 .then(response => response.text())
                 .then(data => {
                     videoLinks = data.split('\n').filter(Boolean);
-
+                    return Promise.all(videoLinks.map(fetchVideoDetails));
+                })
+                .then(details => {
+                    videoDetails = details;
                     if (videoLinks.length > 0) {
                         createPlaylistInterface();
                         playLiveVideo();
@@ -73,6 +77,23 @@
                     }
                 })
                 .catch(error => console.error('Error loading playlist:', error));
+        }
+
+        function fetchVideoDetails(videoUrl) {
+            const videoId = extractVideoID(videoUrl);
+            return fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet&key=YOUR_API_KEY`)
+                .then(response => response.json())
+                .then(data => {
+                    const videoInfo = data.items[0].snippet;
+                    return {
+                        title: videoInfo.title,
+                        channel: videoInfo.channelTitle
+                    };
+                })
+                .catch(() => ({
+                    title: 'Unknown Title',
+                    channel: 'Unknown Channel'
+                }));
         }
 
         function playLiveVideo() {
@@ -150,9 +171,9 @@
             const playlistEl = document.getElementById('playlist');
             playlistEl.innerHTML = '';
 
-            videoLinks.forEach((link, index) => {
+            videoDetails.forEach((detail, index) => {
                 const listItem = document.createElement('li');
-                listItem.textContent = `Video ${index + 1}`;
+                listItem.textContent = `${detail.title} - ${detail.channel}`;
                 listItem.addEventListener('click', () => {
                     currentIndex = index;
                     loadVideoWithStart(videoLinks[currentIndex], 0);
