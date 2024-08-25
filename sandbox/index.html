@@ -49,6 +49,7 @@
     <ul id="playlist"></ul>
     <script>
         let videoLinks = [];
+        let videoTitles = [];
         let currentIndex = 0;
         let player;
 
@@ -56,7 +57,13 @@
             fetch('playlist7.csv')
                 .then(response => response.text())
                 .then(data => {
-                    videoLinks = data.split('\n').filter(Boolean);
+                    const lines = data.split('\n').filter(Boolean);
+
+                    lines.forEach(line => {
+                        const [url, title] = line.split(',');
+                        videoLinks.push(url.trim());
+                        videoTitles.push(title.trim());
+                    });
 
                     if (videoLinks.length > 0) {
                         createPlaylistInterface();
@@ -145,7 +152,7 @@
 
             videoLinks.forEach((link, index) => {
                 const listItem = document.createElement('li');
-                listItem.textContent = `Video ${index + 1}`;
+                listItem.textContent = videoTitles[index];
                 listItem.addEventListener('click', () => {
                     currentIndex = index;
                     loadVideoWithStart(videoLinks[currentIndex], 0);
