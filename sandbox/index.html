@@ -54,16 +54,17 @@
             const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const secondsSinceStartOfDay = Math.floor((now - startOfDay) / 1000);
 
-            // Calculate total duration of the playlist
-            const videoDuration = 3600; // Assuming each video is 1 hour long
-            const totalDuration = videoDuration * videoLinks.length;
+            const totalVideoDuration = 3600; // Assuming each video is 1 hour long
+            const totalDuration = totalVideoDuration * videoLinks.length;
+
             const elapsedTime = secondsSinceStartOfDay % totalDuration;
 
-            // Determine the correct video index and start time within that video
-            currentIndex = Math.floor(elapsedTime / videoDuration);
-            let currentVideoStartTime = elapsedTime % videoDuration;
+            currentIndex = Math.floor(elapsedTime / totalVideoDuration);
+            let currentVideoStartTime = elapsedTime % totalVideoDuration;
 
-            // Load the video, adjusting the start time if necessary
+            // Ensure the start time is within the video's duration
+            currentVideoStartTime = Math.min(currentVideoStartTime, totalVideoDuration - 1);
+
             loadVideoWithRetry(videoLinks[currentIndex], currentVideoStartTime);
         }
 
@@ -71,7 +72,6 @@
             const videoId = extractVideoID(videoUrl);
 
             if (!videoId) {
-                // If the video ID is invalid, move to the next video
                 handleNextVideo();
                 return;
             }
@@ -91,7 +91,6 @@
                         event.target.playVideo();
                     },
                     'onError': function() {
-                        // Handle error by loading the next video
                         handleNextVideo();
                     },
                     'onStateChange': onPlayerStateChange
@@ -115,12 +114,10 @@
             }
         }
 
-        // Load YouTube IFrame API
         function onYouTubeIframeAPIReady() {
             loadPlaylist();
         }
 
-        // Load the IFrame Player API code asynchronously.
         const tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         const firstScriptTag = document.getElementsByTagName('script')[0];
