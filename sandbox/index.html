@@ -24,20 +24,24 @@
             height: 450px;
             border: 2px solid #ccc;
             margin-bottom: 20px;
-            background-color: #000; /* Ensure the player area is visible */
         }
-        #playlist {
+        #playlistContainer {
             width: 80%;
             max-width: 800px;
+            height: 200px; /* Adjust the height as needed */
+            overflow-y: scroll;
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+        #playlist {
             list-style-type: none;
             padding: 0;
+            margin: 0;
         }
         #playlist li {
             padding: 10px;
-            border: 1px solid #ccc;
-            margin-bottom: 5px;
+            border-bottom: 1px solid #ccc;
             cursor: pointer;
-            background-color: #fff;
         }
         #playlist li.current {
             background-color: #ddd;
@@ -47,7 +51,9 @@
 <body>
     <h1>Science & Tech Daily Stream</h1>
     <div id="player"></div>
-    <ul id="playlist"></ul>
+    <div id="playlistContainer">
+        <ul id="playlist"></ul>
+    </div>
     <script>
         let videoLinks = [];
         let currentIndex = 0;
