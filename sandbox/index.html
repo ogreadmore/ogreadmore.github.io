@@ -29,10 +29,10 @@
 </head>
 <body>
     <h1>Science & Tech Daily Stream</h1>
-    <iframe id="videoPlayer" src="" frameborder="0" allowfullscreen></iframe>
+    <div id="player"></div>
     <script>
-        const videoDuration = 3600; // Each video is 1 hour (in seconds). Adjust as needed.
         let videoLinks = [];
+        let currentIndex = 0;
 
         function loadPlaylist() {
             fetch('playlist2.csv')
@@ -55,23 +55,74 @@
             const secondsSinceStartOfDay = Math.floor((now - startOfDay) / 1000);
 
             // Calculate which video should be playing and the start time within that video
+            const videoDuration = 3600; // Each video is 1 hour (in seconds)
             const totalDuration = videoDuration * videoLinks.length;
             const elapsedTime = secondsSinceStartOfDay % totalDuration;
 
-            const currentVideoIndex = Math.floor(elapsedTime / videoDuration);
+            currentIndex = Math.floor(elapsedTime / videoDuration);
             const currentVideoStartTime = elapsedTime % videoDuration;
 
-            const videoPlayer = document.getElementById('videoPlayer');
-            videoPlayer.src = videoLinks[currentVideoIndex] + `?autoplay=1&start=${currentVideoStartTime}`;
-
-            // Automatically switch to the next video when the current one ends
-            setTimeout(() => {
-                playLiveVideo();
-            }, (videoDuration - currentVideoStartTime) * 1000);
+            // Initialize YouTube Player with the correct video and start time
+            new YT.Player('player', {
+                height: '450',
+                width: '800',
+                videoId: extractVideoID(videoLinks[currentIndex]),
+                playerVars: {
+                    'autoplay': 1,
+                    'controls': 1,
+                    'start': currentVideoStartTime,
+                    'mute': 1
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
         }
 
-        // Load the playlist on page load
-        window.onload = loadPlaylist;
+        function extractVideoID(url) {
+            const match = url.match(/(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([a-zA-Z0-9_-]+)/);
+            return match ? match[1] : null;
+        }
+
+        function onPlayerReady(event) {
+            event.target.playVideo();
+        }
+
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.ENDED) {
+                // Play the next video when the current one ends
+                currentIndex = (currentIndex + 1) % videoLinks.length;
+                const videoDuration = 3600; // Each video is 1 hour (in seconds)
+                new YT.Player('player', {
+                    height: '450',
+                    width: '800',
+                    videoId: extractVideoID(videoLinks[currentIndex]),
+                    playerVars: {
+                        'autoplay': 1,
+                        'controls': 1,
+                        'start': 0,
+                        'mute': 1
+                    },
+                    events: {
+                        'onReady': onPlayerReady,
+                        'onStateChange': onPlayerStateChange
+                    }
+                });
+            }
+        }
+
+        // Load YouTube IFrame API
+        function onYouTubeIframeAPIReady() {
+            loadPlaylist();
+        }
+
+        // Load the IFrame Player API code asynchronously.
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
     </script>
 </body>
 </html>
