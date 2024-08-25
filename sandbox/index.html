@@ -18,30 +18,56 @@
         h1 {
             margin-bottom: 20px;
         }
-        #videoPlayer {
+        #player {
             width: 80%;
             max-width: 800px;
             height: 450px;
             border: 2px solid #ccc;
             margin-bottom: 20px;
         }
+        #playlist {
+            width: 80%;
+            max-width: 800px;
+            list-style-type: none;
+            padding: 0;
+        }
+        #playlist li {
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin-bottom: 5px;
+            cursor: pointer;
+            background-color: #fff;
+        }
+        #playlist li.current {
+            background-color: #ddd;
+        }
     </style>
 </head>
 <body>
     <h1>Science & Tech Daily Stream</h1>
     <div id="player"></div>
+    <ul id="playlist"></ul>
     <script>
         let videoLinks = [];
+        let videoTitles = [];
         let currentIndex = 0;
+        let player;
 
         function loadPlaylist() {
             fetch('playlist9.csv')
                 .then(response => response.text())
                 .then(data => {
-                    videoLinks = data.split('\n').filter(Boolean);
+                    const lines = data.split('\n').filter(Boolean);
+
+                    lines.forEach(line => {
+                        const [url, title] = line.split(',');
+                        videoLinks.push(url.trim());
+                        videoTitles.push(title.trim());
+                    });
 
                     if (videoLinks.length > 0) {
-                        playLiveVideo();
+                        createPlaylistInterface();
+                        initializePlayer();
                     } else {
                         console.error('Playlist is empty or cannot be parsed.');
                     }
@@ -49,12 +75,28 @@
                 .catch(error => console.error('Error loading playlist:', error));
         }
 
+        function initializePlayer() {
+            player = new YT.Player('player', {
+                height: '450',
+                width: '800',
+                playerVars: {
+                    'autoplay': 1,
+                    'controls': 1,
+                    'mute': 1
+                },
+                events: {
+                    'onReady': playLiveVideo,
+                    'onError': handleNextVideo,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
         function playLiveVideo() {
             const now = new Date();
             const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const secondsSinceStartOfDay = Math.floor((now - startOfDay) / 1000);
 
-            // Calculate which video should be playing and the start time within that video
             const videoDuration = 3600; // Each video is 1 hour (in seconds)
             const totalDuration = videoDuration * videoLinks.length;
             const elapsedTime = secondsSinceStartOfDay % totalDuration;
@@ -62,22 +104,32 @@
             currentIndex = Math.floor(elapsedTime / videoDuration);
             const currentVideoStartTime = elapsedTime % videoDuration;
 
-            // Initialize YouTube Player with the correct video and start time
-            new YT.Player('player', {
-                height: '450',
-                width: '800',
-                videoId: extractVideoID(videoLinks[currentIndex]),
-                playerVars: {
-                    'autoplay': 1,
-                    'controls': 1,
-                    'start': currentVideoStartTime,
-                    'mute': 1
-                },
-                events: {
-                    'onReady': onPlayerReady,
-                    'onStateChange': onPlayerStateChange
-                }
+            loadVideoWithStart(videoLinks[currentIndex], currentVideoStartTime);
+            updatePlaylistUI();
+        }
+
+        function loadVideoWithStart(videoUrl, startTime) {
+            const videoId = extractVideoID(videoUrl);
+
+            if (!videoId) {
+                console.error('Invalid video URL:', videoUrl);
+                handleNextVideo();
+                return;
+            }
+
+            player.cueVideoById({
+                videoId: videoId,
+                startSeconds: startTime,
+                suggestedQuality: 'large'
             });
+
+            player.playVideo();
+        }
+
+        function handleNextVideo() {
+            currentIndex = (currentIndex + 1) % videoLinks.length;
+            loadVideoWithStart(videoLinks[currentIndex], 0);
+            updatePlaylistUI();
         }
 
         function extractVideoID(url) {
@@ -85,39 +137,39 @@
             return match ? match[1] : null;
         }
 
-        function onPlayerReady(event) {
-            event.target.playVideo();
-        }
-
         function onPlayerStateChange(event) {
             if (event.data === YT.PlayerState.ENDED) {
-                // Play the next video when the current one ends
-                currentIndex = (currentIndex + 1) % videoLinks.length;
-                const videoDuration = 3600; // Each video is 1 hour (in seconds)
-                new YT.Player('player', {
-                    height: '450',
-                    width: '800',
-                    videoId: extractVideoID(videoLinks[currentIndex]),
-                    playerVars: {
-                        'autoplay': 1,
-                        'controls': 1,
-                        'start': 0,
-                        'mute': 1
-                    },
-                    events: {
-                        'onReady': onPlayerReady,
-                        'onStateChange': onPlayerStateChange
-                    }
-                });
+                handleNextVideo();
             }
         }
 
-        // Load YouTube IFrame API
+        function createPlaylistInterface() {
+            const playlistEl = document.getElementById('playlist');
+            playlistEl.innerHTML = '';
+
+            videoLinks.forEach((link, index) => {
+                const listItem = document.createElement('li');
+                listItem.textContent = videoTitles[index];
+                listItem.addEventListener('click', () => {
+                    currentIndex = index;
+                    loadVideoWithStart(videoLinks[currentIndex], 0);
+                    updatePlaylistUI();
+                });
+                playlistEl.appendChild(listItem);
+            });
+        }
+
+        function updatePlaylistUI() {
+            const playlistItems = document.querySelectorAll('#playlist li');
+            playlistItems.forEach((item, index) => {
+                item.classList.toggle('current', index === currentIndex);
+            });
+        }
+
         function onYouTubeIframeAPIReady() {
             loadPlaylist();
         }
 
-        // Load the IFrame Player API code asynchronously.
         const tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         const firstScriptTag = document.getElementsByTagName('script')[0];
