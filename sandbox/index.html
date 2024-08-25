@@ -28,7 +28,7 @@
         #playlistContainer {
             width: 80%;
             max-width: 800px;
-            height: 200px; /* Adjust the height as needed */
+            height: 200px;
             overflow-y: scroll;
             border: 1px solid #ccc;
             background-color: #fff;
@@ -56,6 +56,7 @@
     </div>
     <script>
         let videoLinks = [];
+        let videoDetails = [];
         let currentIndex = 0;
         let player;
 
@@ -64,7 +65,10 @@
                 .then(response => response.text())
                 .then(data => {
                     videoLinks = data.split('\n').filter(Boolean);
-
+                    return Promise.all(videoLinks.map(fetchVideoTitleFromUrl));
+                })
+                .then(details => {
+                    videoDetails = details;
                     if (videoLinks.length > 0) {
                         createPlaylistInterface();
                         playLiveVideo();
@@ -73,6 +77,20 @@
                     }
                 })
                 .catch(error => console.error('Error loading playlist:', error));
+        }
+
+        function fetchVideoTitleFromUrl(videoUrl) {
+            const videoId = extractVideoID(videoUrl);
+            return fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`)
+                .then(response => response.json())
+                .then(data => ({
+                    title: data.title,
+                    channel: data.author_name
+                }))
+                .catch(() => ({
+                    title: 'Unknown Title',
+                    channel: 'Unknown Channel'
+                }));
         }
 
         function playLiveVideo() {
@@ -150,9 +168,9 @@
             const playlistEl = document.getElementById('playlist');
             playlistEl.innerHTML = '';
 
-            videoLinks.forEach((link, index) => {
+            videoDetails.forEach((detail, index) => {
                 const listItem = document.createElement('li');
-                listItem.textContent = `Video ${index + 1}`;
+                listItem.textContent = `${detail.title} - ${detail.channel}`;
                 listItem.addEventListener('click', () => {
                     currentIndex = index;
                     loadVideoWithStart(videoLinks[currentIndex], 0);
