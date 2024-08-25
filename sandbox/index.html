@@ -28,7 +28,7 @@
         #playlistContainer {
             width: 80%;
             max-width: 800px;
-            height: 200px;
+            height: 200px; /* Adjust the height as needed */
             overflow-y: scroll;
             border: 1px solid #ccc;
             background-color: #fff;
@@ -55,30 +55,49 @@
         <ul id="playlist"></ul>
     </div>
     <script>
-        let videoLinks = [
-            "https://www.youtube.com/embed/69hJ9zN4t3g",
-            "https://www.youtube.com/embed/XgpdInYDs-U",
-            "https://www.youtube.com/embed/Vl6VhCAeEfQ",
-            "https://www.youtube.com/embed/K6rSVoAakQ8",
-            "https://www.youtube.com/embed/QpzykxnCtvM"
-        ];
-
+        let videoLinks = [];
         let currentIndex = 0;
         let player;
 
         function loadPlaylist() {
-            createPlaylistInterface();
-            playLiveVideo();
+            fetch('playlist9.csv')
+                .then(response => response.text())
+                .then(data => {
+                    videoLinks = data.split('\n').filter(Boolean);
+
+                    if (videoLinks.length > 0) {
+                        createPlaylistInterface();
+                        playLiveVideo();
+                    } else {
+                        console.error('Playlist is empty or cannot be parsed.');
+                    }
+                })
+                .catch(error => console.error('Error loading playlist:', error));
         }
 
         function playLiveVideo() {
-            const videoUrl = videoLinks[currentIndex];
-            loadVideo(videoUrl, 0);
+            const now = new Date();
+            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const secondsSinceStartOfDay = Math.floor((now - startOfDay) / 1000);
+
+            const videoDuration = 3600; // Each video is 1 hour (in seconds)
+            const totalDuration = videoDuration * videoLinks.length;
+            const elapsedTime = secondsSinceStartOfDay % totalDuration;
+
+            currentIndex = Math.floor(elapsedTime / videoDuration);
+            const currentVideoStartTime = elapsedTime % videoDuration;
+
+            loadVideoWithStart(videoLinks[currentIndex], currentVideoStartTime);
             updatePlaylistUI();
         }
 
-        function loadVideo(videoUrl, startTime) {
+        function loadVideoWithStart(videoUrl, startTime) {
             const videoId = extractVideoID(videoUrl);
+
+            if (!videoId) {
+                handleNextVideo();
+                return;
+            }
 
             if (player) {
                 player.loadVideoById({
@@ -101,10 +120,19 @@
                         'onReady': function(event) {
                             event.target.playVideo();
                         },
+                        'onError': function() {
+                            handleNextVideo();
+                        },
                         'onStateChange': onPlayerStateChange
                     }
                 });
             }
+        }
+
+        function handleNextVideo() {
+            currentIndex = (currentIndex + 1) % videoLinks.length;
+            loadVideoWithStart(videoLinks[currentIndex], 0);
+            updatePlaylistUI();
         }
 
         function extractVideoID(url) {
@@ -118,11 +146,6 @@
             }
         }
 
-        function handleNextVideo() {
-            currentIndex = (currentIndex + 1) % videoLinks.length;
-            playLiveVideo();
-        }
-
         function createPlaylistInterface() {
             const playlistEl = document.getElementById('playlist');
             playlistEl.innerHTML = '';
@@ -132,7 +155,8 @@
                 listItem.textContent = `Video ${index + 1}`;
                 listItem.addEventListener('click', () => {
                     currentIndex = index;
-                    playLiveVideo();
+                    loadVideoWithStart(videoLinks[currentIndex], 0);
+                    updatePlaylistUI();
                 });
                 playlistEl.appendChild(listItem);
             });
