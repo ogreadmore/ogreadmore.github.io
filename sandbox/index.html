@@ -65,7 +65,7 @@
                 .then(response => response.text())
                 .then(data => {
                     videoLinks = data.split('\n').filter(Boolean);
-                    return Promise.all(videoLinks.map(fetchVideoTitleFromUrl));
+                    return Promise.all(videoLinks.map(fetchVideoDetails));
                 })
                 .then(details => {
                     videoDetails = details;
@@ -79,18 +79,38 @@
                 .catch(error => console.error('Error loading playlist:', error));
         }
 
-        function fetchVideoTitleFromUrl(videoUrl) {
+        function fetchVideoDetails(videoUrl) {
             const videoId = extractVideoID(videoUrl);
             return fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`)
                 .then(response => response.json())
                 .then(data => ({
                     title: data.title,
-                    channel: data.author_name
+                    channel: data.author_name,
+                    duration: getVideoDuration(videoId) // Fetching video duration
                 }))
                 .catch(() => ({
                     title: 'Unknown Title',
-                    channel: 'Unknown Channel'
+                    channel: 'Unknown Channel',
+                    duration: 0
                 }));
+        }
+
+        function getVideoDuration(videoId) {
+            return fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=contentDetails&key=YOUR_API_KEY`)
+                .then(response => response.json())
+                .then(data => {
+                    const duration = data.items[0].contentDetails.duration;
+                    return convertYouTubeDuration(duration);
+                })
+                .catch(() => 0);
+        }
+
+        function convertYouTubeDuration(duration) {
+            const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+            const hours = parseInt(match[1]) || 0;
+            const minutes = parseInt(match[2]) || 0;
+            const seconds = parseInt(match[3]) || 0;
+            return hours * 3600 + minutes * 60 + seconds;
         }
 
         function playLiveVideo() {
@@ -98,15 +118,20 @@
             const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const secondsSinceStartOfDay = Math.floor((now - startOfDay) / 1000);
 
-            const videoDuration = 3600; // Each video is 1 hour (in seconds)
-            const totalDuration = videoDuration * videoLinks.length;
+            const totalDuration = videoDetails.reduce((acc, video) => acc + video.duration, 0);
             const elapsedTime = secondsSinceStartOfDay % totalDuration;
 
-            currentIndex = Math.floor(elapsedTime / videoDuration);
-            const currentVideoStartTime = elapsedTime % videoDuration;
-
-            loadVideoWithStart(videoLinks[currentIndex], currentVideoStartTime);
-            updatePlaylistUI();
+            let accumulatedDuration = 0;
+            for (let i = 0; i < videoDetails.length; i++) {
+                if (accumulatedDuration + videoDetails[i].duration > elapsedTime) {
+                    currentIndex = i;
+                    const currentVideoStartTime = elapsedTime - accumulatedDuration;
+                    loadVideoWithStart(videoLinks[currentIndex], currentVideoStartTime);
+                    updatePlaylistUI();
+                    break;
+                }
+                accumulatedDuration += videoDetails[i].duration;
+            }
         }
 
         function loadVideoWithStart(videoUrl, startTime) {
