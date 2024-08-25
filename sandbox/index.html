@@ -35,7 +35,7 @@
         let currentIndex = 0;
 
         function loadPlaylist() {
-            fetch('playlist.csv')
+            fetch('playlist8.csv')
                 .then(response => response.text())
                 .then(data => {
                     videoLinks = data.split('\n').filter(Boolean);
