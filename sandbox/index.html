@@ -49,7 +49,6 @@
     <ul id="playlist"></ul>
     <script>
         let videoLinks = [];
-        let videoTitles = [];
         let currentIndex = 0;
         let player;
 
@@ -57,39 +56,16 @@
             fetch('playlist8.csv')
                 .then(response => response.text())
                 .then(data => {
-                    const lines = data.split('\n').filter(Boolean);
-
-                    lines.forEach(line => {
-                        const [url, title] = line.split(',');
-                        videoLinks.push(url.trim());
-                        videoTitles.push(title.trim());
-                    });
+                    videoLinks = data.split('\n').filter(Boolean);
 
                     if (videoLinks.length > 0) {
                         createPlaylistInterface();
-                        initializePlayer();
+                        playLiveVideo();
                     } else {
                         console.error('Playlist is empty or cannot be parsed.');
                     }
                 })
                 .catch(error => console.error('Error loading playlist:', error));
-        }
-
-        function initializePlayer() {
-            player = new YT.Player('player', {
-                height: '450',
-                width: '800',
-                playerVars: {
-                    'autoplay': 1,
-                    'controls': 1,
-                    'mute': 1
-                },
-                events: {
-                    'onReady': playLiveVideo,
-                    'onError': handleNextVideo,
-                    'onStateChange': onPlayerStateChange
-                }
-            });
         }
 
         function playLiveVideo() {
@@ -112,18 +88,38 @@
             const videoId = extractVideoID(videoUrl);
 
             if (!videoId) {
-                console.error('Invalid video URL:', videoUrl);
                 handleNextVideo();
                 return;
             }
 
-            player.cueVideoById({
-                videoId: videoId,
-                startSeconds: startTime,
-                suggestedQuality: 'large'
-            });
-
-            player.playVideo();
+            if (player) {
+                player.loadVideoById({
+                    videoId: videoId,
+                    startSeconds: startTime,
+                    suggestedQuality: 'large'
+                });
+            } else {
+                player = new YT.Player('player', {
+                    height: '450',
+                    width: '800',
+                    videoId: videoId,
+                    playerVars: {
+                        'autoplay': 1,
+                        'controls': 1,
+                        'start': startTime,
+                        'mute': 1
+                    },
+                    events: {
+                        'onReady': function(event) {
+                            event.target.playVideo();
+                        },
+                        'onError': function() {
+                            handleNextVideo();
+                        },
+                        'onStateChange': onPlayerStateChange
+                    }
+                });
+            }
         }
 
         function handleNextVideo() {
@@ -149,7 +145,7 @@
 
             videoLinks.forEach((link, index) => {
                 const listItem = document.createElement('li');
-                listItem.textContent = videoTitles[index];
+                listItem.textContent = `Video ${index + 1}`;
                 listItem.addEventListener('click', () => {
                     currentIndex = index;
                     loadVideoWithStart(videoLinks[currentIndex], 0);
