@@ -71,9 +71,8 @@
 
                 if (videoLinks.length > 0) {
                     await fetchVideoDurations();
-                    trimPlaylistBasedOnTime();
-                    createPlaylistInterface();
                     playLiveVideo();
+                    createPlaylistInterface();
                 } else {
                     console.error('Playlist is empty or cannot be parsed.');
                 }
@@ -114,7 +113,7 @@
             return (hours * 3600) + (minutes * 60) + seconds;
         }
 
-        function trimPlaylistBasedOnTime() {
+        function playLiveVideo() {
             const now = new Date();
             const startOfDayGMT = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
             const secondsSinceStartOfDay = Math.floor((now - startOfDayGMT) / 1000);
@@ -133,13 +132,9 @@
                 cumulativeDuration += videoDuration;
             }
 
-            // Trim the playlist and durations
-            videoLinks = videoLinks.slice(targetIndex);
-            videoDetails = videoDetails.slice(targetIndex);
-            videoDurations = videoDurations.slice(targetIndex);
-
-            // Adjust the start time of the first video in the trimmed playlist
-            loadVideoWithStart(videoLinks[0], targetStartTime);
+            currentIndex = targetIndex;
+            loadVideoWithStart(videoLinks[currentIndex], targetStartTime);
+            updatePlaylistUI();
         }
 
         function loadVideoWithStart(videoUrl, startTime) {
