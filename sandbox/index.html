@@ -57,7 +57,7 @@
     <script>
         let videoLinks = [];
         let videoDetails = [];
-        let videoDurations = []; // Array to hold video durations
+        let videoDurations = [];
         let currentIndex = 0;
         let player;
 
@@ -68,10 +68,10 @@
                 videoLinks = data.split('\n').filter(Boolean);
 
                 videoDetails = await Promise.all(videoLinks.map(fetchVideoTitleFromUrl));
+                await fetchVideoDurations();
 
                 if (videoLinks.length > 0) {
                     createPlaylistInterface();
-                    await fetchVideoDurations(); // Fetch video durations before playing
                     playLiveVideo();
                 } else {
                     console.error('Playlist is empty or cannot be parsed.');
@@ -164,6 +164,7 @@
                     },
                     events: {
                         'onReady': function(event) {
+                            event.target.seekTo(startTime);
                             event.target.playVideo();
                         },
                         'onError': function() {
