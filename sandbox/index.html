@@ -205,6 +205,7 @@
             videoDetails.forEach((detail, index) => {
                 const listItem = document.createElement('li');
                 listItem.textContent = `${detail.title} - ${detail.channel}`;
+                listItem.id = `video-${index}`;
                 listItem.addEventListener('click', () => {
                     currentIndex = index;
                     loadVideoWithStart(videoLinks[currentIndex], 0);
@@ -212,6 +213,8 @@
                 });
                 playlistEl.appendChild(listItem);
             });
+
+            updatePlaylistUI();  // Ensure that the correct video is highlighted after the interface is created
         }
 
         function updatePlaylistUI() {
