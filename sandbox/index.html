@@ -95,15 +95,24 @@
 
         function playLiveVideo() {
             const now = new Date();
-            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            const secondsSinceStartOfDay = Math.floor((now - startOfDay) / 1000);
+            const gmtNow = new Date(now.getTime() + now.getTimezoneOffset() * 6000);
+            const startOfDay = new Date(gmtNow.getFullYear(), gmtNow.getMonth(), gmtNow.getDate());
+            const secondsSinceStartOfDay = Math.floor((gmtNow - startOfDay) / 1000);
 
-            const videoDuration = 3600; // Each video is 1 hour (in seconds)
-            const totalDuration = videoDuration * videoLinks.length;
-            const elapsedTime = secondsSinceStartOfDay % totalDuration;
+            let elapsedTime = secondsSinceStartOfDay;
+            currentIndex = 0;
 
-            currentIndex = Math.floor(elapsedTime / videoDuration);
-            const currentVideoStartTime = elapsedTime % videoDuration;
+            for (let i = 0; i < videoDetails.length; i++) {
+                const videoDuration = videoDetails[i].duration;
+                if (elapsedTime < videoDuration) {
+                    break;
+                } else {
+                    elapsedTime -= videoDuration;
+                    currentIndex++;
+                }
+            }
+
+            const currentVideoStartTime = elapsedTime;
 
             loadVideoWithStart(videoLinks[currentIndex], currentVideoStartTime);
             updatePlaylistUI();
