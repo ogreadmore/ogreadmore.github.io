@@ -101,20 +101,28 @@
         }
 
         async function fetchVideoDurations() {
-            videoDurations = await Promise.all(videoLinks.map(async (url, index) => {
-                const videoId = extractVideoID(url);
-                try {
-                    const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=contentDetails&key=YOUR_API_KEY`);
-                    const data = await response.json();
-                    const durationInSeconds = convertDurationToSeconds(data.items[0].contentDetails.duration);
-                    videoDetails[index].duration = formatDuration(durationInSeconds);
-                    return durationInSeconds;
-                } catch {
-                    videoDetails[index].duration = "N/A";
-                    return 3600; // Default to 1 hour if there's an error
-                }
-            }));
+    videoDurations = await Promise.all(videoLinks.map(async (url, index) => {
+        const videoId = extractVideoID(url);
+        try {
+            const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=contentDetails&key=YOUR_API_KEY`);
+            const data = await response.json();
+
+            if (data.items.length > 0) {
+                const durationInSeconds = convertDurationToSeconds(data.items[0].contentDetails.duration);
+                videoDetails[index].duration = formatDuration(durationInSeconds);
+                return durationInSeconds;
+            } else {
+                videoDetails[index].duration = "N/A";
+                return 3600; // Default to 1 hour if there's an error
+            }
+        } catch (error) {
+            console.error(`Error fetching duration for video ID ${videoId}:`, error);
+            videoDetails[index].duration = "N/A";
+            return 3600; // Default to 1 hour if there's an error
         }
+    }));
+}
+
 
         function convertDurationToSeconds(duration) {
             const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
