@@ -115,7 +115,7 @@
 
         function playLiveVideo() {
             const now = new Date();
-            const startOfDay = new Date(now.toISOString().split('T')[0] + 'T00:00:00Z');
+            const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
             const secondsSinceStartOfDay = Math.floor((now - startOfDay) / 1000);
 
             let cumulativeTime = 0;
