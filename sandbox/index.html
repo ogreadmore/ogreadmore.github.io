@@ -60,62 +60,60 @@
         let currentIndex = 0;
         let player;
 
-        function loadPlaylist() {
-            fetch('playlist11.csv')
-                .then(response => response.text())
-                .then(data => {
-                    videoLinks = data.split('\n').filter(Boolean);
-                    return Promise.all(videoLinks.map(fetchVideoTitleFromUrl));
-                })
-                .then(details => {
-                    videoDetails = details;
-                    if (videoLinks.length > 0) {
-                        createPlaylistInterface();
-                        playLiveVideo();
-                    } else {
-                        console.error('Playlist is empty or cannot be parsed.');
-                    }
-                })
-                .catch(error => console.error('Error loading playlist:', error));
+        async function loadPlaylist() {
+            try {
+                const response = await fetch('playlist11.csv');
+                const data = await response.text();
+                videoLinks = data.split('\n').filter(Boolean);
+
+                videoDetails = await Promise.all(videoLinks.map(fetchVideoTitleFromUrl));
+
+                if (videoLinks.length > 0) {
+                    createPlaylistInterface();
+                    playLiveVideo();
+                } else {
+                    console.error('Playlist is empty or cannot be parsed.');
+                }
+            } catch (error) {
+                console.error('Error loading playlist:', error);
+            }
         }
 
-        function fetchVideoTitleFromUrl(videoUrl) {
+        async function fetchVideoTitleFromUrl(videoUrl) {
             const videoId = extractVideoID(videoUrl);
-            return fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`)
-                .then(response => response.json())
-                .then(data => ({
-                    title: data.title,
-                    channel: data.author_name
-                }))
-                .catch(() => ({
-                    title: 'Unknown Title',
-                    channel: 'Unknown Channel'
-                }));
+            try {
+                const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+                const data = await response.json();
+                return { title: data.title, channel: data.author_name };
+            } catch {
+                return { title: 'Unknown Title', channel: 'Unknown Channel' };
+            }
         }
 
         function playLiveVideo() {
             const now = new Date();
-            const gmtNow = new Date(now.getTime() + now.getTimezoneOffset() * 6000);
-            const startOfDay = new Date(gmtNow.getFullYear(), gmtNow.getMonth(), gmtNow.getDate());
-            const secondsSinceStartOfDay = Math.floor((gmtNow - startOfDay) / 1000);
+            const startOfDay = new Date(now.toISOString().split('T')[0] + 'T00:00:00Z');
+            const secondsSinceStartOfDay = Math.floor((now - startOfDay) / 1000);
 
-            let elapsedTime = secondsSinceStartOfDay;
-            currentIndex = 0;
-
-            for (let i = 0; i < videoDetails.length; i++) {
-                const videoDuration = videoDetails[i].duration;
-                if (elapsedTime < videoDuration) {
+            let elapsedTime = 0;
+            for (let i = 0; i < videoLinks.length; i++) {
+                const videoDuration = getVideoDuration(i); // Assuming you can get video duration for each video
+                if (elapsedTime + videoDuration > secondsSinceStartOfDay) {
+                    currentIndex = i;
+                    const startTime = secondsSinceStartOfDay - elapsedTime;
+                    loadVideoWithStart(videoLinks[currentIndex], startTime);
                     break;
-                } else {
-                    elapsedTime -= videoDuration;
-                    currentIndex++;
                 }
+                elapsedTime += videoDuration;
             }
 
-            const currentVideoStartTime = elapsedTime;
-
-            loadVideoWithStart(videoLinks[currentIndex], currentVideoStartTime);
             updatePlaylistUI();
+        }
+
+        function getVideoDuration(index) {
+            // Placeholder function: you need to determine the actual duration of the video
+            // This could be hardcoded or fetched dynamically if you have access to it.
+            return 3600; // Assuming 1 hour for simplicity, replace this with the actual video duration
         }
 
         function loadVideoWithStart(videoUrl, startTime) {
