@@ -115,21 +115,25 @@
 
         function playLiveVideo() {
             const now = new Date();
-            const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-            const secondsSinceStartOfDay = Math.floor((now - startOfDay) / 1000);
+            const startOfDayGMT = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+            const secondsSinceStartOfDay = Math.floor((now - startOfDayGMT) / 1000);
 
-            let cumulativeTime = 0;
-            for (let i = 0; i < videoLinks.length; i++) {
+            let cumulativeDuration = 0;
+            let targetIndex = 0;
+            let targetStartTime = 0;
+
+            for (let i = 0; i < videoDurations.length; i++) {
                 const videoDuration = videoDurations[i];
-                if (cumulativeTime + videoDuration > secondsSinceStartOfDay) {
-                    currentIndex = i;
-                    const startTime = secondsSinceStartOfDay - cumulativeTime;
-                    loadVideoWithStart(videoLinks[currentIndex], startTime);
+                if (cumulativeDuration + videoDuration > secondsSinceStartOfDay) {
+                    targetIndex = i;
+                    targetStartTime = secondsSinceStartOfDay - cumulativeDuration;
                     break;
                 }
-                cumulativeTime += videoDuration;
+                cumulativeDuration += videoDuration;
             }
 
+            currentIndex = targetIndex;
+            loadVideoWithStart(videoLinks[currentIndex], targetStartTime);
             updatePlaylistUI();
         }
 
