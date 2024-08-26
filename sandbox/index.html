@@ -72,7 +72,7 @@
 
         async function loadPlaylist() {
             try {
-                const response = await fetch('playlist15.csv');
+                const response = await fetch('playlist16.csv');
                 const data = await response.text();
                 videoLinks = data.split('\n').filter(Boolean);
 
