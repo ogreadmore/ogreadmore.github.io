@@ -23,7 +23,12 @@
             max-width: 800px;
             height: 450px;
             border: 2px solid #ccc;
+            margin-bottom: 10px;
+        }
+        #gmtTime {
             margin-bottom: 20px;
+            font-size: 18px;
+            color: #555;
         }
         #playlistContainer {
             width: 80%;
@@ -51,6 +56,7 @@
 <body>
     <h1>Science & Tech Daily Stream</h1>
     <div id="player"></div>
+    <div id="gmtTime">GMT Time: <span id="gmtClock"></span></div>
     <div id="playlistContainer">
         <ul id="playlist"></ul>
     </div>
@@ -215,8 +221,15 @@
             });
         }
 
+        function updateGMTClock() {
+            const now = new Date();
+            const gmtTime = now.toUTCString().split(' ')[4];
+            document.getElementById('gmtClock').textContent = gmtTime;
+        }
+
         function onYouTubeIframeAPIReady() {
             loadPlaylist();
+            setInterval(updateGMTClock, 1000); // Update GMT clock every second
         }
 
         const tag = document.createElement('script');
