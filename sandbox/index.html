@@ -68,9 +68,9 @@
                 videoLinks = data.split('\n').filter(Boolean);
 
                 videoDetails = await Promise.all(videoLinks.map(fetchVideoTitleFromUrl));
-                await fetchVideoDurations();
 
                 if (videoLinks.length > 0) {
+                    await fetchVideoDurations();
                     createPlaylistInterface();
                     playLiveVideo();
                 } else {
@@ -100,13 +100,13 @@
                     const data = await response.json();
                     return convertDurationToSeconds(data.items[0].contentDetails.duration);
                 } catch {
-                    return 3600; // Default to 1 hour if there's an error
+                    return 3600;
                 }
             }));
         }
 
         function convertDurationToSeconds(duration) {
-            const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+            const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
             const hours = parseInt(match[1]) || 0;
             const minutes = parseInt(match[2]) || 0;
             const seconds = parseInt(match[3]) || 0;
@@ -164,7 +164,6 @@
                     },
                     events: {
                         'onReady': function(event) {
-                            event.target.seekTo(startTime);
                             event.target.playVideo();
                         },
                         'onError': function() {
