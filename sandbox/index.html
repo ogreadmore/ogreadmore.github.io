@@ -110,6 +110,7 @@
                     videoDetails[index].duration = formatDuration(durationInSeconds);
                     return durationInSeconds;
                 } catch {
+                    videoDetails[index].duration = "N/A";
                     return 3600; // Default to 1 hour if there's an error
                 }
             }));
