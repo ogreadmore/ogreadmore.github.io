@@ -54,7 +54,7 @@
     </style>
 </head>
 <body>
-    <h1>Science & Tech Daily Stream</h1>
+    <h1>Live Stream</h1>
     <div id="player"></div>
     <div id="gmtTime">GMT Time: <span id="gmtClock"></span></div>
     <div id="playlistContainer">
@@ -70,7 +70,7 @@
 
         async function loadPlaylist() {
             try {
-                const response = await fetch('playlist19.csv');
+                const response = await fetch('playlist-yoga.csv');
                 const data = await response.text();
                 videoLinks = data.split('\n').filter(Boolean);
 
