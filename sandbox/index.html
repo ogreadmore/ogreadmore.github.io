@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,7 +14,6 @@
             height: 100vh;
             margin: 0;
             background-color: #f4f4f4;
-            color: #333;
         }
         h1 {
             margin-bottom: 20px;
@@ -56,7 +54,7 @@
     </style>
 </head>
 <body>
-    <h1>Science & Tech Live Stream</h1>
+    <h1>Science & Tech Daily Stream</h1>
     <div id="player"></div>
     <div id="gmtTime">GMT Time: <span id="gmtClock"></span></div>
     <div id="playlistContainer">
@@ -72,7 +70,7 @@
 
         async function loadPlaylist() {
             try {
-                const response = await fetch('playlistai1.csv');
+                const response = await fetch('playlist14.csv');
                 const data = await response.text();
                 videoLinks = data.split('\n').filter(Boolean);
 
