@@ -11,21 +11,21 @@
             height: 100%;
             font-family: Arial, sans-serif;
             background-color: #000000;
-            color: #fff;
+            color: #333;
         }
         h1 {
-            margin: 0;
-            padding: 10px;
-            width: 100%;
-            background-color: #000;
-            color: #fff;
-            text-align: center;
-            box-sizing: border-box;
-            font-size: 20px;
-        }
+    margin: 0;
+    padding: 10px; /* Decrease padding to make the header area thinner */
+    width: 100%;
+    background-color: #000000;
+    color: #fff;
+    text-align: center;
+    box-sizing: border-box;
+    font-size: 20px; /* Decrease the font size to make the text smaller */
+}
         #player {
             width: 100%;
-            height: calc(100vh - 60px); /* Adjust height to account for header */
+            height: calc(100vh - 60px); /* 60px accounts for header */
             background-color: #000;
         }
         #gmtTime {
@@ -56,26 +56,15 @@
         #playlist li.current {
             background-color: #ddd;
         }
-        #discordWidget {
-            width: 100%;
-            height: 500px;
-            border: none;
-            margin-top: 20px;
-        }
     </style>
 </head>
 <body>
-    <h1>Science & Tech Live Stream</h1>
+    <h1>Science & Tech Daily Stream</h1>
     <div id="player"></div>
     <div id="gmtTime">GMT Time: <span id="gmtClock"></span></div>
-    
-    <!-- Discord Embed -->
-    <iframe id="discordWidget" src="https://discord.com/widget?id=YOUR_SERVER_ID&theme=dark" allowtransparency="true" frameborder="0"></iframe>
-
     <div id="playlistContainer">
         <ul id="playlist"></ul>
     </div>
-
     <script>
         let videoLinks = [];
         let videoDetails = [];
