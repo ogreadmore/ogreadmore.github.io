@@ -330,7 +330,7 @@
 -------------------------------------------- */
 .has-accent-color
 {
-    color: #cf000f;
+    color: #04d9ff;
 }
 
 .has-white-color
@@ -356,7 +356,7 @@
 
 .message.danger
 {
-    color: #cf000f;
+    color: #04d9ff;
 }
 
 /* GAPS
@@ -928,18 +928,18 @@
 ::-moz-selection
 {
     color: #fff;
-    background-color: #cf000f;
+    background-color: #04d9ff;
 }
 ::selection
 {
     color: #fff;
-    background-color: #cf000f;
+    background-color: #04d9ff;
 }
 
 ::-moz-selection
 {
     color: #fff;
-    background-color: #cf000f;
+    background-color: #04d9ff;
 }
 
 /* BODY
@@ -1016,7 +1016,7 @@ a:active
 }
 a:hover
 {
-    color: #cf000f;
+    color: #04d9ff;
 }
 
 /* HEADINGS
@@ -1669,7 +1669,7 @@ select:focus::-webkit-input-placeholder
 .vlt-default-menu__navigation .sf-menu > li.active > a,
 .vlt-default-menu__navigation .sf-menu > li:hover > a
 {
-    color: #cf000f;
+    color: #04d9ff;
 }
 
 /* HEADER: OFFCANVAS
@@ -1808,7 +1808,7 @@ select:focus::-webkit-input-placeholder
 .vlt-offcanvas-menu__navigation .sf-menu > li.active > a,
 .vlt-offcanvas-menu__navigation .sf-menu > li:hover > a
 {
-    color: #cf000f;
+    color: #04d9ff;
 }
 .vlt-offcanvas-menu__footer
 {
@@ -2069,9 +2069,9 @@ select:focus::-webkit-input-placeholder
 }
 .vlt-comment-item__inner .vlt-comment-reply:hover
 {
-    background-color: #cf000f; 
-    -webkit-box-shadow: inset 0 0 0 1px #cf000f;
-            box-shadow: inset 0 0 0 1px #cf000f;
+    background-color: #04d9ff; 
+    -webkit-box-shadow: inset 0 0 0 1px #04d9ff;
+            box-shadow: inset 0 0 0 1px #04d9ff;
 }
 
 /* 04. Pages */
@@ -2566,7 +2566,7 @@ select:focus::-webkit-input-placeholder
 
 ::-webkit-scrollbar-thumb
 {
-    background-color: #cf000f;
+    background-color: #04d9ff;
 }
 
 /* PARTIAL: FIXED SOCIALS
@@ -2655,7 +2655,7 @@ select:focus::-webkit-input-placeholder
 }
 .vlt-language-switcher a.is-active
 {
-    color: #cf000f;
+    color: #04d9ff;
 }
 .vlt-language-switcher a + a
 {
@@ -2757,7 +2757,7 @@ select:focus::-webkit-input-placeholder
 
     opacity: .6;
     border-radius: 50%;
-    background-color: #cf000f;
+    background-color: #04d9ff;
 }
 
 .double-bounce-two
@@ -2806,7 +2806,7 @@ select:focus::-webkit-input-placeholder
 .fancybox-loading
 {
     border: 2px solid rgba(255, 255, 255, .2);
-    border-top-color: #cf000f;
+    border-top-color: #04d9ff;
 }
 
 /* VENDOR: JARALLAX
@@ -2904,7 +2904,7 @@ select:focus::-webkit-input-placeholder
     text-transform: uppercase;
 
     color: #fff;
-    background-color: #cf000f;
+    background-color: #04d9ff;
 }
 .vlt-btn--primary:hover
 {
@@ -3244,7 +3244,7 @@ select:focus::-webkit-input-placeholder
             transform-origin: top;
 
     border-radius: .3125rem;
-    background-color: #cf000f;
+    background-color: #04d9ff;
 }
 
 /* WIDGET: PARTNERS
@@ -3357,7 +3357,7 @@ select:focus::-webkit-input-placeholder
     height: 100%;
 
     border-radius: .4375rem;
-    background-color: #cf000f;
+    background-color: #04d9ff;
 }
 
 /* WIDGET: PULLQUOTE
@@ -3378,7 +3378,7 @@ select:focus::-webkit-input-placeholder
 
     height: 2.375rem;
 
-    color: #cf000f;
+    color: #04d9ff;
 }
 .vlt-pullquote__text
 {
@@ -3473,7 +3473,7 @@ select:focus::-webkit-input-placeholder
 }
 .vlt-slider-controls .vlt-swiper-pagination .swiper-pagination-bullet-active
 {
-    background-color: #cf000f;
+    background-color: #04d9ff;
 }
 .vlt-slider-controls .vlt-swiper-pagination .swiper-pagination-bullet + .swiper-pagination-bullet
 {
@@ -3516,9 +3516,9 @@ select:focus::-webkit-input-placeholder
 .vlt-slider-controls--style-1 .vlt-swiper-button-prev:hover,
 .vlt-slider-controls--style-1 .vlt-swiper-button-next:hover
 {
-    background-color: #cf000f;
-    -webkit-box-shadow: inset 0 0 0 1px #cf000f;
-            box-shadow: inset 0 0 0 1px #cf000f;
+    background-color: #04d9ff;
+    -webkit-box-shadow: inset 0 0 0 1px #04d9ff;
+            box-shadow: inset 0 0 0 1px #04d9ff;
 }
 .vlt-slider-controls--style-1 .vlt-swiper-button-prev svg,
 .vlt-slider-controls--style-1 .vlt-swiper-button-next svg
