@@ -41,11 +41,15 @@
 								</li>
 								<li data-menuanchor="About"><a href="#About">About</a>
 								</li>
+								<li data-menuanchor="Projects"><a href="#Projects">Projects</a>
+								</li>
 								<li data-menuanchor="Education"><a href="#Education">Education</a>
 								</li>
 								<li data-menuanchor="Testimonials"><a href="#Testimonials">Testimonials</a>
 								</li>
 								<li data-menuanchor="Partners"><a href="#Partners">Partners</a>
+								</li>
+								<li data-menuanchor="Blog"><a href="#Blog">Blog</a>
 								</li>
 								<li data-menuanchor="Contact"><a href="#Contact">Contact</a>
 								</li>
@@ -82,11 +86,15 @@
 				</li>
 				<li data-menuanchor="About"><a href="#About">About</a>
 				</li>
+				<li data-menuanchor="Projects"><a href="#Projects">Projects</a>
+				</li>
 				<li data-menuanchor="Education"><a href="#Education">Education</a>
 				</li>
 				<li data-menuanchor="Testimonials"><a href="#Testimonials">Testimonials</a>
 				</li>
 				<li data-menuanchor="Partners"><a href="#Partners">Partners</a>
+				</li>
+				<li data-menuanchor="Blog"><a href="#Blog">Blog</a>
 				</li>
 				<li data-menuanchor="Contact"><a href="#Contact">Contact</a>
 				</li>
@@ -263,10 +271,10 @@
 														<div class="col-xl-4"><img src="assets/img/root/upenn-sm.png" alt="Behance" loading="lazy">
 														</div>
 														<div class="col-xl-4"><span class="vlt-timeline-item__date">2019 - 2020</span>
-															<h5 class="vlt-timeline-item__title">University of Pennsylvania</h5>
+															<h5 class="vlt-timeline-item__title">Behance</h5>
 														</div>
 														<div class="col-xl-4">
-															<p class="vlt-timeline-item__text">Leadership and Communication Professional Certificate</p>
+															<p class="vlt-timeline-item__text">AI for Business Professional Certificate</p>
 														</div>
 													</div>
 												</div>
@@ -276,28 +284,28 @@
 														<div class="col-xl-4"><img src="assets/img/root/lund-sm.png" alt="Envato" loading="lazy">
 														</div>
 														<div class="col-xl-4"><span class="vlt-timeline-item__date">2017 - 2018</span>
-															<h5 class="vlt-timeline-item__title">Lund University</h5>
+															<h5 class="vlt-timeline-item__title">Envato</h5>
 														</div>
 														<div class="col-xl-4">
-															<p class="vlt-timeline-item__text">Rule bearing whales. Created gathering blessed, sixth likeness male. Over were which you'll so be make moveth made saw above.</p>
+															<p class="vlt-timeline-item__text">AI & Law Professional Certificate</p>
 														</div>
 													</div>
 												</div>
 												<!--Timeline Item-->
-												<div class="vlt-timeline-item" style="visibility: hidden;">
+												<div class="vlt-timeline-item">
 													<div class="row">
-														<div class="col-xl-4"><img src="assets/img/root/twitter.png" alt="Twitter" loading="lazy">
+														<div class="col-xl-4">
 														</div>
-														<div class="col-xl-4"><span class="vlt-timeline-item__date">2015 - 2018</span>
-															<h5 class="vlt-timeline-item__title">Twitter</h5>
+														<div class="col-xl-4"><span class="vlt-timeline-item__date">&nbsp;</span>
+															<h5 class="vlt-timeline-item__title">&nbsp;</h5>
 														</div>
 														<div class="col-xl-4">
-															<p class="vlt-timeline-item__text">Firmament itself rule their evening, which moved very night so great them cattle bearing and gathered forth had whose bearing.</p>
+															<p class="vlt-timeline-item__text">&nbsp;</p>
 														</div>
 													</div>
-												</div>
+												</div>                                                
+												
 											</div>
-											
 										</div>
 									</div>
 								</div>
@@ -332,7 +340,7 @@
 												<defs />
 												<path fill="currentColor" d="M25 0C16.9271 0 10.7422 2.14844 6.44531 6.44531 2.14844 10.7422 0 16.9271 0 25v50h31.25V25H12.5c0-4.4271.9766-7.6172 2.9297-9.5703C17.3828 13.4766 20.5729 12.5 25 12.5V0zm43.75 0c-8.0729 0-14.2578 2.14844-18.5547 6.44531C45.8984 10.7422 43.75 16.9271 43.75 25v50H75V25H56.25c0-4.4271.9766-7.6172 2.9297-9.5703C61.1328 13.4766 64.3229 12.5 68.75 12.5V0z" /></svg>
 											<div class="vlt-gap-215 vlt-gap-100--lg"></div>
-											<h3>A deep understanding of social sciences and online marketing strategies...</h3>
+											<h3>Creative & dedicated is things that gilber studio brings for your business.</h3>
 										</div>
 									</div>
 								</div>
@@ -348,13 +356,13 @@
 														<!--Testimonial-->
 														<div class="vlt-testimonial">
 															<div class="vlt-testimonial__text">
-																<p style="font-size: .92rem;">&quot;I have known Taylor for years and have worked with him on several projects. Most recently, I contracted Taylor for some social media and project management work and was impressed with his ability to deliver results quickly. Through his deep understanding of social sciences and online marketing strategies, he was able to attract desired target demographics and enhance our ability to deliver our message to relevant audiences. I recommend Taylor enthusiastically due to his fine attention to detail, adherence to timelines, and warm professional demeanor.&quot;
+																<p>&quot;Said heaven dry made Them gathering the very second morning us be divide isn't. Saw Seasons winged replenish grass from set can't for he which. You third god unto let.&quot;
 																</p>
 															</div>
 															<div class="vlt-testimonial__meta">
-																<h5 class="vlt-testimonial__name">Vlad Khaykin
+																<h5 class="vlt-testimonial__name">Dwight Schrute
 																</h5>
-																<div class="vlt-testimonial__function">Thought Leader Focused on Ending Anti-Semitism
+																<div class="vlt-testimonial__function">The Office
 																</div>
 															</div>
 														</div>
@@ -363,7 +371,7 @@
 														<!--Testimonial-->
 														<div class="vlt-testimonial">
 															<div class="vlt-testimonial__text">
-																<p style="font-size: .92rem;">&quot;I have known Taylor for many years and his insight has consistently proven invaluable. He is an excellent full-stack web developer with an incredible understanding of business and project management. His knowledge of leadership and team building is second to none. He has the rare ability to lead by example, which is what I personally have found to be his most impressive attribute. Accordingly, he is a great guy to be around due to his warm sense of humor, strong sense of ethics, and ability to think on his feet. I would recommend Taylor for a wide variety of leadership and project management roles.&quot;
+																<p>&quot;Said heaven dry made Them gathering the very second morning us be divide isn't. Saw Seasons winged replenish grass from set can't for he which. You third god unto let.&quot;
 																</p>
 															</div>
 															<div class="vlt-testimonial__meta">
@@ -378,7 +386,7 @@
 														<!--Testimonial-->
 														<div class="vlt-testimonial">
 															<div class="vlt-testimonial__text">
-																<p style="font-size: .92rem;">&quot;I’ve had the privilege of working with Taylor on numerous projects over the years. He has a keen understanding of best practices in a variety of fields, in addition to a wonderful personality. I wasn’t just an associate of his, but a friend as well. I can trust Taylor and I recommend him not just as a talented professional but as someone who you can truly rely on.&quot;
+																<p>&quot;Said heaven dry made Them gathering the very second morning us be divide isn't. Saw Seasons winged replenish grass from set can't for he which. You third god unto let.&quot;
 																</p>
 															</div>
 															<div class="vlt-testimonial__meta">
@@ -452,16 +460,19 @@
 									<!--Animated Block-->
 									<div class="vlt-animated-block" data-animation-name="fadeInUpSm" style="animation-delay:0s; animation-duration:700ms;">
 										<h3>Contact</h3>
+										<div class="vlt-gap-30"></div>
+										<p>You'll called for yielding male, so lights Stars abundantly, is their.</p>
 										<div class="vlt-gap-40"></div>
-										<address>Cleveland, Ohio</address>
+										<address>27 Queen St, New York USA</address>
 										<p><a class="tel" href="tel:+72126742510">440 941 1785</a></p>
+										<p><a class="email" href="mailto:gilber.design@gmail.com">gilber.design@gmail.com</a></p>
 									</div>
 								</div>
 								<div class="col-xl-6 offset-xl-2">
 									<div class="vlt-gap-70--lg"></div>
 									<!--Animated Block-->
 									<div class="vlt-animated-block" data-animation-name="fadeInUpSm" style="animation-delay:.1s; animation-duration:700ms;">
-										<h4>I'm here to help. <span class="has-accent-color">Reach out anytime.</span></h4>
+										<h4>Let's grab a coffee and jump on conversation <span class="has-accent-color">chat with me.</span></h4>
 										<div class="vlt-gap-20"></div>
 										<form class="vlt-contact-form" novalidate="novalidate">
 											<div class="vlt-form-group">
@@ -492,7 +503,7 @@
 	<!--Footer-->
 	<footer class="vlt-footer vlt-footer--default vlt-footer--fixed">
 		<div class="vlt-footer-copyright">
-			<p>© Taylor Oliphant. 2024</p>
+			<p>© Gilber. 2020</p>
 		</div>
 		<div class="vlt-language-switcher"><a class="is-active" href="#">Eng</a><a href="#">Fra</a><a href="#">Ger</a></div>
 	</footer>
