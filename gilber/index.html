@@ -464,21 +464,46 @@
 										<h4>I'm here to help. <span class="has-accent-color">Reach out anytime.</span></h4>
 										<div class="vlt-gap-20"></div>
                                         
-<form class="vlt-contact-form" action="https://formspree.io/f/mblrblda" method="POST" novalidate="novalidate">
+<form class="vlt-contact-form" action="https://formspree.io/f/mblrblda" method="POST">
     <div class="vlt-form-group">
-        <input type="text" id="name" name="name" required="required" placeholder="Your Name">
+        <input type="text" id="name" name="name" required placeholder="Your Name">
     </div>
     <div class="vlt-form-group">
-        <input type="email" id="email" name="email" required="required" placeholder="Your Email">
+        <input type="email" id="email" name="email" required placeholder="Your Email">
     </div>
     <div class="vlt-form-group">
         <textarea name="message" id="message" rows="3" placeholder="Message"></textarea>
     </div>
-    <div class="message success">Your message is successfully sent...</div>
-    <div class="message danger">Sorry something went wrong!</div>
+    <div class="message success" style="display:none; color:green;">Your message was successfully sent!</div>
+    <div class="message danger" style="display:none; color:red;">Sorry, something went wrong!</div>
     <!--Button-->
     <button class="vlt-btn vlt-btn--primary vlt-btn--md" type="submit">Contact Me</button>
 </form>
+
+<script>
+    document.querySelector('.vlt-contact-form').addEventListener('submit', function(e) {
+        e.preventDefault(); // Prevent form default submission
+        var form = e.target;
+        fetch(form.action, {
+            method: form.method,
+            body: new FormData(form),
+            headers: { 'Accept': 'application/json' }
+        }).then(response => {
+            if (response.ok) {
+                form.reset();
+                document.querySelector('.message.success').style.display = 'block';
+                document.querySelector('.message.danger').style.display = 'none';
+            } else {
+                document.querySelector('.message.success').style.display = 'none';
+                document.querySelector('.message.danger').style.display = 'block';
+            }
+        }).catch(error => {
+            document.querySelector('.message.success').style.display = 'none';
+            document.querySelector('.message.danger').style.display = 'block';
+        });
+    });
+</script>
+
 
                                         
 									</div>
