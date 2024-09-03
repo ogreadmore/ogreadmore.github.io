@@ -31,3 +31,8 @@ opacity: 1;
     height: 75px !important;
 }
 }
+
+.vlt-testimonial {
+    padding-right: 2px; /* Adjust the value as needed */
+    overflow: hidden; /* Ensures content does not overflow outside */
+}
