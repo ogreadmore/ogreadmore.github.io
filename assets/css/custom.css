@@ -36,3 +36,17 @@ opacity: 1;
     padding-right: 2px; /* Adjust the value as needed */
     overflow: hidden; /* Ensures content does not overflow outside */
 }
+
+@media (min-width: 768px) {
+.hiddenonbig
+{
+display: none !important;
+}
+}
+
+@media (max-width: 768px) {
+.hiddenonsmall
+{
+display: none !important;
+}
+}
