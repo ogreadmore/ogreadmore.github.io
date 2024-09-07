@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Science & Tech Video Stream</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .custom-shadow {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        #playlist {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        #playlist .list-group-item {
+            cursor: pointer;
+        }
+        #playlist .list-group-item:hover {
+            background-color: #f1f3f5;
+        }
+        #playlist .list-group-item.active {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-satellite-dish me-2"></i>
+                Science & Tech Stream
+            </a>
+            <span class="navbar-text" id="gmtTime">
+                GMT Time: <span id="gmtClock"></span>
+            </span>
+        </div>
+    </nav>
+
+    <div class="container my-4">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card custom-shadow">
+                    <div class="card-body p-0">
+                        <div id="player" class="ratio ratio-16x9"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card custom-shadow">
+                    <div class="card-header bg-primary text-white">
+                        <i class="fas fa-list me-2"></i>Playlist
+                    </div>
+                    <div class="card-body p-0">
+                        <ul id="playlist" class="list-group list-group-flush"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let videoLinks = [];
+        let videoDetails = [];
+        let videoDurations = [];
+        let cumulativeDurations = [];
+        let currentIndex = 0;
+        let player;
+
+        async function loadPlaylist() {
+            try {
+                const response = await fetch('playlist-ai2.csv');
+                const data = await response.text();
+                videoLinks = data.split('\n').filter(Boolean);
+
+                videoDetails = await Promise.all(videoLinks.map(fetchVideoDetails));
+
+                if (videoLinks.length > 0) {
+                    await fetchVideoDurations();
+                    calculateCumulativeDurations();
+                    playLiveVideo();
+                    createPlaylistInterface();
+                } else {
+                    console.error('Playlist is empty or cannot be parsed.');
+                }
+            } catch (error) {
+                console.error('Error loading playlist:', error);
+            }
+        }
+
+        async function fetchVideoDetails(videoUrl) {
+            const videoId = extractVideoID(videoUrl);
+            try {
+                const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+                const data = await response.json();
+                return { title: data.title, channel: data.author_name };
+            } catch {
+                return { title: 'Unknown Title', channel: 'Unknown Channel' };
+            }
+        }
+
+        async function fetchVideoDurations() {
+            videoDurations = await Promise.all(videoLinks.map(async (url, index) => {
+                const videoId = extractVideoID(url);
+                try {
+                    const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=contentDetails&key=AIzaSyBzXbqVZ9IP6QcZWU5z0Mb7p0C6H5RvnAI`);
+                    const data = await response.json();
+                    const durationInSeconds = convertDurationToSeconds(data.items[0].contentDetails.duration);
+                    videoDetails[index].duration = formatDuration(durationInSeconds);
+                    return durationInSeconds;
+                } catch {
+                    videoDetails[index].duration = "N/A";
+                    return 3600; // Default to 1 hour if there's an error
+                }
+            }));
+        }
+
+        function convertDurationToSeconds(duration) {
+            const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+            const hours = parseInt(match[1]) || 0;
+            const minutes = parseInt(match[2]) || 0;
+            const seconds = parseInt(match[3]) || 0;
+            return (hours * 3600) + (minutes * 60) + seconds;
+        }
+
+        function formatDuration(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            return [h > 0 ? h : null, m > 9 ? m : `0${m}`, s > 9 ? s : `0${s}`].filter(Boolean).join(':');
+        }
+
+        function calculateCumulativeDurations() {
+            cumulativeDurations = [];
+            videoDurations.reduce((acc, duration, index) => {
+                cumulativeDurations[index] = acc + duration;
+                return cumulativeDurations[index];
+            }, 0);
+        }
+
+        function playLiveVideo() {
+            const now = new Date();
+            const startOfDayGMT = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+            const secondsSinceStartOfDay = Math.floor((now - startOfDayGMT) / 1000);
+
+            let targetIndex = 0;
+            let targetStartTime = 0;
+
+            for (let i = 0; i < cumulativeDurations.length; i++) {
+                if (cumulativeDurations[i] > secondsSinceStartOfDay) {
+                    targetIndex = i;
+                    targetStartTime = secondsSinceStartOfDay - (cumulativeDurations[i - 1] || 0);
+                    break;
+                }
+            }
+
+            currentIndex = targetIndex;
+            loadVideoWithStart(videoLinks[currentIndex], targetStartTime);
+            updatePlaylistUI();
+        }
+
+        function loadVideoWithStart(videoUrl, startTime) {
+            const videoId = extractVideoID(videoUrl);
+
+            if (!videoId) {
+                handleNextVideo();
+                return;
+            }
+
+            if (player) {
+                player.loadVideoById({
+                    videoId: videoId,
+                    startSeconds: startTime,
+                    suggestedQuality: 'large'
+                });
+            } else {
+                player = new YT.Player('player', {
+                    height: '450',
+                    width: '100%',
+                    videoId: videoId,
+                    playerVars: {
+                        'autoplay': 1,
+                        'controls': 1,
+                        'start': startTime,
+                        'mute': 1
+                    },
+                    events: {
+                        'onReady': function(event) {
+                            event.target.playVideo();
+                        },
+                        'onError': function() {
+                            handleNextVideo();
+                        },
+                        'onStateChange': onPlayerStateChange
+                    }
+                });
+            }
+        }
+
+        function handleNextVideo() {
+            currentIndex = (currentIndex + 1) % videoLinks.length;
+            loadVideoWithStart(videoLinks[currentIndex], 0);
+            updatePlaylistUI();
+        }
+
+        function extractVideoID(url) {
+            const match = url.match(/(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([a-zA-Z0-9_-]+)/);
+            return match ? match[1] : null;
+        }
+
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.ENDED) {
+                handleNextVideo();
+            }
+        }
+
+        function createPlaylistInterface() {
+            const playlistEl = document.getElementById('playlist');
+            playlistEl.innerHTML = '';
+
+            videoDetails.forEach((detail, index) => {
+                const listItem = document.createElement('li');
+                listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+                listItem.innerHTML = `
+                    <div>
+                        <h6 class="mb-0">${detail.title}</h6>
+                        <small class="text-muted">${detail.channel}</small>
+                    </div>
+                    <span class="badge bg-primary rounded-pill">${detail.duration}</span>
+                `;
+                listItem.id = `video-${index}`;
+                listItem.addEventListener('click', () => {
+                    currentIndex = index;
+                    loadVideoWithStart(videoLinks[currentIndex], 0);
+                    updatePlaylistUI();
+                });
+                playlistEl.appendChild(listItem);
+            });
+
+            updatePlaylistUI();
+        }
+
+        function updatePlaylistUI() {
+            const playlistItems = document.querySelectorAll('#playlist .list-group-item');
+            playlistItems.forEach((item, index) => {
+                item.classList.toggle('active', index === currentIndex);
+            });
+        }
+
+        function updateGMTClock() {
+            const now = new Date();
+            const gmtTime = now.toUTCString().split(' ')[4];
+            document.getElementById('gmtClock').textContent = gmtTime;
+        }
+
+        function onYouTubeIframeAPIReady() {
+            loadPlaylist();
+            setInterval(updateGMTClock, 1000);
+        }
+
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    </script>
+</body>
+</html>
