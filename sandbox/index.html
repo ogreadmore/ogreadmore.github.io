@@ -251,6 +251,12 @@
             playlistItems.forEach((item, index) => {
                 item.classList.toggle('active', index === currentIndex);
             });
+            
+            // Scroll to the current video
+            const currentItem = document.getElementById(`video-${currentIndex}`);
+            if (currentItem) {
+                currentItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         }
 
         function updateGMTClock() {
