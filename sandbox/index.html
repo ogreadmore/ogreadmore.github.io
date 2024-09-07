@@ -173,7 +173,7 @@
 
             currentIndex = targetIndex;
             loadVideoWithStart(videoLinks[currentIndex], targetStartTime);
-            updatePlaylistUI();
+            updatePlaylistUI(false);  // Don't scroll to the current item
         }
 
         function loadVideoWithStart(videoUrl, startTime) {
@@ -199,11 +199,12 @@
                         'autoplay': 1,
                         'controls': 1,
                         'start': startTime,
-                        'mute': 1
+                        'mute': 0  // Changed to 0 to start unmuted
                     },
                     events: {
                         'onReady': function(event) {
                             event.target.playVideo();
+                            event.target.unMute();  // Ensure the video is unmuted
                         },
                         'onError': function() {
                             handleNextVideo();
@@ -254,19 +255,21 @@
                 playlistEl.appendChild(listItem);
             });
 
-            updatePlaylistUI();
+            updatePlaylistUI(false);  // Don't scroll to the current item on initial load
         }
 
-        function updatePlaylistUI() {
+        function updatePlaylistUI(scrollToCurrent = true) {
             const playlistItems = document.querySelectorAll('#playlist .list-group-item');
             playlistItems.forEach((item, index) => {
                 item.classList.toggle('active', index === currentIndex);
             });
             
-            // Scroll to the current video
-            const currentItem = document.getElementById(`video-${currentIndex}`);
-            if (currentItem) {
-                currentItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Scroll to the current video only if scrollToCurrent is true
+            if (scrollToCurrent) {
+                const currentItem = document.getElementById(`video-${currentIndex}`);
+                if (currentItem) {
+                    currentItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
             }
         }
 
