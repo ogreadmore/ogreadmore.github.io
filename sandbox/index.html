@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,10 +8,11 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
-            background-color: #f8f9fa;
+            background-color: #121212;
+            color: #e0e0e0;
         }
         .custom-shadow {
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
         #playlist {
             max-height: 300px;
@@ -19,19 +20,32 @@
         }
         #playlist .list-group-item {
             cursor: pointer;
+            background-color: #1e1e1e;
+            border-color: #333;
         }
         #playlist .list-group-item:hover {
-            background-color: #f1f3f5;
+            background-color: #2a2a2a;
         }
         #playlist .list-group-item.active {
-            background-color: #007bff;
-            border-color: #007bff;
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+        .navbar {
+            background-color: #1e1e1e !important;
+        }
+        .card {
+            background-color: #1e1e1e;
+            border-color: #333;
+        }
+        .card-header {
+            background-color: #252525;
+            border-bottom-color: #333;
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
             <a class="navbar-brand" href="#">
                 <i class="fas fa-satellite-dish me-2"></i>
                 Science & Tech Stream
@@ -42,18 +56,15 @@
         </div>
     </nav>
 
-    <div class="container my-4">
+    <div class="container-fluid p-0">
+        <div id="player" style="width:100vw; height:calc(100vh - 56px);"></div>
+    </div>
+
+    <div class="container-fluid mt-3">
         <div class="row">
-            <div class="col-lg-8">
+            <div class="col-12">
                 <div class="card custom-shadow">
-                    <div class="card-body p-0">
-                        <div id="player" class="ratio ratio-16x9"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-4">
-                <div class="card custom-shadow">
-                    <div class="card-header bg-primary text-white">
+                    <div class="card-header">
                         <i class="fas fa-list me-2"></i>Playlist
                     </div>
                     <div class="card-body p-0">
@@ -181,7 +192,7 @@
                 });
             } else {
                 player = new YT.Player('player', {
-                    height: '450',
+                    height: '100%',
                     width: '100%',
                     videoId: videoId,
                     playerVars: {
