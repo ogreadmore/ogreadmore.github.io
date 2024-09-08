@@ -94,7 +94,7 @@
                 const data = await response.text();
                 videoLinks = data.split('\n').filter(Boolean);
 
-                videoDetails = await Promise.all(videoLinks.map(fetchVideoDetails));
+                videoDetails = await Promise.all(videoLinks.map((link, index) => fetchVideoDetails(link, index)));
 
                 if (videoLinks.length > 0) {
                     await fetchVideoDurations();
@@ -109,14 +109,14 @@
             }
         }
 
-        async function fetchVideoDetails(videoUrl) {
+        async function fetchVideoDetails(videoUrl, index) {
             const videoId = extractVideoID(videoUrl);
             try {
                 const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
                 const data = await response.json();
-                return { title: data.title, channel: data.author_name };
+                return { title: data.title, channel: data.author_name, index: index };
             } catch {
-                return { title: 'Unknown Title', channel: 'Unknown Channel' };
+                return { title: 'Unknown Title', channel: 'Unknown Channel', index: index };
             }
         }
 
@@ -240,7 +240,15 @@
             const playlistEl = document.getElementById('playlist');
             playlistEl.innerHTML = '';
 
-            videoDetails.forEach((detail, index) => {
+            // Create a copy of videoDetails and sort it
+            const sortedVideoDetails = [...videoDetails];
+            sortedVideoDetails.sort((a, b) => {
+                if (a.index === currentIndex) return -1;
+                if (b.index === currentIndex) return 1;
+                return a.index - b.index;
+            });
+
+            sortedVideoDetails.forEach((detail, index) => {
                 const listItem = document.createElement('li');
                 listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
                 listItem.innerHTML = `
@@ -250,9 +258,9 @@
                     </div>
                     <span class="badge bg-primary rounded-pill">${detail.duration}</span>
                 `;
-                listItem.id = `video-${index}`;
+                listItem.id = `video-${detail.index}`;
                 listItem.addEventListener('click', () => {
-                    currentIndex = index;
+                    currentIndex = detail.index;
                     loadVideoWithStart(videoLinks[currentIndex], 0);
                     updatePlaylistUI();
                 });
@@ -267,7 +275,7 @@
             const playlistItems = playlistEl.querySelectorAll('.list-group-item');
             
             playlistItems.forEach((item, index) => {
-                item.classList.toggle('active', index === currentIndex);
+                item.classList.toggle('active', item.id === `video-${currentIndex}`);
             });
             
             if (scrollToCurrent) {
