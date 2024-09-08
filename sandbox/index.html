@@ -18,6 +18,7 @@
         #playlist {
             max-height: 300px;
             overflow-y: auto;
+            scroll-behavior: smooth; /* Add smooth scrolling */
         }
         #playlist .list-group-item {
             cursor: pointer;
@@ -262,16 +263,24 @@
         }
 
         function updatePlaylistUI(scrollToCurrent = true) {
-            const playlistItems = document.querySelectorAll('#playlist .list-group-item');
+            const playlistEl = document.getElementById('playlist');
+            const playlistItems = playlistEl.querySelectorAll('.list-group-item');
+            
             playlistItems.forEach((item, index) => {
                 item.classList.toggle('active', index === currentIndex);
             });
             
-            // Scroll to the current video only if scrollToCurrent is true
             if (scrollToCurrent) {
                 const currentItem = document.getElementById(`video-${currentIndex}`);
                 if (currentItem) {
-                    currentItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    // Calculate the scroll position to show the current item at the top
+                    const scrollTop = currentItem.offsetTop - playlistEl.offsetTop;
+                    
+                    // Smooth scroll to the calculated position
+                    playlistEl.scrollTo({
+                        top: scrollTop,
+                        behavior: 'smooth'
+                    });
                 }
             }
         }
