@@ -90,7 +90,7 @@
 
         async function loadPlaylist() {
             try {
-                const response = await fetch('playlist-ai2.csv');
+                const response = await fetch('webdev-playlist.csv');
                 const data = await response.text();
                 videoLinks = data.split('\n').filter(Boolean);
 
