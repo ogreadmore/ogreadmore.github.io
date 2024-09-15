@@ -47,6 +47,18 @@
             width: 100vw;
             height: calc(100vh - 56px);
         }
+        .toggle-button {
+            cursor: pointer;
+            color: #fff;
+            background-color: #0d6efd;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        .toggle-button.active {
+            background-color: #198754;
+        }
     </style>
 </head>
 <body>
@@ -56,9 +68,12 @@
                 <i class="fas fa-satellite-dish me-2"></i>
                 Science & Tech Stream
             </a>
-            <span class="navbar-text" id="gmtTime">
-                GMT Time: <span id="gmtClock"></span>
-            </span>
+            <div class="d-flex align-items-center">
+                <button id="modeToggle" class="toggle-button active" onclick="toggleMode()">Live TV Mode</button>
+                <span class="navbar-text" id="gmtTime">
+                    GMT Time: <span id="gmtClock"></span>
+                </span>
+            </div>
         </div>
     </nav>
 
@@ -165,13 +180,18 @@
         let player;
         let editIndex = null;
         let removeIndex = null;
+        let isLiveMode = true; // Start in Live TV Mode
 
         async function loadPlaylist() {
             try {
                 await fetchVideoDetails();
                 await fetchVideoDurations();
                 calculateCumulativeDurations();
-                playLiveVideo();
+                if (isLiveMode) {
+                    playLiveVideo();
+                } else {
+                    loadVideoWithStart(videoLinks[0], 0);
+                }
                 createPlaylistInterface();
             } catch (error) {
                 console.error('Error loading playlist:', error);
@@ -238,10 +258,13 @@
             let targetIndex = 0;
             let targetStartTime = 0;
 
+            const totalDuration = cumulativeDurations[cumulativeDurations.length - 1];
+            const daySeconds = secondsSinceStartOfDay % totalDuration;
+
             for (let i = 0; i < cumulativeDurations.length; i++) {
-                if (cumulativeDurations[i] > secondsSinceStartOfDay) {
+                if (cumulativeDurations[i] > daySeconds) {
                     targetIndex = i;
-                    targetStartTime = secondsSinceStartOfDay - (cumulativeDurations[i - 1] || 0);
+                    targetStartTime = daySeconds - (cumulativeDurations[i - 1] || 0);
                     break;
                 }
             }
@@ -291,9 +314,15 @@
         }
 
         function handleNextVideo() {
-            currentIndex = (currentIndex + 1) % videoLinks.length;
-            loadVideoWithStart(videoLinks[currentIndex], 0);
-            updatePlaylistUI();
+            if (isLiveMode) {
+                currentIndex = (currentIndex + 1) % videoLinks.length;
+                loadVideoWithStart(videoLinks[currentIndex], 0);
+                updatePlaylistUI();
+            } else {
+                currentIndex = (currentIndex + 1) % videoLinks.length;
+                loadVideoWithStart(videoLinks[currentIndex], 0);
+                updatePlaylistUI();
+            }
         }
 
         function extractVideoID(url) {
@@ -328,9 +357,11 @@
                 `;
                 listItem.id = `video-${detail.index}`;
                 listItem.addEventListener('click', () => {
-                    currentIndex = detail.index;
-                    loadVideoWithStart(videoLinks[currentIndex], 0);
-                    updatePlaylistUI();
+                    if (!isLiveMode) {
+                        currentIndex = detail.index;
+                        loadVideoWithStart(videoLinks[currentIndex], 0);
+                        updatePlaylistUI();
+                    }
                 });
                 playlistEl.appendChild(listItem);
             });
@@ -446,6 +477,22 @@
             a.href = URL.createObjectURL(blob);
             a.download = 'playlist.html';
             a.click();
+        }
+
+        function toggleMode() {
+            isLiveMode = !isLiveMode;
+            const modeToggleBtn = document.getElementById('modeToggle');
+            if (isLiveMode) {
+                modeToggleBtn.textContent = 'Live TV Mode';
+                modeToggleBtn.classList.add('active');
+                playLiveVideo();
+            } else {
+                modeToggleBtn.textContent = 'Regular Mode';
+                modeToggleBtn.classList.remove('active');
+                loadVideoWithStart(videoLinks[0], 0);
+                currentIndex = 0;
+                updatePlaylistUI();
+            }
         }
 
         // Load the YouTube Iframe API
