@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>YouTube Playlist Editor</title>
+    <style>
+        /* Basic styling */
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #playlist { margin-bottom: 20px; }
+        .video { margin-bottom: 10px; }
+        .video-title { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>YouTube Playlist Editor</h1>
+    <div id="playlist"></div>
+    <h2>Add Video</h2>
+    <input type="text" id="videoTitle" placeholder="Video Title">
+    <input type="text" id="videoID" placeholder="Video ID">
+    <button onclick="addVideo()">Add Video</button>
+    <button onclick="savePage()">Save</button>
+
+    <script>
+        var playlist = [
+            {title: 'Sample Video 1', id: 'dQw4w9WgXcQ'},
+            {title: 'Sample Video 2', id: '9bZkp7q19f0'}
+        ];
+
+        function renderPlaylist() {
+            var playlistDiv = document.getElementById("playlist");
+            playlistDiv.innerHTML = "";
+            playlist.forEach(function(video, index) {
+                var videoDiv = document.createElement("div");
+                videoDiv.className = "video";
+                videoDiv.innerHTML = '<span class="video-title">' + video.title + '</span> ' +
+                    '(<a href="https://www.youtube.com/watch?v=' + video.id + '" target="_blank">Watch</a>) ' +
+                    '<button onclick="removeVideo(' + index + ')">Remove</button>';
+                playlistDiv.appendChild(videoDiv);
+            });
+        }
+
+        function addVideo() {
+            var title = document.getElementById("videoTitle").value;
+            var id = document.getElementById("videoID").value;
+            if (title && id) {
+                playlist.push({title: title, id: id});
+                renderPlaylist();
+                document.getElementById("videoTitle").value = "";
+                document.getElementById("videoID").value = "";
+            } else {
+                alert("Please enter both title and video ID.");
+            }
+        }
+
+        function removeVideo(index) {
+            playlist.splice(index, 1);
+            renderPlaylist();
+        }
+
+        function savePage() {
+            var htmlTemplateStart = '<!DOCTYPE html>\n' +
+                '<html>\n' +
+                '<head>\n' +
+                '    <title>YouTube Playlist Editor</title>\n' +
+                '    <style>\n' +
+                '        body { font-family: Arial, sans-serif; margin: 20px; }\n' +
+                '        #playlist { margin-bottom: 20px; }\n' +
+                '        .video { margin-bottom: 10px; }\n' +
+                '        .video-title { font-weight: bold; }\n' +
+                '    </style>\n' +
+                '</head>\n' +
+                '<body>\n' +
+                '    <h1>YouTube Playlist Editor</h1>\n' +
+                '    <div id="playlist"></div>\n' +
+                '    <h2>Add Video</h2>\n' +
+                '    <input type="text" id="videoTitle" placeholder="Video Title">\n' +
+                '    <input type="text" id="videoID" placeholder="Video ID">\n' +
+                '    <button onclick="addVideo()">Add Video</button>\n' +
+                '    <button onclick="savePage()">Save</button>\n' +
+                '    <script>\n';
+
+            var htmlTemplateEnd = '\n    </script>\n</body>\n</html>';
+
+            var scriptContent = 'var playlist = ' + JSON.stringify(playlist, null, 4) + ';\n' +
+                renderFunctionsAsString() +
+                '\nrenderPlaylist();';
+
+            var htmlContent = htmlTemplateStart + scriptContent + htmlTemplateEnd;
+
+            var blob = new Blob([htmlContent], { type: 'text/html' });
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'playlist.html';
+            a.click();
+        }
+
+        function renderFunctionsAsString() {
+            return `
+function renderPlaylist() {
+    var playlistDiv = document.getElementById("playlist");
+    playlistDiv.innerHTML = "";
+    playlist.forEach(function(video, index) {
+        var videoDiv = document.createElement("div");
+        videoDiv.className = "video";
+        videoDiv.innerHTML = '<span class="video-title">' + video.title + '</span> ' +
+            '(<a href="https://www.youtube.com/watch?v=' + video.id + '" target="_blank">Watch</a>) ' +
+            '<button onclick="removeVideo(' + index + ')">Remove</button>';
+        playlistDiv.appendChild(videoDiv);
+    });
+}
+
+function addVideo() {
+    var title = document.getElementById("videoTitle").value;
+    var id = document.getElementById("videoID").value;
+    if (title && id) {
+        playlist.push({ title: title, id: id });
+        renderPlaylist();
+        document.getElementById("videoTitle").value = "";
+        document.getElementById("videoID").value = "";
+    } else {
+        alert("Please enter both title and video ID.");
+    }
+}
+
+function removeVideo(index) {
+    playlist.splice(index, 1);
+    renderPlaylist();
+}
+
+function savePage() {
+    // Same savePage function code
+    // This prevents infinite recursion when saving
+}
+            `;
+        }
+
+        renderPlaylist();
+    </script>
+</body>
+</html>
