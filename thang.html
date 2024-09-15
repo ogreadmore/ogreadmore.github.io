@@ -1,141 +1,457 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" data-bs-theme="dark">
 <head>
-    <title>YouTube Playlist Editor</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Science & Tech Video Stream</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Basic styling */
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        #playlist { margin-bottom: 20px; }
-        .video { margin-bottom: 10px; }
-        .video-title { font-weight: bold; }
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+        .custom-shadow {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        #playlist {
+            max-height: 300px;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+        #playlist .list-group-item {
+            cursor: pointer;
+            background-color: #1e1e1e;
+            border-color: #333;
+        }
+        #playlist .list-group-item:hover {
+            background-color: #2a2a2a;
+        }
+        #playlist .list-group-item.active {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+        .navbar {
+            background-color: #1e1e1e !important;
+        }
+        .card {
+            background-color: #1e1e1e;
+            border-color: #333;
+        }
+        .card-header {
+            background-color: #252525;
+            border-bottom-color: #333;
+        }
+        #player {
+            width: 100vw;
+            height: calc(100vh - 56px);
+        }
     </style>
 </head>
 <body>
-    <h1>YouTube Playlist Editor</h1>
-    <div id="playlist"></div>
-    <h2>Add Video</h2>
-    <input type="text" id="videoTitle" placeholder="Video Title">
-    <input type="text" id="videoID" placeholder="Video ID">
-    <button onclick="addVideo()">Add Video</button>
-    <button onclick="savePage()">Save</button>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-satellite-dish me-2"></i>
+                Science & Tech Stream
+            </a>
+            <span class="navbar-text" id="gmtTime">
+                GMT Time: <span id="gmtClock"></span>
+            </span>
+        </div>
+    </nav>
 
+    <div id="player"></div>
+
+    <div class="container-fluid mt-3">
+        <div class="row">
+            <!-- Playlist and controls -->
+            <div class="col-12">
+                <div class="card custom-shadow">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-list me-2"></i>Playlist
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-success me-2" onclick="addVideo()">Add Video</button>
+                            <button class="btn btn-sm btn-primary" onclick="savePage()">Save</button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul id="playlist" class="list-group list-group-flush"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Video Modal -->
+    <div class="modal fade" id="addVideoModal" tabindex="-1" aria-labelledby="addVideoModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 id="addVideoModalLabel" class="modal-title">Add Video</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="addVideoForm">
+              <div class="mb-3">
+                <label for="videoUrl" class="form-label">YouTube Video URL</label>
+                <input type="text" class="form-control" id="videoUrl" placeholder="Enter YouTube video URL" required>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button onclick="submitAddVideo()" type="button" class="btn btn-primary">Add Video</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Video Modal -->
+    <div class="modal fade" id="editVideoModal" tabindex="-1" aria-labelledby="editVideoModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 id="editVideoModalLabel" class="modal-title">Edit Video</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="editVideoForm">
+              <div class="mb-3">
+                <label for="editVideoUrl" class="form-label">YouTube Video URL</label>
+                <input type="text" class="form-control" id="editVideoUrl" placeholder="Enter YouTube video URL" required>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button onclick="submitEditVideo()" type="button" class="btn btn-primary">Save Changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Remove Video Confirmation Modal -->
+    <div class="modal fade" id="removeVideoModal" tabindex="-1" aria-labelledby="removeVideoModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 id="removeVideoModalLabel" class="modal-title">Remove Video</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            Are you sure you want to remove this video from the playlist?
+          </div>
+          <div class="modal-footer">
+            <button onclick="confirmRemoveVideo()" type="button" class="btn btn-danger">Remove Video</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Include Bootstrap JS and YouTube Iframe API -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Initialize playlist with sample data
-        var playlist = [
-            { title: 'Sample Video 1', id: 'dQw4w9WgXcQ' },
-            { title: 'Sample Video 2', id: '9bZkp7q19f0' }
+        let videoLinks = [
+            // Sample data
+            'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            'https://www.youtube.com/watch?v=9bZkp7q19f0'
         ];
+        let videoDetails = [];
+        let videoDurations = [];
+        let cumulativeDurations = [];
+        let currentIndex = 0;
+        let player;
+        let editIndex = null;
+        let removeIndex = null;
 
-        // Function to render the playlist
-        function renderPlaylist() {
-            var playlistDiv = document.getElementById("playlist");
-            playlistDiv.innerHTML = "";
-            playlist.forEach(function(video, index) {
-                var videoDiv = document.createElement("div");
-                videoDiv.className = "video";
-                videoDiv.innerHTML = '<span class="video-title">' + video.title + '</span> ' +
-                    '(<a href="https://www.youtube.com/watch?v=' + video.id + '" target="_blank">Watch</a>) ' +
-                    '<button onclick="removeVideo(' + index + ')">Remove</button>';
-                playlistDiv.appendChild(videoDiv);
-            });
-        }
-
-        // Function to add a video to the playlist
-        function addVideo() {
-            var title = document.getElementById("videoTitle").value;
-            var id = document.getElementById("videoID").value;
-            if (title && id) {
-                playlist.push({ title: title, id: id });
-                renderPlaylist();
-                document.getElementById("videoTitle").value = "";
-                document.getElementById("videoID").value = "";
-            } else {
-                alert("Please enter both title and video ID.");
+        async function loadPlaylist() {
+            try {
+                await fetchVideoDetails();
+                await fetchVideoDurations();
+                calculateCumulativeDurations();
+                playLiveVideo();
+                createPlaylistInterface();
+            } catch (error) {
+                console.error('Error loading playlist:', error);
             }
         }
 
-        // Function to remove a video from the playlist
-        function removeVideo(index) {
-            playlist.splice(index, 1);
-            renderPlaylist();
+        async function fetchVideoDetails() {
+            videoDetails = await Promise.all(videoLinks.map(async (link, index) => {
+                const videoId = extractVideoID(link);
+                try {
+                    const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+                    const data = await response.json();
+                    return { title: data.title, channel: data.author_name, index: index };
+                } catch {
+                    return { title: 'Unknown Title', channel: 'Unknown Channel', index: index };
+                }
+            }));
         }
 
-        // Function to save the page with the updated playlist
-        function savePage() {
-            // Generate the entire HTML content as a string
-            var htmlContent = '<!DOCTYPE html>\n' +
-'<html>\n' +
-'<head>\n' +
-'    <title>YouTube Playlist Editor</title>\n' +
-'    <style>\n' +
-'        body { font-family: Arial, sans-serif; margin: 20px; }\n' +
-'        #playlist { margin-bottom: 20px; }\n' +
-'        .video { margin-bottom: 10px; }\n' +
-'        .video-title { font-weight: bold; }\n' +
-'    </style>\n' +
-'</head>\n' +
-'<body>\n' +
-'    <h1>YouTube Playlist Editor</h1>\n' +
-'    <div id="playlist"></div>\n' +
-'    <h2>Add Video</h2>\n' +
-'    <input type="text" id="videoTitle" placeholder="Video Title">\n' +
-'    <input type="text" id="videoID" placeholder="Video ID">\n' +
-'    <button onclick="addVideo()">Add Video</button>\n' +
-'    <button onclick="savePage()">Save</button>\n' +
-'    <script>\n' +
-'        var playlist = ' + JSON.stringify(playlist, null, 4) + ';\n' +
-'\n' +
-'        function renderPlaylist() {\n' +
-'            var playlistDiv = document.getElementById("playlist");\n' +
-'            playlistDiv.innerHTML = "";\n' +
-'            playlist.forEach(function(video, index) {\n' +
-'                var videoDiv = document.createElement("div");\n' +
-'                videoDiv.className = "video";\n' +
-'                videoDiv.innerHTML = \'<span class="video-title">\' + video.title + \'</span> \' +\n' +
-'                    \'(<a href="https://www.youtube.com/watch?v=\' + video.id + \'" target="_blank">Watch</a>) \' +\n' +
-'                    \'<button onclick="removeVideo(\' + index + \')">Remove</button>\';\n' +
-'                playlistDiv.appendChild(videoDiv);\n' +
-'            });\n' +
-'        }\n' +
-'\n' +
-'        function addVideo() {\n' +
-'            var title = document.getElementById("videoTitle").value;\n' +
-'            var id = document.getElementById("videoID").value;\n' +
-'            if (title && id) {\n' +
-'                playlist.push({ title: title, id: id });\n' +
-'                renderPlaylist();\n' +
-'                document.getElementById("videoTitle").value = "";\n' +
-'                document.getElementById("videoID").value = "";\n' +
-'            } else {\n' +
-'                alert("Please enter both title and video ID.");\n' +
-'            }\n' +
-'        }\n' +
-'\n' +
-'        function removeVideo(index) {\n' +
-'            playlist.splice(index, 1);\n' +
-'            renderPlaylist();\n' +
-'        }\n' +
-'\n' +
-'        function savePage() {\n' +
-'            // Same savePage function code\n' +
-'            alert("Please use the already downloaded file to save.");\n' +
-'        }\n' +
-'\n' +
-'        renderPlaylist();\n' +
-'    </' + 'script>\n' +
-'</body>\n' +
-'</html>';
+        async function fetchVideoDurations() {
+            videoDurations = await Promise.all(videoLinks.map(async (url, index) => {
+                const videoId = extractVideoID(url);
+                try {
+                    const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=contentDetails&key=YOUR_API_KEY`);
+                    const data = await response.json();
+                    const durationInSeconds = convertDurationToSeconds(data.items[0].contentDetails.duration);
+                    videoDetails[index].duration = formatDuration(durationInSeconds);
+                    return durationInSeconds;
+                } catch {
+                    videoDetails[index].duration = "N/A";
+                    return 3600; // Default to 1 hour if there's an error
+                }
+            }));
+        }
 
-            // Create a blob of the HTML content
-            var blob = new Blob([htmlContent], { type: 'text/html' });
-            var a = document.createElement('a');
+        function convertDurationToSeconds(duration) {
+            const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+            const hours = parseInt(match[1]) || 0;
+            const minutes = parseInt(match[2]) || 0;
+            const seconds = parseInt(match[3]) || 0;
+            return (hours * 3600) + (minutes * 60) + seconds;
+        }
+
+        function formatDuration(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            return [h > 0 ? h : null, m > 9 ? m : `0${m}`, s > 9 ? s : `0${s}`].filter(Boolean).join(':');
+        }
+
+        function calculateCumulativeDurations() {
+            cumulativeDurations = [];
+            videoDurations.reduce((acc, duration, index) => {
+                cumulativeDurations[index] = acc + duration;
+                return cumulativeDurations[index];
+            }, 0);
+        }
+
+        function playLiveVideo() {
+            const now = new Date();
+            const startOfDayGMT = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+            const secondsSinceStartOfDay = Math.floor((now - startOfDayGMT) / 1000);
+
+            let targetIndex = 0;
+            let targetStartTime = 0;
+
+            for (let i = 0; i < cumulativeDurations.length; i++) {
+                if (cumulativeDurations[i] > secondsSinceStartOfDay) {
+                    targetIndex = i;
+                    targetStartTime = secondsSinceStartOfDay - (cumulativeDurations[i - 1] || 0);
+                    break;
+                }
+            }
+
+            currentIndex = targetIndex;
+            loadVideoWithStart(videoLinks[currentIndex], targetStartTime);
+            updatePlaylistUI(false);
+        }
+
+        function loadVideoWithStart(videoUrl, startTime) {
+            const videoId = extractVideoID(videoUrl);
+
+            if (!videoId) {
+                handleNextVideo();
+                return;
+            }
+
+            if (player) {
+                player.loadVideoById({
+                    videoId: videoId,
+                    startSeconds: startTime,
+                    suggestedQuality: 'large'
+                });
+            } else {
+                player = new YT.Player('player', {
+                    height: '100%',
+                    width: '100%',
+                    videoId: videoId,
+                    playerVars: {
+                        'autoplay': 1,
+                        'controls': 1,
+                        'start': startTime,
+                        'mute': 0
+                    },
+                    events: {
+                        'onReady': function(event) {
+                            event.target.playVideo();
+                            event.target.unMute();
+                        },
+                        'onError': function() {
+                            handleNextVideo();
+                        },
+                        'onStateChange': onPlayerStateChange
+                    }
+                });
+            }
+        }
+
+        function handleNextVideo() {
+            currentIndex = (currentIndex + 1) % videoLinks.length;
+            loadVideoWithStart(videoLinks[currentIndex], 0);
+            updatePlaylistUI();
+        }
+
+        function extractVideoID(url) {
+            const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtube\.com\/embed\/|youtu\.be\/)([a-zA-Z0-9_-]+)/;
+            const match = url.match(regex);
+            return match ? match[1] : null;
+        }
+
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.ENDED) {
+                handleNextVideo();
+            }
+        }
+
+        function createPlaylistInterface() {
+            const playlistEl = document.getElementById('playlist');
+            playlistEl.innerHTML = '';
+
+            videoDetails.forEach((detail, index) => {
+                const listItem = document.createElement('li');
+                listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+                listItem.innerHTML = `
+                    <div>
+                        <h6 class="mb-0">${detail.title}</h6>
+                        <small class="text-muted">${detail.channel}</small>
+                    </div>
+                    <div>
+                        <span class="badge bg-primary rounded-pill me-2">${detail.duration}</span>
+                        <button class="btn btn-sm btn-secondary me-1" onclick="openEditVideoModal(${index})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-danger" onclick="openRemoveVideoModal(${index})"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                `;
+                listItem.id = `video-${detail.index}`;
+                listItem.addEventListener('click', () => {
+                    currentIndex = detail.index;
+                    loadVideoWithStart(videoLinks[currentIndex], 0);
+                    updatePlaylistUI();
+                });
+                playlistEl.appendChild(listItem);
+            });
+
+            updatePlaylistUI(false);
+        }
+
+        function updatePlaylistUI(scrollToCurrent = true) {
+            const playlistEl = document.getElementById('playlist');
+            const playlistItems = playlistEl.querySelectorAll('.list-group-item');
+
+            playlistItems.forEach((item, index) => {
+                item.classList.toggle('active', item.id === `video-${currentIndex}`);
+            });
+
+            if (scrollToCurrent) {
+                const currentItem = document.getElementById(`video-${currentIndex}`);
+                if (currentItem) {
+                    const scrollTop = currentItem.offsetTop - playlistEl.offsetTop;
+                    playlistEl.scrollTo({
+                        top: scrollTop,
+                        behavior: 'smooth'
+                    });
+                }
+            }
+        }
+
+        function updateGMTClock() {
+            const now = new Date();
+            const gmtTime = now.toUTCString().split(' ')[4];
+            document.getElementById('gmtClock').textContent = gmtTime;
+        }
+
+        function onYouTubeIframeAPIReady() {
+            loadPlaylist();
+            setInterval(updateGMTClock, 1000);
+        }
+
+        function addVideo() {
+            document.getElementById('videoUrl').value = '';
+            const addVideoModal = new bootstrap.Modal(document.getElementById('addVideoModal'));
+            addVideoModal.show();
+        }
+
+        async function submitAddVideo() {
+            const url = document.getElementById('videoUrl').value.trim();
+            const videoId = extractVideoID(url);
+            if (videoId) {
+                videoLinks.push(url);
+                await fetchVideoDetails();
+                await fetchVideoDurations();
+                calculateCumulativeDurations();
+                createPlaylistInterface();
+                const addVideoModal = bootstrap.Modal.getInstance(document.getElementById('addVideoModal'));
+                addVideoModal.hide();
+            } else {
+                alert('Invalid YouTube URL');
+            }
+        }
+
+        function openEditVideoModal(index) {
+            editIndex = index;
+            document.getElementById('editVideoUrl').value = videoLinks[index];
+            const editVideoModal = new bootstrap.Modal(document.getElementById('editVideoModal'));
+            editVideoModal.show();
+        }
+
+        async function submitEditVideo() {
+            const url = document.getElementById('editVideoUrl').value.trim();
+            const videoId = extractVideoID(url);
+            if (videoId) {
+                videoLinks[editIndex] = url;
+                await fetchVideoDetails();
+                await fetchVideoDurations();
+                calculateCumulativeDurations();
+                createPlaylistInterface();
+                const editVideoModal = bootstrap.Modal.getInstance(document.getElementById('editVideoModal'));
+                editVideoModal.hide();
+            } else {
+                alert('Invalid YouTube URL');
+            }
+        }
+
+        function openRemoveVideoModal(index) {
+            removeIndex = index;
+            const removeVideoModal = new bootstrap.Modal(document.getElementById('removeVideoModal'));
+            removeVideoModal.show();
+        }
+
+        function confirmRemoveVideo() {
+            videoLinks.splice(removeIndex, 1);
+            videoDetails.splice(removeIndex, 1);
+            videoDurations.splice(removeIndex, 1);
+            calculateCumulativeDurations();
+            createPlaylistInterface();
+            const removeVideoModal = bootstrap.Modal.getInstance(document.getElementById('removeVideoModal'));
+            removeVideoModal.hide();
+        }
+
+        function savePage() {
+            let htmlContent = document.documentElement.outerHTML;
+
+            const videoLinksString = JSON.stringify(videoLinks, null, 4);
+            htmlContent = htmlContent.replace(
+                /let videoLinks = \[[\s\S]*?\];/,
+                `let videoLinks = ${videoLinksString};`
+            );
+
+            htmlContent = htmlContent.replace(/<script src="https:\/\/www\.youtube\.com\/iframe_api"><\/script>/, '');
+
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
             a.download = 'playlist.html';
             a.click();
         }
 
-        // Initial rendering of the playlist
-        renderPlaylist();
+        // Load the YouTube Iframe API
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.head.appendChild(tag);
     </script>
 </body>
 </html>
