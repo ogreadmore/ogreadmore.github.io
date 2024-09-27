@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Heart Cursor Game</title>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="80" width="80"><text y="60" font-size="60">❤️</text></svg>') 40 40, auto;
+  }
+  canvas {
+    display: block;
+  }
+  #gameOver {
+    position: absolute;
+    top: 40%;
+    width: 100%;
+    text-align: center;
+    font-size: 60px;
+    font-family: Arial, sans-serif;
+    color: red;
+    display: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<div id="gameOver">Game Over</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let width, height;
+
+function resizeCanvas() {
+  width = canvas.width = window.innerWidth;
+  height = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+let score = 0;
+let missed = 0;
+let maxMissed = 3;
+let waveNumber = 0;
+let entities = [];
+let lastTime = Date.now();
+let gameOver = false;
+
+const cursorCollisionRadius = 20; // Adjusted collision radius for the heart cursor
+
+class Entity {
+  constructor(x, y, vx, vy, isSad) {
+    this.size = 40; // Size for collision detection
+    this.x = x;
+    this.y = y;
+    this.vx = vx;
+    this.vy = vy;
+    this.isSad = isSad;
+    this.hit = false; // To check if the entity has been interacted with
+    this.angle = Math.random() * Math.PI * 2; // For random movement patterns
+    this.angularSpeed = (Math.random() - 0.5) * 0.1; // For random movement patterns
+  }
+
+  update(delta) {
+    // Update position with more complex movement
+    this.angle += this.angularSpeed * delta;
+    this.x += Math.cos(this.angle) * this.vx * delta;
+    this.y += this.vy * delta;
+
+    // Keep entities within the canvas horizontally
+    if (this.x < this.size / 2) {
+      this.x = this.size / 2;
+      this.angle = Math.PI - this.angle;
+    } else if (this.x > width - this.size / 2) {
+      this.x = width - this.size / 2;
+      this.angle = Math.PI - this.angle;
+    }
+
+    if (this.isSad && this.y > height + this.size) {
+      missed++;
+      this.hit = true; // Mark as processed
+    }
+
+    if (!this.isSad && this.y + this.size < 0) {
+      this.hit = true; // Mark as processed
+    }
+  }
+
+  getFace() {
+    if (!this.isSad) {
+      return '😍'; // Heart eyes emoji
+    } else {
+      // Change face based on position
+      const progress = this.y / height;
+      if (progress < 0.25) {
+        return '😐'; // Neutral
+      } else if (progress < 0.5) {
+        return '🙁'; // Sad
+      } else if (progress < 0.75) {
+        return '😢'; // Crying
+      } else {
+        return '😱'; // Scared
+      }
+    }
+  }
+
+  draw() {
+    ctx.font = '40px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(this.getFace(), this.x, this.y);
+  }
+}
+
+function spawnWave() {
+  waveNumber++;
+  const numEntities = Math.pow(2, waveNumber - 1); // 1, 2, 4, 8, ...
+  for (let i = 0; i < numEntities; i++) {
+    spawnEntity();
+  }
+}
+
+function spawnEntity() {
+  const size = 40; // Same as entity size
+  const x = Math.random() * (width - size) + size / 2;
+  const y = -size;
+  const vx = Math.random() * 1 + 1; // Increased speed
+  const vy = Math.random() * 1 + 1; // Increased speed
+  entities.push(new Entity(x, y, vx, vy, true));
+}
+
+canvas.addEventListener('mousemove', function(e) {
+  const rect = canvas.getBoundingClientRect();
+  mouseX = e.clientX - rect.left;
+  mouseY = e.clientY - rect.top;
+});
+
+canvas.addEventListener('click', function(e) {
+  entities.forEach(entity => {
+    // Adjusted collision detection with reduced cursor collision radius
+    const dx = entity.x - mouseX;
+    const dy = entity.y - mouseY;
+    const distance = Math.hypot(dx, dy);
+    if (entity.isSad && !entity.hit && distance <= entity.size / 2 + cursorCollisionRadius) {
+      entity.isSad = false;
+      entity.vx = 0; // Stop horizontal movement
+      entity.vy = -(Math.random() * 5 + 5); // Increased upward speed
+      score++;
+    }
+  });
+});
+
+let mouseX = 0;
+let mouseY = 0;
+
+function update() {
+  if (gameOver) return;
+
+  const now = Date.now();
+  const delta = (now - lastTime) / 16; // Roughly 60fps
+
+  ctx.clearRect(0, 0, width, height);
+
+  entities.forEach(entity => {
+    entity.update(delta);
+    entity.draw();
+  });
+
+  // Remove entities that have been processed
+  entities = entities.filter(entity => !entity.hit);
+
+  // Check if all entities have been processed to start the next wave
+  if (entities.length === 0) {
+    spawnWave();
+  }
+
+  // Draw score and lives left
+  ctx.fillStyle = 'black';
+  ctx.font = '40px Arial';
+  ctx.fillText('Score: ' + score, 160, 60);
+  ctx.fillText('Lives Left: ' + (maxMissed - missed), 160, 120);
+  ctx.fillText('Wave: ' + waveNumber, 160, 180);
+
+  if (missed >= maxMissed) {
+    endGame();
+  }
+
+  lastTime = now;
+  requestAnimationFrame(update);
+}
+
+function endGame() {
+  gameOver = true;
+  document.getElementById('gameOver').style.display = 'block';
+}
+
+spawnWave(); // Start the first wave
+update();
+</script>
+</body>
+</html>
