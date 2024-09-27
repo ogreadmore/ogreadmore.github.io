@@ -500,6 +500,9 @@
 
     function startGame() {
       document.getElementById('startButton').style.display = 'none';
+      lastTime = Date.now(); // Reset lastTime
+      lastWaveSpawnTime = Date.now(); // Reset lastWaveSpawnTime
+      gameOver = false;
       showWaveOverlay(waveNumber);
       update();
     }
@@ -514,6 +517,8 @@
       speedMultiplier = 0.8;
       waveSpawnInterval = 1000;
       gameOver = false;
+      lastTime = Date.now(); // Reset lastTime
+      lastWaveSpawnTime = Date.now(); // Reset lastWaveSpawnTime
       updateGameStats();
       showWaveOverlay(waveNumber);
       update();
