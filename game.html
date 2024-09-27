@@ -2,12 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Heart Touch Game</title>
+<title>Heart Catch Game</title>
 <style>
   body {
     margin: 0;
     overflow: hidden;
     touch-action: none; /* Prevent default touch behaviors */
+    /* Use custom cursor for desktop */
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="80" width="80"><text y="60" x="40" text-anchor="middle" font-size="60">❤️</text></svg>') 40 40, auto;
   }
   canvas {
     display: block;
@@ -17,22 +19,25 @@
     position: absolute;
     pointer-events: none; /* Allow clicks through the image */
     display: none;
+    z-index: 10;
   }
   #gameOver {
     position: absolute;
     top: 40%;
     width: 100%;
     text-align: center;
-    font-size: 60px;
+    font-size: 6vh;
     font-family: Arial, sans-serif;
     color: red;
     display: none;
+    z-index: 10;
   }
 </style>
 </head>
 <body>
 <canvas id="gameCanvas"></canvas>
-<img id="heartCursor" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><text y='60%' x='50%' dominant-baseline='middle' text-anchor='middle' font-size='100%'>❤️</text></svg>" alt="Heart Cursor">
+<!-- Heart cursor for mobile devices -->
+<img id="heartCursor" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><text y='50%' x='50%' dominant-baseline='middle' text-anchor='middle' font-size='100%'>❤️</text></svg>" alt="Heart Cursor">
 <div id="gameOver">Game Over</div>
 
 <script>
@@ -40,7 +45,11 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const heartCursor = document.getElementById('heartCursor');
 
-let width, height;
+let width = window.innerWidth;
+let height = window.innerHeight;
+canvas.width = width;
+canvas.height = height;
+
 let faceSize;
 let cursorCollisionRadius;
 let score = 0;
@@ -49,30 +58,52 @@ let maxMissed = 3;
 let entities = [];
 let lastTime = Date.now();
 let gameOver = false;
-let spawnInterval = 2000; // Time between spawns in milliseconds
-let lastSpawnTime = Date.now();
-let spawnAcceleration = 0.98; // Spawn interval multiplier to increase spawn rate over time
 let isTouching = false;
 let touchX = 0;
 let touchY = 0;
 
-function resizeCanvas() {
-  width = canvas.width = window.innerWidth;
-  height = canvas.height = window.innerHeight;
+// Wave management
+let waveNumber = 0;
+let waveTotalFaces = 0;
+let facesSpawnedInWave = 0;
+let facesProcessedInWave = 0;
+let facesPerWave = 5; // Starting number of faces per wave
+let waveSpawnInterval = 1000; // Time between spawns in milliseconds
+let lastWaveSpawnTime = Date.now();
+
+function resizeGame() {
+  width = window.innerWidth;
+  height = window.innerHeight;
+  canvas.width = width;
+  canvas.height = height;
 
   // Set face size based on screen size
-  faceSize = Math.min(width, height) / 5;
+  faceSize = Math.min(width, height) / 15; // Adjusted size for better fit
+  faceSize = Math.max(Math.min(faceSize, 60), 30); // Face size between 30px and 60px
 
   // Adjust heart cursor size
-  heartCursor.style.width = faceSize + 'px';
-  heartCursor.style.height = faceSize + 'px';
-  heartCursor.style.marginLeft = -faceSize / 2 + 'px';
-  heartCursor.style.marginTop = -faceSize / 2 + 'px';
+  heartCursor.style.width = faceSize * 2 + 'px'; // Doubled size
+  heartCursor.style.height = faceSize * 2 + 'px';
+  heartCursor.style.marginLeft = -faceSize + 'px';
+  heartCursor.style.marginTop = -faceSize + 'px';
 
   // Adjust collision radius
-  cursorCollisionRadius = faceSize / 2;
+  cursorCollisionRadius = faceSize; // Adjusted for larger heart
 }
-resizeCanvas(); // Call once at the beginning
+resizeGame();
+
+// Reapply custom cursor for desktop devices
+function isMobileDevice() {
+  return typeof window.orientation !== 'undefined' || navigator.userAgent.indexOf('IEMobile') !== -1;
+}
+
+if (isMobileDevice()) {
+  // Hide custom cursor on mobile devices
+  document.body.style.cursor = 'none';
+} else {
+  // Hide heart image cursor on desktop devices
+  heartCursor.style.display = 'none';
+}
 
 class Entity {
   constructor(x, y, vx, vy, isSad) {
@@ -84,7 +115,7 @@ class Entity {
     this.isSad = isSad;
     this.hit = false;
     this.angle = Math.random() * Math.PI * 2;
-    this.angularSpeed = (Math.random() - 0.5) * 0.1;
+    this.angularSpeed = (Math.random() - 0.5) * 0.15; // Increased angular speed for more movement
   }
 
   update(delta) {
@@ -105,10 +136,12 @@ class Entity {
     if (this.isSad && this.y > height + this.size) {
       missed++;
       this.hit = true; // Mark as processed
+      facesProcessedInWave++;
     }
 
     if (!this.isSad && this.y + this.size < 0) {
       this.hit = true; // Mark as processed
+      facesProcessedInWave++;
     }
   }
 
@@ -131,20 +164,34 @@ class Entity {
   }
 
   draw() {
-    ctx.font = faceSize + 'px Arial';
+    ctx.font = this.size + 'px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(this.getFace(), this.x, this.y);
   }
 }
 
+function startNextWave() {
+  waveNumber++;
+  facesPerWave = Math.ceil(facesPerWave * 1.5); // Increase faces per wave
+  waveSpawnInterval *= 0.9; // Decrease spawn interval to increase spawn rate
+  if (waveSpawnInterval < 200) {
+    waveSpawnInterval = 200; // Minimum spawn interval
+  }
+  waveTotalFaces = facesPerWave;
+  facesSpawnedInWave = 0;
+  facesProcessedInWave = 0;
+  lastWaveSpawnTime = Date.now();
+}
+
 function spawnEntity() {
   const size = faceSize; // Same as entity size
   const x = Math.random() * (width - size) + size / 2;
   const y = -size;
-  const vx = Math.random() * 1 + 1; // Speed adjustments
-  const vy = Math.random() * 1 + 1;
+  const vx = Math.random() * 2 + 1; // Increased speed
+  const vy = Math.random() * 2 + 2; // Increased downward speed
   entities.push(new Entity(x, y, vx, vy, true));
+  facesSpawnedInWave++;
 }
 
 function handleTouchStart(e) {
@@ -165,6 +212,7 @@ function handleTouchStart(e) {
       entity.vx = 0; // Stop horizontal movement
       entity.vy = -(Math.random() * 5 + 5); // Increased upward speed
       score++;
+      facesProcessedInWave++;
     }
   });
 }
@@ -190,9 +238,6 @@ canvas.addEventListener('touchend', handleTouchEnd);
 canvas.addEventListener('mousedown', function(e) {
   touchX = e.clientX;
   touchY = e.clientY;
-  heartCursor.style.display = 'block';
-  heartCursor.style.left = touchX + 'px';
-  heartCursor.style.top = touchY + 'px';
 
   entities.forEach(entity => {
     const dx = entity.x - touchX;
@@ -203,6 +248,7 @@ canvas.addEventListener('mousedown', function(e) {
       entity.vx = 0;
       entity.vy = -(Math.random() * 5 + 5);
       score++;
+      facesProcessedInWave++;
     }
   });
 });
@@ -211,12 +257,6 @@ canvas.addEventListener('mousemove', function(e) {
   if (isTouching) return; // Ignore mouse move during touch
   touchX = e.clientX;
   touchY = e.clientY;
-  heartCursor.style.left = touchX + 'px';
-  heartCursor.style.top = touchY + 'px';
-});
-
-canvas.addEventListener('mouseup', function(e) {
-  heartCursor.style.display = 'none';
 });
 
 function update() {
@@ -227,6 +267,12 @@ function update() {
 
   ctx.clearRect(0, 0, width, height);
 
+  // Spawn entities over time during the wave
+  while (facesSpawnedInWave < waveTotalFaces && now - lastWaveSpawnTime > waveSpawnInterval) {
+    spawnEntity();
+    lastWaveSpawnTime += waveSpawnInterval;
+  }
+
   entities.forEach(entity => {
     entity.update(delta);
     entity.draw();
@@ -235,22 +281,18 @@ function update() {
   // Remove entities that have been processed
   entities = entities.filter(entity => !entity.hit);
 
-  // Spawn new entity if time has passed
-  if (now - lastSpawnTime > spawnInterval) {
-    spawnEntity();
-    lastSpawnTime = now;
-    // Increase spawn rate over time
-    spawnInterval *= spawnAcceleration;
-    if (spawnInterval < 500) {
-      spawnInterval = 500; // Minimum spawn interval
-    }
+  // Check if all faces in the wave have been processed
+  if (facesProcessedInWave >= waveTotalFaces && entities.length === 0) {
+    startNextWave();
   }
 
-  // Draw score and lives left
+  // Draw score, lives left, and wave number
   ctx.fillStyle = 'black';
-  ctx.font = '30px Arial';
-  ctx.fillText('Score: ' + score, 20, 40);
-  ctx.fillText('Lives Left: ' + (maxMissed - missed), 20, 80);
+  ctx.font = (faceSize / 2.5) + 'px Arial';
+  ctx.textAlign = 'left';
+  ctx.fillText('Score: ' + score, width * 0.05, faceSize * 0.6);
+  ctx.fillText('Lives Left: ' + (maxMissed - missed), width * 0.05, faceSize * 1.2);
+  ctx.fillText('Wave: ' + waveNumber, width * 0.05, faceSize * 1.8);
 
   if (missed >= maxMissed) {
     endGame();
@@ -265,6 +307,12 @@ function endGame() {
   document.getElementById('gameOver').style.display = 'block';
 }
 
+// Ensure the game resizes properly when the window size changes
+window.addEventListener('resize', () => {
+  resizeGame();
+});
+
+startNextWave(); // Start the first wave
 update(); // Start the game loop
 </script>
 </body>
