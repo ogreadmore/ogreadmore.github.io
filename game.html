@@ -1,389 +1,490 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Heart Catch Game</title>
-<style>
-  body {
-    margin: 0;
-    overflow: hidden;
-    touch-action: none; /* Prevent default touch behaviors */
-    /* Use custom cursor for desktop */
-    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="80" width="80"><text y="60" x="40" text-anchor="middle" font-size="60">❤️</text></svg>') 40 40, auto;
-  }
-  canvas {
-    display: block;
-    background-color: #f0f0f0;
-  }
-  #heartCursor {
-    position: absolute;
-    pointer-events: none; /* Allow clicks through the image */
-    display: none;
-    z-index: 10;
-  }
-  #gameOver {
-    position: absolute;
-    top: 40%;
-    width: 100%;
-    text-align: center;
-    font-size: 6vh;
-    font-family: Arial, sans-serif;
-    color: red;
-    display: none;
-    z-index: 10;
-  }
-</style>
+  <meta charset="UTF-8">
+  <title>Heart Catch Game</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Press Start 2P', cursive;
+      margin: 0;
+      overflow: hidden;
+      touch-action: none;
+      cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="120" width="120"><text y="90" x="60" text-anchor="middle" font-size="90">❤️</text></svg>') 60 60, auto;
+      position: relative;
+      height: 100vh;
+      width: 100vw;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #f0f0f0;
+      z-index: 5; /* Positioned below gameStats */
+    }
+    #heartCursor {
+      position: absolute;
+      pointer-events: none;
+      display: none;
+      z-index: 10;
+    }
+    #gameOver {
+      position: absolute;
+      top: 40%;
+      width: 100%;
+      text-align: center;
+      font-size: 6vh;
+      color: magenta;
+      display: none;
+      z-index: 15;
+      margin-bottom: 2vh; /* Adds space between game over and restart */
+      pointer-events: none;
+    }
+    #startButton, #restartButton {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: transparent;
+      color: magenta;
+      padding: 20px 40px;
+      border: 3px solid magenta;
+      border-radius: 5px;
+      cursor: inherit; /* Inherit cursor from body */
+      font-family: 'Press Start 2P', cursive;
+      font-size: 2rem;
+      display: none;
+      user-select: none;
+      z-index: 15;
+    }
+    #startButton:hover, #restartButton:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    #gameStats {
+      position: absolute;
+      top: 5%;
+      left: 5%;
+      color: magenta;
+      z-index: 10; /* Positioned above the canvas */
+      text-align: left;
+      font-family: 'Press Start 2P', cursive;
+      pointer-events: none; /* Prevents interference with gameplay */
+    }
+    #title {
+      font-size: 4vh;
+    }
+    #stats {
+      font-size: 2vh;
+      margin-top: 1vh; /* Blank line */
+    }
+    #controls {
+      margin-top: 1vh; /* Blank line */
+      display: flex;
+      gap: 10px;
+    }
+    #pauseText {
+      display: inline-block;
+      padding: 5px 10px;
+      border: 2px solid magenta;
+      color: magenta;
+      cursor: inherit; /* Inherit cursor from body */
+      font-size: 1.5vh;
+      font-family: 'Press Start 2P', cursive;
+      user-select: none;
+      pointer-events: none; /* Prevents interference with gameplay */
+    }
+    #waveOverlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: magenta;
+      font-size: 5vh;
+      opacity: 0;
+      transition: opacity 1s;
+      z-index: 20;
+      pointer-events: none;
+    }
+  </style>
 </head>
 <body>
-<canvas id="gameCanvas"></canvas>
-<!-- Heart cursor for mobile devices -->
-<img id="heartCursor" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><text y='50%' x='50%' dominant-baseline='middle' text-anchor='middle' font-size='100%'>❤️</text></svg>" alt="Heart Cursor">
-<div id="gameOver">Game Over</div>
+  <!-- Game Canvas -->
+  <canvas id="gameCanvas"></canvas>
+  
+  <!-- Heart cursor for mobile devices -->
+  <img id="heartCursor" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><text y='50%' x='50%' dominant-baseline='middle' text-anchor='middle' font-size='100%'>❤️</text></svg>" alt="Heart Cursor">
+  
+  <!-- Game Statistics and Controls -->
+  <div id="gameStats">
+    <div id="title">spread love</div>
+    <div id="stats" style="line-height: 1.5em;">
+      score: 0<br>
+      lives left: 3<br>
+      wave: 1
+    </div>
+    <div id="controls">
+      <!-- Removed pause and reset buttons as per request -->
+      <!-- If you want to keep pause functionality without visible buttons, consider adding keyboard controls -->
+    </div>
+  </div>
+  
+  <!-- Start and Restart Buttons -->
+  <div id="startButton" onclick="startGame()">start game</div>
+  <div id="gameOver">game over</div>
+  <div id="restartButton" onclick="restartGame()" style="margin-top: 20px;">restart</div>
+  
+  <!-- Wave Overlay -->
+  <div id="waveOverlay">wave 1!</div>
+  
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const heartCursor = document.getElementById('heartCursor');
+    const waveOverlay = document.getElementById('waveOverlay');
 
-<script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const heartCursor = document.getElementById('heartCursor');
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
 
-let width = window.innerWidth;
-let height = window.innerHeight;
-canvas.width = width;
-canvas.height = height;
+    let faceSize;
+    let cursorCollisionRadius;
+    let score = 0;
+    let missed = 0;
+    let maxMissed = 3;
+    let entities = [];
+    let lastTime = Date.now();
+    let gameOver = false;
+    let isTouching = false;
+    let touchX = undefined;
+    let touchY = undefined;
 
-let faceSize;
-let cursorCollisionRadius;
-let score = 0;
-let missed = 0;
-let maxMissed = 3;
-let entities = [];
-let lastTime = Date.now();
-let gameOver = false;
-let isTouching = false;
-// Initialize touchX and touchY as undefined
-let touchX = undefined;
-let touchY = undefined;
+    let waveNumber = 1;
+    let speedMultiplier = 0.8; // Start a bit slower
+    let waveSpawnInterval = 1000;
+    let lastWaveSpawnTime = Date.now();
+    let isPaused = false;
+    let animationFrameId;
 
-// Wave management
-let waveNumber = 0;
-let waveTotalFaces = 0;
-let facesSpawnedInWave = 0;
-let facesProcessedInWave = 0;
-let facesPerWave = 5; // Starting number of faces per wave
-let waveSpawnInterval = 1000; // Time between spawns in milliseconds
-let lastWaveSpawnTime = Date.now();
+    function resizeGame() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
 
-// New: Speed multiplier that increases each wave
-let speedMultiplier = 1; // Starts at 1 and increases every wave
+      faceSize = Math.min(width, height) / 15;
+      faceSize = Math.max(Math.min(faceSize, 60), 30);
 
-function resizeGame() {
-  width = window.innerWidth;
-  height = window.innerHeight;
-  canvas.width = width;
-  canvas.height = height;
+      heartCursor.style.width = faceSize * 2 + 'px';
+      heartCursor.style.height = faceSize * 2 + 'px';
+      heartCursor.style.marginLeft = -faceSize + 'px';
+      heartCursor.style.marginTop = -faceSize + 'px';
 
-  // Set face size based on screen size
-  faceSize = Math.min(width, height) / 15; // Adjusted size for better fit
-  faceSize = Math.max(Math.min(faceSize, 60), 30); // Face size between 30px and 60px
+      cursorCollisionRadius = faceSize;
+    }
+    resizeGame();
 
-  // Adjust heart cursor size
-  heartCursor.style.width = faceSize * 2 + 'px'; // Doubled size
-  heartCursor.style.height = faceSize * 2 + 'px';
-  heartCursor.style.marginLeft = -faceSize + 'px';
-  heartCursor.style.marginTop = -faceSize + 'px';
+    function isMobileDevice() {
+      return typeof window.orientation !== 'undefined' || navigator.userAgent.indexOf('IEMobile') !== -1;
+    }
 
-  // Adjust collision radius
-  cursorCollisionRadius = faceSize; // Adjusted for larger heart
-}
-resizeGame();
+    if (isMobileDevice()) {
+      document.body.style.cursor = 'none';
+    } else {
+      heartCursor.style.display = 'none';
+    }
 
-// Reapply custom cursor for desktop devices
-function isMobileDevice() {
-  return typeof window.orientation !== 'undefined' || navigator.userAgent.indexOf('IEMobile') !== -1;
-}
+    class Entity {
+      constructor(x, y, vx, vy, isSad) {
+        this.size = faceSize;
+        this.x = x;
+        this.y = y;
+        this.vx = vx * speedMultiplier;
+        this.vy = vy * speedMultiplier;
+        this.isSad = isSad;
+        this.hit = false;
+      }
 
-if (isMobileDevice()) {
-  // Hide custom cursor on mobile devices
-  document.body.style.cursor = 'none';
-} else {
-  // Hide heart image cursor on desktop devices
-  heartCursor.style.display = 'none';
-}
+      update(delta) {
+        if (this.isSad) {
+          if (typeof touchX !== 'undefined' && typeof touchY !== 'undefined') {
+            let dx = this.x - touchX;
+            let dy = this.y - touchY;
+            let distance = Math.hypot(dx, dy);
+            let detectionRadius = 200;
 
-class Entity {
-  constructor(x, y, vx, vy, isSad) {
-    this.size = faceSize;
-    this.x = x;
-    this.y = y;
-    this.vx = vx * speedMultiplier; // Apply speed multiplier
-    this.vy = vy * speedMultiplier; // Apply speed multiplier
-    this.isSad = isSad;
-    this.hit = false;
-  }
+            if (distance < detectionRadius) {
+              let nx = dx / distance;
+              let ny = dy / distance;
+              let avoidSpeed = ((detectionRadius - distance) / detectionRadius) * 2 * speedMultiplier;
+              this.vx += nx * avoidSpeed * delta;
+              this.vy += ny * avoidSpeed * delta;
+            }
+          }
 
-  update(delta) {
-    if (this.isSad) {
-      // Only proceed if touchX and touchY are defined
-      if (typeof touchX !== 'undefined' && typeof touchY !== 'undefined') {
-        // Compute vector from entity to mouse
-        let dx = this.x - touchX;
-        let dy = this.y - touchY;
-        let distance = Math.hypot(dx, dy);
-        let detectionRadius = 200; // Increased detection radius
+          this.vx += (Math.random() - 0.5) * 0.4 * delta * speedMultiplier;
+          this.vy += (Math.random() - 0.5) * 0.4 * delta * speedMultiplier;
 
-        if (distance < detectionRadius) {
-          // Normalize the vector
-          let nx = dx / distance;
-          let ny = dy / distance;
-          // Increase speed when closer to the mouse
-          let avoidSpeed = ((detectionRadius - distance) / detectionRadius) * 2 * speedMultiplier; // Increased avoid speed
-          this.vx += nx * avoidSpeed * delta;
-          this.vy += ny * avoidSpeed * delta;
+          let maxSpeed = 5 * speedMultiplier;
+          let speed = Math.hypot(this.vx, this.vy);
+          if (speed > maxSpeed) {
+            this.vx = (this.vx / speed) * maxSpeed;
+            this.vy = (this.vy / speed) * maxSpeed;
+          }
+
+          this.x += this.vx * delta;
+          this.y += this.vy * delta;
+
+          if (this.x < this.size / 2) {
+            this.x = this.size / 2;
+            this.vx = -this.vx;
+          } else if (this.x > width - this.size / 2) {
+            this.x = width - this.size / 2;
+            this.vx = -this.vx;
+          }
+
+          if (this.y < this.size / 2) {
+            this.y = this.size / 2;
+            this.vy = -this.vy;
+          } else if (this.y > height + this.size) {
+            missed++;
+            this.hit = true;
+          }
+        } else {
+          this.vx += (Math.random() - 0.5) * 0.1 * delta * speedMultiplier;
+          this.vy += (Math.random() - 0.5) * 0.1 * delta * speedMultiplier;
+
+          let maxSpeed = 5 * speedMultiplier;
+          let speed = Math.hypot(this.vx, this.vy);
+          if (speed > maxSpeed) {
+            this.vx = (this.vx / speed) * maxSpeed;
+            this.vy = (this.vy / speed) * maxSpeed;
+          }
+
+          this.x += this.vx * delta;
+          this.y += this.vy * delta;
+
+          if (this.x < this.size / 2) {
+            this.x = this.size / 2;
+            this.vx = -this.vx;
+          } else if (this.x > width - this.size / 2) {
+            this.x = width - this.size / 2;
+            this.vx = -this.vx;
+          }
+
+          if (this.y < -this.size) {
+            this.hit = true;
+          }
         }
       }
 
-      // Add random fluctuations to make movement more erratic
-      this.vx += (Math.random() - 0.5) * 0.6 * delta * speedMultiplier; // Increased randomness
-      this.vy += (Math.random() - 0.5) * 0.6 * delta * speedMultiplier; // Increased randomness
-
-      // Limit the speed to prevent excessive velocity
-      let maxSpeed = 5 * speedMultiplier; // Max speed increases with wave
-      let speed = Math.hypot(this.vx, this.vy);
-      if (speed > maxSpeed) {
-        this.vx = (this.vx / speed) * maxSpeed;
-        this.vy = (this.vy / speed) * maxSpeed;
+      getFace() {
+        if (!this.isSad) {
+          return '😍';
+        } else {
+          const progress = this.y / height;
+          if (progress < 0.25) {
+            return '😐';
+          } else if (progress < 0.5) {
+            return '🙁';
+          } else if (progress < 0.75) {
+            return '😢';
+          } else {
+            return '😱';
+          }
+        }
       }
 
-      // Update position
-      this.x += this.vx * delta;
-      this.y += this.vy * delta;
-
-      // Keep entities within the canvas boundaries
-      if (this.x < this.size / 2) {
-        this.x = this.size / 2;
-        this.vx = -this.vx;
-      } else if (this.x > width - this.size / 2) {
-        this.x = width - this.size / 2;
-        this.vx = -this.vx;
-      }
-
-      if (this.y < this.size / 2) {
-        this.y = this.size / 2;
-        this.vy = -this.vy;
-      } else if (this.y > height + this.size) {
-        missed++;
-        this.hit = true; // Mark as processed
-        facesProcessedInWave++;
-      }
-    } else {
-      // Happy face moving upwards with slight random movement
-      this.vx += (Math.random() - 0.5) * 0.2 * delta * speedMultiplier; // Slightly increased randomness
-      this.vy += (Math.random() - 0.5) * 0.2 * delta * speedMultiplier;
-
-      // Limit the speed
-      let maxSpeed = 5 * speedMultiplier;
-      let speed = Math.hypot(this.vx, this.vy);
-      if (speed > maxSpeed) {
-        this.vx = (this.vx / speed) * maxSpeed;
-        this.vy = (this.vy / speed) * maxSpeed;
-      }
-
-      // Update position
-      this.x += this.vx * delta;
-      this.y += this.vy * delta;
-
-      // Keep entities within the canvas boundaries
-      if (this.x < this.size / 2) {
-        this.x = this.size / 2;
-        this.vx = -this.vx;
-      } else if (this.x > width - this.size / 2) {
-        this.x = width - this.size / 2;
-        this.vx = -this.vx;
-      }
-
-      if (this.y < -this.size) {
-        this.hit = true; // Mark as processed
-        facesProcessedInWave++;
+      draw() {
+        ctx.font = `${this.size}px "Press Start 2P", cursive`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'magenta';
+        ctx.fillText(this.getFace(), this.x, this.y);
       }
     }
-  }
 
-  getFace() {
-    if (!this.isSad) {
-      return '😍'; // Heart eyes emoji
-    } else {
-      // Change face based on position
-      const progress = this.y / height;
-      if (progress < 0.25) {
-        return '😐'; // Neutral
-      } else if (progress < 0.5) {
-        return '🙁'; // Sad
-      } else if (progress < 0.75) {
-        return '😢'; // Crying
-      } else {
-        return '😱'; // Scared
+    function showWaveOverlay(waveNumber) {
+      waveOverlay.textContent = `wave ${waveNumber}!`;
+      waveOverlay.style.opacity = '1';
+      setTimeout(() => {
+        waveOverlay.style.opacity = '0';
+      }, 2000);
+    }
+
+    function spawnEntity() {
+      const size = faceSize;
+      const x = Math.random() * (width - size) + size / 2;
+      const y = -size;
+      const vx = (Math.random() - 0.5) * 1.5 * speedMultiplier;
+      const vy = (Math.random() * 1.5 + 1.5) * speedMultiplier;
+      entities.push(new Entity(x, y, vx, vy, true));
+    }
+
+    function handleTouchStart(e) {
+      isTouching = true;
+      const touch = e.touches[0];
+      touchX = touch.clientX;
+      touchY = touch.clientY;
+      heartCursor.style.display = 'block';
+      heartCursor.style.left = touchX + 'px';
+      heartCursor.style.top = touchY + 'px';
+
+      entities.forEach(entity => {
+        const dx = entity.x - touchX;
+        const dy = entity.y - touchY;
+        const distance = Math.hypot(dx, dy);
+        if (entity.isSad && !entity.hit && distance <= entity.size / 2 + cursorCollisionRadius) {
+          entity.isSad = false;
+          entity.vx = (Math.random() - 0.5) * 4 * speedMultiplier;
+          entity.vy = -(Math.random() * 5 + 5) * speedMultiplier;
+          score++;
+          updateGameStats();
+
+          // Check if it's time to increase the wave
+          if (score % 10 === 0) {
+            waveNumber++;
+            speedMultiplier += 0.1;
+            waveSpawnInterval = Math.max(200, waveSpawnInterval - 50);
+            updateGameStats();
+            showWaveOverlay(waveNumber);
+          }
+        }
+      });
+    }
+
+    function handleTouchMove(e) {
+      const touch = e.touches[0];
+      touchX = touch.clientX;
+      touchY = touch.clientY;
+      heartCursor.style.left = touchX + 'px';
+      heartCursor.style.top = touchY + 'px';
+    }
+
+    function handleTouchEnd(e) {
+      isTouching = false;
+      heartCursor.style.display = 'none';
+      touchX = undefined;
+      touchY = undefined;
+    }
+
+    canvas.addEventListener('touchstart', handleTouchStart);
+    canvas.addEventListener('touchmove', handleTouchMove);
+    canvas.addEventListener('touchend', handleTouchEnd);
+
+    canvas.addEventListener('mousedown', function(e) {
+      touchX = e.clientX;
+      touchY = e.clientY;
+
+      entities.forEach(entity => {
+        const dx = entity.x - touchX;
+        const dy = entity.y - touchY;
+        const distance = Math.hypot(dx, dy);
+        if (entity.isSad && !entity.hit && distance <= entity.size / 2 + cursorCollisionRadius) {
+          entity.isSad = false;
+          entity.vx = (Math.random() - 0.5) * 4 * speedMultiplier;
+          entity.vy = -(Math.random() * 5 + 5) * speedMultiplier;
+          score++;
+          updateGameStats();
+
+          // Check if it's time to increase the wave
+          if (score % 10 === 0) {
+            waveNumber++;
+            speedMultiplier += 0.1;
+            waveSpawnInterval = Math.max(200, waveSpawnInterval - 50);
+            updateGameStats();
+            showWaveOverlay(waveNumber);
+          }
+        }
+      });
+    });
+
+    canvas.addEventListener('mousemove', function(e) {
+      if (isTouching) return;
+      touchX = e.clientX;
+      touchY = e.clientY;
+    });
+
+    canvas.addEventListener('mouseleave', function() {
+      touchX = undefined;
+      touchY = undefined;
+    });
+
+    function update() {
+      if (gameOver || isPaused) return;
+
+      const now = Date.now();
+      const delta = (now - lastTime) / 16;
+
+      ctx.clearRect(0, 0, width, height);
+
+      if (now - lastWaveSpawnTime > waveSpawnInterval) {
+        spawnEntity();
+        lastWaveSpawnTime = now;
       }
+
+      entities.forEach(entity => {
+        entity.update(delta);
+        entity.draw();
+      });
+
+      entities = entities.filter(entity => !entity.hit);
+
+      if (missed >= maxMissed) {
+        endGame();
+      }
+
+      lastTime = now;
+      animationFrameId = requestAnimationFrame(update);
     }
-  }
 
-  draw() {
-    ctx.font = this.size + 'px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(this.getFace(), this.x, this.y);
-  }
-}
-
-function startNextWave() {
-  waveNumber++;
-  speedMultiplier += 0.5; // Increase speed multiplier each wave
-  facesPerWave = Math.ceil(facesPerWave * 1.5); // Increase faces per wave
-  waveSpawnInterval *= 0.9; // Decrease spawn interval to increase spawn rate
-  if (waveSpawnInterval < 200) {
-    waveSpawnInterval = 200; // Minimum spawn interval
-  }
-  waveTotalFaces = facesPerWave;
-  facesSpawnedInWave = 0;
-  facesProcessedInWave = 0;
-  lastWaveSpawnTime = Date.now();
-}
-
-function spawnEntity() {
-  const size = faceSize;
-  const x = Math.random() * (width - size) + size / 2;
-  const y = -size;
-  const vx = (Math.random() - 0.5) * 2 * speedMultiplier; // Random horizontal speed with multiplier
-  const vy = (Math.random() * 2 + 2) * speedMultiplier; // Downward speed with multiplier
-  entities.push(new Entity(x, y, vx, vy, true));
-  facesSpawnedInWave++;
-}
-
-function handleTouchStart(e) {
-  isTouching = true;
-  const touch = e.touches[0];
-  touchX = touch.clientX;
-  touchY = touch.clientY;
-  heartCursor.style.display = 'block';
-  heartCursor.style.left = touchX + 'px';
-  heartCursor.style.top = touchY + 'px';
-
-  entities.forEach(entity => {
-    const dx = entity.x - touchX;
-    const dy = entity.y - touchY;
-    const distance = Math.hypot(dx, dy);
-    if (entity.isSad && !entity.hit && distance <= entity.size / 2 + cursorCollisionRadius) {
-      entity.isSad = false;
-      entity.vx = (Math.random() - 0.5) * 4 * speedMultiplier; // Increased random horizontal speed
-      entity.vy = -(Math.random() * 5 + 5) * speedMultiplier; // Upward speed with multiplier
-      score++;
-      facesProcessedInWave++;
+    function updateGameStats() {
+      document.getElementById('stats').innerHTML = `
+        score: ${score}<br>
+        lives left: ${maxMissed - missed}<br>
+        wave: ${waveNumber}
+      `;
     }
-  });
-}
 
-function handleTouchMove(e) {
-  const touch = e.touches[0];
-  touchX = touch.clientX;
-  touchY = touch.clientY;
-  heartCursor.style.left = touchX + 'px';
-  heartCursor.style.top = touchY + 'px';
-}
-
-function handleTouchEnd(e) {
-  isTouching = false;
-  heartCursor.style.display = 'none';
-  touchX = undefined;
-  touchY = undefined;
-}
-
-canvas.addEventListener('touchstart', handleTouchStart);
-canvas.addEventListener('touchmove', handleTouchMove);
-canvas.addEventListener('touchend', handleTouchEnd);
-
-// Fallback for mouse input on desktop
-canvas.addEventListener('mousedown', function(e) {
-  touchX = e.clientX;
-  touchY = e.clientY;
-
-  entities.forEach(entity => {
-    const dx = entity.x - touchX;
-    const dy = entity.y - touchY;
-    const distance = Math.hypot(dx, dy);
-    if (entity.isSad && !entity.hit && distance <= entity.size / 2 + cursorCollisionRadius) {
-      entity.isSad = false;
-      entity.vx = (Math.random() - 0.5) * 4 * speedMultiplier; // Increased random horizontal speed
-      entity.vy = -(Math.random() * 5 + 5) * speedMultiplier; // Upward speed with multiplier
-      score++;
-      facesProcessedInWave++;
+    function endGame() {
+      gameOver = true;
+      document.getElementById('gameOver').style.display = 'block';
+      document.getElementById('restartButton').style.display = 'block';
     }
-  });
-});
 
-canvas.addEventListener('mousemove', function(e) {
-  if (isTouching) return; // Ignore mouse move during touch
-  touchX = e.clientX;
-  touchY = e.clientY;
-});
+    function startGame() {
+      document.getElementById('startButton').style.display = 'none';
+      showWaveOverlay(waveNumber);
+      update();
+    }
 
-canvas.addEventListener('mouseleave', function() {
-  touchX = undefined;
-  touchY = undefined;
-});
+    function restartGame() {
+      document.getElementById('gameOver').style.display = 'none';
+      document.getElementById('restartButton').style.display = 'none';
+      score = 0;
+      missed = 0;
+      waveNumber = 1;
+      entities = [];
+      speedMultiplier = 0.8;
+      waveSpawnInterval = 1000;
+      gameOver = false;
+      updateGameStats();
+      showWaveOverlay(waveNumber);
+      update();
+    }
 
-function update() {
-  if (gameOver) return;
+    // Ensure the game resizes properly when the window size changes
+    window.addEventListener('resize', () => {
+      resizeGame();
+    });
 
-  const now = Date.now();
-  const delta = (now - lastTime) / 16; // Roughly 60fps
+    // Initialize the game stats
+    updateGameStats();
 
-  ctx.clearRect(0, 0, width, height);
-
-  // Spawn entities over time during the wave
-  while (facesSpawnedInWave < waveTotalFaces && now - lastWaveSpawnTime > waveSpawnInterval) {
-    spawnEntity();
-    lastWaveSpawnTime += waveSpawnInterval;
-  }
-
-  entities.forEach(entity => {
-    entity.update(delta);
-    entity.draw();
-  });
-
-  // Remove entities that have been processed
-  entities = entities.filter(entity => !entity.hit);
-
-  // Check if all faces in the wave have been processed
-  if (facesProcessedInWave >= waveTotalFaces && entities.length === 0) {
-    startNextWave();
-  }
-
-  // Draw score, lives left, and wave number
-  ctx.fillStyle = 'black';
-  ctx.font = (faceSize / 2.5) + 'px Arial';
-  ctx.textAlign = 'left';
-  ctx.fillText('Score: ' + score, width * 0.05, faceSize * 0.6);
-  ctx.fillText('Lives Left: ' + (maxMissed - missed), width * 0.05, faceSize * 1.2);
-  ctx.fillText('Wave: ' + waveNumber, width * 0.05, faceSize * 1.8);
-
-  if (missed >= maxMissed) {
-    endGame();
-  }
-
-  lastTime = now;
-  requestAnimationFrame(update);
-}
-
-function endGame() {
-  gameOver = true;
-  document.getElementById('gameOver').style.display = 'block';
-}
-
-// Ensure the game resizes properly when the window size changes
-window.addEventListener('resize', () => {
-  resizeGame();
-});
-
-startNextWave(); // Start the first wave
-update(); // Start the game loop
-</script>
+    // Show the start button when the page loads
+    document.getElementById('startButton').style.display = 'block';
+  </script>
 </body>
 </html>
