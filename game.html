@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <!-- Add the viewport meta tag -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Heart Catch Game</title>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
@@ -74,6 +76,8 @@
     }
     #title {
       font-size: 4vh;
+      word-wrap: break-word; /* Ensure text wraps if too long */
+      max-width: 90vw; /* Prevent overflow by limiting width */
     }
     #stats {
       font-size: 2vh;
@@ -106,6 +110,34 @@
       transition: opacity 1s;
       z-index: 20;
       pointer-events: none;
+    }
+
+    /* Media Query for Mobile Devices */
+    @media only screen and (max-width: 768px) {
+      body {
+        /* Optionally adjust body styles for mobile if needed */
+      }
+      #title {
+        font-size: 2vh; /* Half of 4vh */
+        max-width: 90vw; /* Ensure it doesn't exceed viewport */
+      }
+      #stats {
+        font-size: 1vh; /* Half of 2vh */
+      }
+      #gameOver {
+        font-size: 3vh; /* Half of 6vh */
+      }
+      #startButton, #restartButton {
+        font-size: 1rem; /* Half of 2rem */
+        padding: 10px 20px; /* Half padding */
+      }
+      #pauseText {
+        font-size: 0.75vh; /* Half of 1.5vh */
+      }
+      #waveOverlay {
+        font-size: 2.5vh; /* Half of 5vh */
+      }
+      /* Adjust other elements if necessary */
     }
   </style>
 </head>
