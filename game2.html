@@ -258,7 +258,7 @@
                     pointerPosition.x = e.touches[0].clientX;
                     pointerPosition.y = e.touches[0].clientY;
                     if (gameStarted && !gameOver && !gameEnding && !paused && isMobile) {
-                        // For mobile, directly set the paddle to the touch position without smoothing
+                        // For mobile, set target paddle index smoothly
                         setPaddleToPointer();
                     }
                 }
@@ -429,6 +429,7 @@
                 // Optional: Draw filled heart for visibility
                 // ctx.fillStyle = 'rgba(255, 0, 0, 0.1)';
                 // ctx.fill(heartPath);
+                console.log("Heart drawn.");
             }
 
             // Draw paddle with increased thickness and consistent length
@@ -487,6 +488,7 @@
                 }
 
                 ctx.shadowBlur = 0; // Reset shadow for other drawings
+                console.log(`Paddle drawn from index ${startIndex} to ${endIndex}`);
             }
 
             // Update target paddle index based on pointer position
@@ -503,7 +505,7 @@
                     }
                 }
                 targetPaddleStartIndex = newTargetPaddleStart;
-                console.log(`Target paddle index updated to ${targetPaddleStartIndex}`);
+                console.log(`Desktop: Target paddle index updated to ${targetPaddleStartIndex}`);
             }
 
             // Directly set paddle position to pointer (for mobile devices)
@@ -519,9 +521,9 @@
                         closestIndex = i;
                     }
                 }
-                paddleStartIndex = closestIndex;
+                // Only update target index to allow smooth movement
                 targetPaddleStartIndex = closestIndex;
-                console.log(`Paddle position set to index ${closestIndex}`);
+                console.log(`Mobile: Target paddle index set to ${targetPaddleStartIndex}`);
             }
 
             // Update paddle based on keyboard input with time-based movement
@@ -538,10 +540,8 @@
                 console.log(`Keyboard movement: ${movement.toFixed(2)}, new target index: ${targetPaddleStartIndex}`);
             }
 
-            // Update paddle towards target index for smooth touch/mouse control (Non-Mobile)
+            // Update paddle towards target index for smooth touch/mouse control
             function updatePaddleTowardsTarget(deltaTime) {
-                if (isMobile) return; // Skip smoothing for mobile devices
-
                 if (Math.abs(targetPaddleStartIndex - paddleStartIndex) < 0.1) return; // Threshold to prevent jitter
 
                 let difference = targetPaddleStartIndex - paddleStartIndex;
@@ -565,7 +565,7 @@
 
                 // Wrap around if necessary
                 paddleStartIndex = (paddleStartIndex + heartPoints.length) % heartPoints.length;
-                console.log(`Paddle moved to index ${paddleStartIndex}`);
+                console.log(`Paddle moved to index ${paddleStartIndex.toFixed(2)}`);
             }
 
             // Update ball position and handle collisions
@@ -697,6 +697,7 @@
                 ctx.shadowColor = 'magenta';
                 ctx.fill();
                 ctx.shadowBlur = 0; // Reset shadow
+                console.log(`Ball drawn at (${ball.x.toFixed(2)}, ${ball.y.toFixed(2)})`);
             }
 
             // Update scoreboard
