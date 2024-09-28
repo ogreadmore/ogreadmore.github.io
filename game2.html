@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>heart centered</title>
+    <title>Heart Pong Game - Enhanced Version</title>
     <style>
         body {
             margin: 0;
@@ -26,19 +26,66 @@
             z-index: 5;
         }
 
+        /* Scoreboard Styles */
         #scoreboard {
             position: absolute;
             top: 5%;
             left: 5%;
             color: magenta;
             font-family: 'Press Start 2P', cursive;
-            font-size: 2vh;
+            font-size: 3vh; /* Increased font size for the title */
             user-select: none;
             z-index: 10;
             text-align: left;
         }
 
-        #startButton, #restartButton {
+        #scoreboard .title {
+            font-size: 4vh; /* Bigger font for "Heart Centered" */
+            margin-bottom: 10px; /* Increased space between title and score */
+        }
+
+        #scoreboard .score {
+            font-size: 2.5vh;
+        }
+
+        /* Game Over and Restart Button Styles */
+        #gameOver {
+            position: absolute;
+            top: 40%;
+            width: 100%;
+            text-align: center;
+            font-size: 6vh;
+            color: magenta;
+            display: none;
+            z-index: 15;
+            pointer-events: none;
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        #restartButton {
+            position: absolute;
+            top: 55%; /* Positioned 20px below the GAME OVER message */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: transparent;
+            color: magenta;
+            padding: 15px 30px;
+            border: 3px solid magenta;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 2rem;
+            user-select: none;
+            z-index: 15;
+            display: none;
+        }
+
+        #restartButton:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Start Button Styles */
+        #startButton {
             position: absolute;
             top: 50%;
             left: 50%;
@@ -55,34 +102,60 @@
             z-index: 15;
         }
 
-        #startButton:hover, #restartButton:hover {
+        #startButton:hover {
             background-color: rgba(255, 255, 255, 0.1);
         }
 
-        #gameOver {
+        /* Paused Overlay Styles */
+        #pausedOverlay {
             position: absolute;
-            top: 40%;
+            top: 0;
+            left: 0;
             width: 100%;
-            text-align: center;
-            font-size: 6vh;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
             color: magenta;
             display: none;
-            z-index: 15;
-            pointer-events: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 20;
             font-family: 'Press Start 2P', cursive;
+            font-size: 4vh;
+            user-select: none;
+            cursor: pointer; /* Indicate that it can be interacted with */
+        }
+
+        /* Flex container for paused overlay */
+        #pausedOverlayContent {
+            display: flex;
+            height: 100%;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
         }
 
         /* Media Query for Mobile Devices */
         @media only screen and (max-width: 768px) {
-            #scoreboard {
-                font-size: 1vh;
-            }
-            #gameOver {
+            #scoreboard .title {
                 font-size: 3vh;
             }
+
+            #scoreboard .score {
+                font-size: 2vh;
+            }
+
+            #gameOver {
+                font-size: 4vh;
+            }
+
             #startButton, #restartButton {
-                font-size: 1rem;
+                font-size: 1.5rem;
                 padding: 10px 20px;
+            }
+
+            #pausedOverlay {
+                font-size: 3vh;
             }
         }
     </style>
@@ -92,13 +165,21 @@
 <body>
     <!-- Scoreboard -->
     <div id="scoreboard">
-        <div>heart centered</div>
-        <div>score: 0</div>
+        <div class="title">Heart Centered</div>
+        <div class="score">Score: 0</div>
     </div>
-    <!-- Game Over and Buttons -->
+    <!-- Game Over and Restart Button -->
     <div id="gameOver">GAME OVER</div>
+    <div id="restartButton" onclick="restartGame()">RESTART</div>
+    <!-- Start Button -->
     <div id="startButton" onclick="startGame()">START GAME</div>
-    <div id="restartButton" onclick="restartGame()" style="display: none;">RESTART</div>
+    <!-- Paused Overlay -->
+    <div id="pausedOverlay">
+        <div id="pausedOverlayContent">
+            <div>PAUSED</div>
+            <div style="font-size: 2vh; margin-top: 2vh;">Move your mouse back to resume</div>
+        </div>
+    </div>
     <!-- Game Canvas -->
     <canvas id="gameCanvas"></canvas>
     <script>
@@ -109,13 +190,15 @@
         // Game variables
         let heartPath = new Path2D();
         let heartPoints = [];
-        const totalHeartPoints = 1000; // Increased for smoother heart
-        let paddleStartIndex = 0;
-        const paddleLength = 100; // Length of the paddle in number of points
+        const desiredArcLength = 1; // Desired distance between points in pixels
+        const paddlePixelLength = 400; // Doubled desired physical paddle length in pixels
+        let paddleLength = 0; // Number of points in the paddle, to be calculated
+        let paddleStartIndex = 0.0; // Allow floating point for smooth movement
         let score = 0;
         let gameStarted = false;
         let gameOver = false;
         let gameEnding = false; // Flag to manage game ending sequence
+        let paused = false; // New flag to manage paused state
         let animationFrameId;
 
         // Ball properties
@@ -123,7 +206,7 @@
             x: 0,
             y: 0,
             radius: 10, // Increased for better visibility
-            speed: 3, // Reduced from 4 for slower starting speed
+            speed: 2.5, // Reduced from 3 for slower starting speed
             velocity: { x: 0, y: 0 } // Velocity vector
         };
 
@@ -133,17 +216,23 @@
         // Keyboard controls
         let keyboardControl = { left: false, right: false };
 
+        // Paddle movement speed in points per second
+        const paddleSpeed = 200; // Adjust as needed for desired speed
+
         // Flag to track if the ball is currently outside the heart
         let isBallOutside = false;
 
         // Flag to track if the paddle was hit (for visual feedback)
         let isPaddleHit = false;
 
+        // Paused Overlay Element
+        const pausedOverlay = document.getElementById('pausedOverlay');
+
         // Event listeners for mouse
         canvas.addEventListener('mousemove', function (e) {
             pointerPosition.x = e.clientX;
             pointerPosition.y = e.clientY;
-            if (gameStarted && !gameOver && !gameEnding) {
+            if (gameStarted && !gameOver && !gameEnding && !paused) {
                 updatePaddleIndex();
             }
         });
@@ -153,7 +242,7 @@
             e.preventDefault();
             pointerPosition.x = e.touches[0].clientX;
             pointerPosition.y = e.touches[0].clientY;
-            if (gameStarted && !gameOver && !gameEnding) {
+            if (gameStarted && !gameOver && !gameEnding && !paused) {
                 updatePaddleIndex();
             }
         }, { passive: false });
@@ -177,6 +266,26 @@
             }
         });
 
+        // Event listeners for mouse leaving and entering the canvas
+        canvas.addEventListener('mouseleave', function (e) {
+            if (gameStarted && !gameOver && !gameEnding) {
+                pauseGame();
+            }
+        });
+
+        canvas.addEventListener('mouseenter', function (e) {
+            if (gameStarted && paused) {
+                resumeGame();
+            }
+        });
+
+        // Event listener for mouse entering the paused overlay to resume the game
+        pausedOverlay.addEventListener('mouseenter', function (e) {
+            if (gameStarted && paused) {
+                resumeGame();
+            }
+        });
+
         // Resize canvas to fit the window
         function resizeCanvas() {
             canvas.width = window.innerWidth;
@@ -188,14 +297,23 @@
         }
         window.addEventListener('resize', resizeCanvas);
 
-        // Generate heart shape points
+        // Generate heart shape points with uniform arc-length spacing
         function generateHeartPoints() {
             heartPoints = [];
-            for (let t = 0; t < 2 * Math.PI; t += (2 * Math.PI) / totalHeartPoints) {
-                // Heart shape parametric equations
-                let x = 16 * Math.pow(Math.sin(t), 3);
-                let y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
-                heartPoints.push({ x: x, y: -y }); // Invert y for canvas coordinates
+            let t = 0;
+            const deltaT = 0.001; // Initial t increment
+            let lastPoint = calculateHeartPoint(t);
+            heartPoints.push(lastPoint);
+            t += deltaT;
+
+            while (t < 2 * Math.PI) {
+                let currentPoint = calculateHeartPoint(t);
+                let distance = Math.hypot(currentPoint.x - lastPoint.x, currentPoint.y - lastPoint.y);
+                if (distance >= desiredArcLength) {
+                    heartPoints.push(currentPoint);
+                    lastPoint = currentPoint;
+                }
+                t += deltaT;
             }
 
             // Scale and center the heart
@@ -212,6 +330,23 @@
                 heartPath.lineTo(heartPoints[i].x, heartPoints[i].y);
             }
             heartPath.closePath();
+
+            // Calculate paddleLength based on desired physical length
+            // Approximate average distance between points
+            let totalDistance = 0;
+            for (let i = 1; i < heartPoints.length; i++) {
+                totalDistance += Math.hypot(heartPoints[i].x - heartPoints[i - 1].x, heartPoints[i].y - heartPoints[i - 1].y);
+            }
+            const averageDistance = totalDistance / (heartPoints.length - 1);
+            paddleLength = Math.round(paddlePixelLength / averageDistance);
+        }
+
+        // Calculate a point on the heart for a given t
+        function calculateHeartPoint(t) {
+            // Heart shape parametric equations
+            let x = 16 * Math.pow(Math.sin(t), 3);
+            let y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+            return { x: x, y: -y }; // Invert y for canvas coordinates
         }
 
         // Set ball starting position inside the heart
@@ -270,17 +405,18 @@
             ctx.lineJoin = 'round';
             ctx.shadowBlur = 20;
             ctx.shadowColor = 'magenta';
-            let endIndex = (paddleStartIndex + paddleLength) % heartPoints.length;
+            let startIndex = Math.floor(paddleStartIndex) % heartPoints.length;
+            let endIndex = (startIndex + paddleLength) % heartPoints.length;
 
             // Handle wrap-around
-            if (paddleStartIndex < endIndex) {
-                ctx.moveTo(heartPoints[paddleStartIndex].x, heartPoints[paddleStartIndex].y);
-                for (let i = paddleStartIndex + 1; i <= endIndex; i++) {
+            if (startIndex < endIndex) {
+                ctx.moveTo(heartPoints[startIndex].x, heartPoints[startIndex].y);
+                for (let i = startIndex + 1; i <= endIndex; i++) {
                     ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
                 }
             } else {
-                ctx.moveTo(heartPoints[paddleStartIndex].x, heartPoints[paddleStartIndex].y);
-                for (let i = paddleStartIndex + 1; i < heartPoints.length; i++) {
+                ctx.moveTo(heartPoints[startIndex].x, heartPoints[startIndex].y);
+                for (let i = startIndex + 1; i < heartPoints.length; i++) {
                     ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
                 }
                 for (let i = 0; i <= endIndex; i++) {
@@ -297,14 +433,14 @@
                 ctx.lineWidth = 30; // Slightly thicker for glow effect
                 ctx.shadowBlur = 40;
                 ctx.shadowColor = 'yellow';
-                if (paddleStartIndex < endIndex) {
-                    ctx.moveTo(heartPoints[paddleStartIndex].x, heartPoints[paddleStartIndex].y);
-                    for (let i = paddleStartIndex + 1; i <= endIndex; i++) {
+                if (startIndex < endIndex) {
+                    ctx.moveTo(heartPoints[startIndex].x, heartPoints[startIndex].y);
+                    for (let i = startIndex + 1; i <= endIndex; i++) {
                         ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
                     }
                 } else {
-                    ctx.moveTo(heartPoints[paddleStartIndex].x, heartPoints[paddleStartIndex].y);
-                    for (let i = paddleStartIndex + 1; i < heartPoints.length; i++) {
+                    ctx.moveTo(heartPoints[startIndex].x, heartPoints[startIndex].y);
+                    for (let i = startIndex + 1; i < heartPoints.length; i++) {
                         ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
                     }
                     for (let i = 0; i <= endIndex; i++) {
@@ -335,33 +471,40 @@
             paddleStartIndex = newPaddleStart;
         }
 
-        // Update paddle based on keyboard input
-        function updatePaddleKeyboard() {
+        // Update paddle based on keyboard input with time-based movement
+        function updatePaddleKeyboard(deltaTime) {
+            let movement = 0;
             if (keyboardControl.left) {
-                paddleStartIndex = (paddleStartIndex - 5 + heartPoints.length) % heartPoints.length;
+                movement -= paddleSpeed * deltaTime;
             }
             if (keyboardControl.right) {
-                paddleStartIndex = (paddleStartIndex + 5) % heartPoints.length;
+                movement += paddleSpeed * deltaTime;
+            }
+            paddleStartIndex = (paddleStartIndex + movement) % heartPoints.length;
+            if (paddleStartIndex < 0) {
+                paddleStartIndex += heartPoints.length;
             }
         }
 
         // Update ball position and handle collisions
         function updateBall() {
-            if (gameEnding || gameOver) {
-                // Continue moving the ball off-screen
-                ball.x += ball.velocity.x;
-                ball.y += ball.velocity.y;
+            if (gameEnding || gameOver || paused) {
+                // Continue moving the ball off-screen or do nothing if paused
+                if (!paused) {
+                    ball.x += ball.velocity.x;
+                    ball.y += ball.velocity.y;
 
-                // Check if the ball is completely off the screen
-                if (ball.x < -ball.radius || ball.x > canvas.width + ball.radius ||
-                    ball.y < -ball.radius || ball.y > canvas.height + ball.radius) {
-                    // End the game after the ball has flown off-screen
-                    gameOver = true;
-                    cancelAnimationFrame(animationFrameId);
-                    document.getElementById('gameOver').style.display = 'block';
-                    document.getElementById('restartButton').style.display = 'block';
-                    // Remove 'playing' class to show cursor again
-                    document.body.classList.remove('playing');
+                    // Check if the ball is completely off the screen
+                    if (ball.x < -ball.radius || ball.x > canvas.width + ball.radius ||
+                        ball.y < -ball.radius || ball.y > canvas.height + ball.radius) {
+                        // End the game after the ball has flown off-screen
+                        gameOver = true;
+                        cancelAnimationFrame(animationFrameId);
+                        document.getElementById('gameOver').style.display = 'block';
+                        document.getElementById('restartButton').style.display = 'block';
+                        // Remove 'playing' class to show cursor again
+                        document.body.classList.remove('playing');
+                    }
                 }
                 return; // Exit the function to prevent further collision checks
             }
@@ -378,6 +521,9 @@
                 gameEnding = true;
                 return;
             }
+
+            // Update isBallOutside flag
+            isBallOutside = isCurrentlyOutside;
 
             // Check collision with paddle
             if (isBallCollidingWithPaddle()) {
@@ -414,16 +560,17 @@
 
         // Find the collision point between the ball and the paddle
         function findCollisionPoint() {
-            let endIndex = (paddleStartIndex + paddleLength) % heartPoints.length;
+            let startIndex = Math.floor(paddleStartIndex) % heartPoints.length;
+            let endIndex = (startIndex + paddleLength) % heartPoints.length;
 
             // Gather paddle points
             let paddlePoints = [];
-            if (paddleStartIndex < endIndex) {
-                for (let i = paddleStartIndex; i <= endIndex; i++) {
+            if (startIndex < endIndex) {
+                for (let i = startIndex; i <= endIndex; i++) {
                     paddlePoints.push(heartPoints[i]);
                 }
             } else {
-                for (let i = paddleStartIndex; i < heartPoints.length; i++) {
+                for (let i = startIndex; i < heartPoints.length; i++) {
                     paddlePoints.push(heartPoints[i]);
                 }
                 for (let i = 0; i <= endIndex; i++) {
@@ -468,10 +615,25 @@
 
         // Update scoreboard
         function updateScoreboard() {
-            document.getElementById('scoreboard').innerHTML = `
-                <div>heart centered</div>
-                <div>score: ${score}</div>
-            `;
+            document.querySelector('#scoreboard .score').innerText = `Score: ${score}`;
+        }
+
+        // Pause the game
+        function pauseGame() {
+            paused = true;
+            cancelAnimationFrame(animationFrameId);
+            pausedOverlay.style.display = 'flex';
+            // Optionally, show a message or change styles
+            console.log('Game paused');
+        }
+
+        // Resume the game
+        function resumeGame() {
+            paused = false;
+            pausedOverlay.style.display = 'none';
+            lastFrameTime = performance.now(); // Reset the lastFrameTime to avoid large deltaTime
+            console.log('Game resumed');
+            gameLoop(); // Restart the game loop
         }
 
         // End game and show Game Over screen
@@ -484,9 +646,15 @@
             document.body.classList.remove('playing');
         }
 
-        // Main game loop
-        function gameLoop() {
-            if (gameOver) return;
+        // Main game loop with deltaTime for smooth movement
+        let lastFrameTime = performance.now();
+        function gameLoop(currentTime = performance.now()) {
+            if (gameOver || paused) return;
+
+            // Calculate deltaTime in seconds
+            let deltaTime = (currentTime - lastFrameTime) / 1000;
+            lastFrameTime = currentTime;
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             drawHeart();
@@ -495,8 +663,8 @@
             drawBall();
             updateScoreboard();
 
-            // Handle keyboard input
-            updatePaddleKeyboard();
+            // Handle keyboard input with deltaTime
+            updatePaddleKeyboard(deltaTime);
 
             animationFrameId = requestAnimationFrame(gameLoop);
         }
@@ -512,12 +680,18 @@
             gameStarted = true;
             gameOver = false;
             gameEnding = false;
-            ball.speed = 3; // Slower starting speed
+            paused = false;
+            ball.speed = 2.5; // Slower starting speed
             setBallStartingPosition();
             initializeBallVelocity(); // Set random initial velocity
             updateScoreboard();
+            // Reset lastFrameTime for consistent deltaTime
+            lastFrameTime = performance.now();
+            // Hide paused overlay if visible
+            pausedOverlay.style.display = 'none';
             // Start game loop
             gameLoop();
+            console.log('Game started');
         }
 
         // Restart the game
@@ -532,12 +706,18 @@
             gameStarted = true;
             gameOver = false;
             gameEnding = false;
-            ball.speed = 3; // Slower starting speed
+            paused = false;
+            ball.speed = 2.5; // Slower starting speed
             setBallStartingPosition();
             initializeBallVelocity(); // Set random initial velocity
             updateScoreboard();
+            // Reset lastFrameTime for consistent deltaTime
+            lastFrameTime = performance.now();
+            // Hide paused overlay if visible
+            pausedOverlay.style.display = 'none';
             // Start game loop
             gameLoop();
+            console.log('Game restarted');
         }
 
         // Initialize game on page load
