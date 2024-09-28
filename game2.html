@@ -170,9 +170,9 @@
     </div>
     <!-- Game Over and Restart Button -->
     <div id="gameOver">GAME OVER</div>
-    <div id="restartButton" onclick="restartGame()">RESTART</div>
+    <div id="restartButton">RESTART</div>
     <!-- Start Button -->
-    <div id="startButton" onclick="startGame()">START GAME</div>
+    <div id="startButton">START GAME</div>
     <!-- Paused Overlay -->
     <div id="pausedOverlay">
         <div id="pausedOverlayContent">
@@ -183,258 +183,266 @@
     <!-- Game Canvas -->
     <canvas id="gameCanvas"></canvas>
     <script>
-        // Canvas setup
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("DOM fully loaded and parsed.");
 
-        // Game variables
-        let heartPath = new Path2D();
-        let heartPoints = [];
-        const desiredArcLength = 1; // Desired distance between points in pixels
-        const paddlePixelLength = 400; // Doubled desired physical paddle length in pixels
-        let paddleLength = 0; // Number of points in the paddle, to be calculated
-        let paddleStartIndex = 0.0; // Allow floating point for smooth movement
-        let targetPaddleStartIndex = 0.0; // Target index for smooth paddle movement
-        let score = 0;
-        let gameStarted = false;
-        let gameOver = false;
-        let gameEnding = false; // Flag to manage game ending sequence
-        let paused = false; // New flag to manage paused state
-        let animationFrameId;
-
-        // Ball properties
-        let ball = {
-            x: 0,
-            y: 0,
-            radius: 10, // Increased for better visibility
-            speed: 2.5, // Reduced from 3 for slower starting speed
-            velocity: { x: 0, y: 0 } // Velocity vector
-        };
-
-        // Mouse and touch controls
-        let pointerPosition = { x: canvas.width / 2, y: canvas.height / 2 };
-
-        // Keyboard controls
-        let keyboardControl = { left: false, right: false };
-
-        // Paddle movement speeds
-        const paddleSpeed = 150; // Used for moving towards target
-        const keyboardMoveSpeed = 100; // Speed for keyboard controls (points per second)
-
-        // Flag to track if the ball is currently outside the heart
-        let isBallOutside = false;
-
-        // Flag to track if the paddle was hit (for visual feedback)
-        let isPaddleHit = false;
-
-        // Paused Overlay Element
-        const pausedOverlay = document.getElementById('pausedOverlay');
-
-        // Event listeners for mouse
-        canvas.addEventListener('mousemove', function (e) {
-            pointerPosition.x = e.clientX;
-            pointerPosition.y = e.clientY;
-            if (gameStarted && !gameOver && !gameEnding && !paused) {
-                updateTargetPaddleIndex();
+            // Canvas setup
+            const canvas = document.getElementById('gameCanvas');
+            if (!canvas) {
+                console.error("Canvas element not found!");
+                return;
             }
-        });
+            const ctx = canvas.getContext('2d');
+            console.log("Canvas and context initialized.");
 
-        // Event listeners for touch
-        canvas.addEventListener('touchmove', function (e) {
-            e.preventDefault();
-            pointerPosition.x = e.touches[0].clientX;
-            pointerPosition.y = e.touches[0].clientY;
-            if (gameStarted && !gameOver && !gameEnding && !paused) {
-                updateTargetPaddleIndex();
-            }
-        }, { passive: false });
+            // Game variables
+            let heartPath = new Path2D();
+            let heartPoints = [];
+            const desiredArcLength = 1; // Desired distance between points in pixels
+            const paddlePixelLength = 400; // Doubled desired physical paddle length in pixels
+            let paddleLength = 0; // Number of points in the paddle, to be calculated
+            let paddleStartIndex = 0.0; // Allow floating point for smooth movement
+            let targetPaddleStartIndex = 0.0; // Target index for smooth paddle movement
+            let score = 0;
+            let gameStarted = false;
+            let gameOver = false;
+            let gameEnding = false; // Flag to manage game ending sequence
+            let paused = false; // New flag to manage paused state
+            let animationFrameId;
 
-        // Event listeners for keyboard
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
-                keyboardControl.left = true;
-            }
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
-                keyboardControl.right = true;
-            }
-        });
-
-        document.addEventListener('keyup', function(e) {
-            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
-                keyboardControl.left = false;
-            }
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
-                keyboardControl.right = false;
-            }
-        });
-
-        // Event listeners for mouse leaving and entering the canvas
-        canvas.addEventListener('mouseleave', function (e) {
-            if (gameStarted && !gameOver && !gameEnding) {
-                pauseGame();
-            }
-        });
-
-        canvas.addEventListener('mouseenter', function (e) {
-            if (gameStarted && paused) {
-                resumeGame();
-            }
-        });
-
-        // Event listener for mouse entering the paused overlay to resume the game
-        pausedOverlay.addEventListener('mouseenter', function (e) {
-            if (gameStarted && paused) {
-                resumeGame();
-            }
-        });
-
-        // Resize canvas to fit the window
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            generateHeartPoints(); // Regenerate heart points to fit new size
-            if (!gameStarted) {
-                setBallStartingPosition();
-            }
-        }
-        window.addEventListener('resize', resizeCanvas);
-
-        // Generate heart shape points with uniform arc-length spacing
-        function generateHeartPoints() {
-            heartPoints = [];
-            let t = 0;
-            const deltaT = 0.001; // Initial t increment
-            let lastPoint = calculateHeartPoint(t);
-            heartPoints.push(lastPoint);
-            t += deltaT;
-
-            while (t < 2 * Math.PI) {
-                let currentPoint = calculateHeartPoint(t);
-                let distance = Math.hypot(currentPoint.x - lastPoint.x, currentPoint.y - lastPoint.y);
-                if (distance >= desiredArcLength) {
-                    heartPoints.push(currentPoint);
-                    lastPoint = currentPoint;
-                }
-                t += deltaT;
-            }
-
-            // Scale and center the heart
-            const scale = Math.min(canvas.width, canvas.height) / 40;
-            heartPoints = heartPoints.map(point => ({
-                x: point.x * scale + canvas.width / 2,
-                y: point.y * scale + canvas.height / 2
-            }));
-
-            // Create the heart path for collision detection
-            heartPath = new Path2D();
-            heartPath.moveTo(heartPoints[0].x, heartPoints[0].y);
-            for (let i = 1; i < heartPoints.length; i++) {
-                heartPath.lineTo(heartPoints[i].x, heartPoints[i].y);
-            }
-            heartPath.closePath();
-
-            // Calculate paddleLength based on desired physical length
-            // Approximate average distance between points
-            let totalDistance = 0;
-            for (let i = 1; i < heartPoints.length; i++) {
-                totalDistance += Math.hypot(heartPoints[i].x - heartPoints[i - 1].x, heartPoints[i].y - heartPoints[i - 1].y);
-            }
-            const averageDistance = totalDistance / (heartPoints.length - 1);
-            paddleLength = Math.round(paddlePixelLength / averageDistance);
-        }
-
-        // Calculate a point on the heart for a given t
-        function calculateHeartPoint(t) {
-            // Heart shape parametric equations
-            let x = 16 * Math.pow(Math.sin(t), 3);
-            let y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
-            return { x: x, y: -y }; // Invert y for canvas coordinates
-        }
-
-        // Set ball starting position inside the heart
-        function setBallStartingPosition() {
-            // Start at the center of the heart
-            ball.x = canvas.width / 2;
-            ball.y = canvas.height / 2;
-
-            // Initialize velocity if not set
-            if (!gameStarted) {
-                initializeBallVelocity();
-            }
-        }
-
-        // Initialize ball velocity with a random angle
-        function initializeBallVelocity() {
-            let angleDegrees = Math.random() * 120 + 30; // 30 to 150 degrees
-            let angleRadians = angleDegrees * (Math.PI / 180);
-            ball.velocity.x = ball.speed * Math.cos(angleRadians);
-            ball.velocity.y = ball.speed * Math.sin(angleRadians);
-        }
-
-        // Reflect the ball's velocity vector based on the normal vector
-        function reflectVelocity(incident, normal) {
-            // Normalize the normal vector
-            let normLength = Math.hypot(normal.x, normal.y);
-            if (normLength === 0) return { x: incident.x, y: incident.y }; // Prevent division by zero
-            let normalUnit = { x: normal.x / normLength, y: normal.y / normLength };
-
-            // Compute dot product
-            let dot = incident.x * normalUnit.x + incident.y * normalUnit.y;
-
-            // Compute reflected vector
-            let reflected = {
-                x: incident.x - 2 * dot * normalUnit.x,
-                y: incident.y - 2 * dot * normalUnit.y
+            // Ball properties
+            let ball = {
+                x: 0,
+                y: 0,
+                radius: 10, // Increased for better visibility
+                speed: 2.5, // Reduced from 3 for slower starting speed
+                velocity: { x: 0, y: 0 } // Velocity vector
             };
 
-            return reflected;
-        }
+            // Pointer (mouse or touch) controls
+            let pointerPosition = { x: canvas.width / 2, y: canvas.height / 2 };
 
-        // Draw heart outline with dotted line
-        function drawHeart() {
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 2;
-            ctx.setLineDash([5, 5]); // Dotted line pattern
-            ctx.stroke(heartPath);
-            ctx.setLineDash([]); // Reset to solid for other drawings
-        }
+            // Keyboard controls
+            let keyboardControl = { left: false, right: false };
 
-        // Draw paddle with increased thickness and consistent length
-        function drawPaddle() {
-            ctx.beginPath();
-            ctx.strokeStyle = 'magenta';
-            ctx.lineWidth = 25; // Increased for better visibility
-            ctx.lineJoin = 'round';
-            ctx.shadowBlur = 20;
-            ctx.shadowColor = 'magenta';
-            let startIndex = Math.floor(paddleStartIndex) % heartPoints.length;
-            let endIndex = (startIndex + paddleLength) % heartPoints.length;
+            // Paddle movement speeds
+            const paddleSpeed = 150; // Used for moving towards target
+            const keyboardMoveSpeed = 100; // Speed for keyboard controls (points per second)
 
-            // Handle wrap-around
-            if (startIndex < endIndex) {
-                ctx.moveTo(heartPoints[startIndex].x, heartPoints[startIndex].y);
-                for (let i = startIndex + 1; i <= endIndex; i++) {
-                    ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
+            // Flag to track if the ball is currently outside the heart
+            let isBallOutside = false;
+
+            // Flag to track if the paddle was hit (for visual feedback)
+            let isPaddleHit = false;
+
+            // Paused Overlay Element
+            const pausedOverlay = document.getElementById('pausedOverlay');
+
+            // Detect if the device is mobile
+            const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            console.log("Is mobile device:", isMobile);
+
+            // Event listeners for mouse
+            canvas.addEventListener('mousemove', function (e) {
+                pointerPosition.x = e.clientX;
+                pointerPosition.y = e.clientY;
+                if (gameStarted && !gameOver && !gameEnding && !paused && !isMobile) {
+                    updateTargetPaddleIndex();
                 }
-            } else {
-                ctx.moveTo(heartPoints[startIndex].x, heartPoints[startIndex].y);
-                for (let i = startIndex + 1; i < heartPoints.length; i++) {
-                    ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
+            });
+
+            // Event listeners for touch
+            canvas.addEventListener('touchmove', function (e) {
+                e.preventDefault();
+                if (e.touches.length > 0) {
+                    pointerPosition.x = e.touches[0].clientX;
+                    pointerPosition.y = e.touches[0].clientY;
+                    if (gameStarted && !gameOver && !gameEnding && !paused && isMobile) {
+                        // For mobile, directly set the paddle to the touch position without smoothing
+                        setPaddleToPointer();
+                    }
                 }
-                for (let i = 0; i <= endIndex; i++) {
-                    ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
+            }, { passive: false });
+
+            // Event listeners for keyboard
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                    keyboardControl.left = true;
+                    console.log("Left key pressed.");
+                }
+                if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                    keyboardControl.right = true;
+                    console.log("Right key pressed.");
+                }
+            });
+
+            document.addEventListener('keyup', function(e) {
+                if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                    keyboardControl.left = false;
+                    console.log("Left key released.");
+                }
+                if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                    keyboardControl.right = false;
+                    console.log("Right key released.");
+                }
+            });
+
+            // Event listeners for mouse leaving and entering the canvas
+            canvas.addEventListener('mouseleave', function (e) {
+                if (gameStarted && !gameOver && !gameEnding) {
+                    pauseGame();
+                }
+            });
+
+            canvas.addEventListener('mouseenter', function (e) {
+                if (gameStarted && paused) {
+                    resumeGame();
+                }
+            });
+
+            // Event listener for mouse entering the paused overlay to resume the game
+            pausedOverlay.addEventListener('mouseenter', function (e) {
+                if (gameStarted && paused) {
+                    resumeGame();
+                }
+            });
+
+            // Resize canvas to fit the window
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                console.log(`Canvas resized to ${canvas.width}x${canvas.height}`);
+                generateHeartPoints(); // Regenerate heart points to fit new size
+                if (!gameStarted) {
+                    setBallStartingPosition();
+                }
+            }
+            window.addEventListener('resize', resizeCanvas);
+
+            // Generate heart shape points with uniform arc-length spacing
+            function generateHeartPoints() {
+                heartPoints = [];
+                let t = 0;
+                const deltaT = 0.001; // Initial t increment
+                let lastPoint = calculateHeartPoint(t);
+                heartPoints.push(lastPoint);
+                t += deltaT;
+
+                while (t < 2 * Math.PI) {
+                    let currentPoint = calculateHeartPoint(t);
+                    let distance = Math.hypot(currentPoint.x - lastPoint.x, currentPoint.y - lastPoint.y);
+                    if (distance >= desiredArcLength) {
+                        heartPoints.push(currentPoint);
+                        lastPoint = currentPoint;
+                    }
+                    t += deltaT;
+                }
+
+                // Scale and center the heart
+                const scale = Math.min(canvas.width, canvas.height) / 40;
+                heartPoints = heartPoints.map(point => ({
+                    x: point.x * scale + canvas.width / 2,
+                    y: point.y * scale + canvas.height / 2
+                }));
+
+                console.log(`Generated ${heartPoints.length} heart points.`);
+
+                // Create the heart path for collision detection
+                heartPath = new Path2D();
+                heartPath.moveTo(heartPoints[0].x, heartPoints[0].y);
+                for (let i = 1; i < heartPoints.length; i++) {
+                    heartPath.lineTo(heartPoints[i].x, heartPoints[i].y);
+                }
+                heartPath.closePath();
+
+                // Calculate paddleLength based on desired physical length
+                // Approximate average distance between points
+                let totalDistance = 0;
+                for (let i = 1; i < heartPoints.length; i++) {
+                    totalDistance += Math.hypot(heartPoints[i].x - heartPoints[i - 1].x, heartPoints[i].y - heartPoints[i - 1].y);
+                }
+                const averageDistance = totalDistance / (heartPoints.length - 1);
+                paddleLength = Math.round(paddlePixelLength / averageDistance);
+                console.log(`Paddle length set to ${paddleLength} points.`);
+            }
+
+            // Calculate a point on the heart for a given t
+            function calculateHeartPoint(t) {
+                // Heart shape parametric equations
+                let x = 16 * Math.pow(Math.sin(t), 3);
+                let y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+                return { x: x, y: -y }; // Invert y for canvas coordinates
+            }
+
+            // Set ball starting position inside the heart
+            function setBallStartingPosition() {
+                // Start at the center of the heart
+                ball.x = canvas.width / 2;
+                ball.y = canvas.height / 2;
+                console.log(`Ball starting position set to (${ball.x}, ${ball.y})`);
+
+                // Initialize velocity if not set
+                if (!gameStarted) {
+                    initializeBallVelocity();
                 }
             }
 
-            ctx.stroke();
+            // Initialize ball velocity with a random angle
+            function initializeBallVelocity() {
+                let angleDegrees = Math.random() * 120 + 30; // 30 to 150 degrees
+                let angleRadians = angleDegrees * (Math.PI / 180);
+                ball.velocity.x = ball.speed * Math.cos(angleRadians);
+                ball.velocity.y = ball.speed * Math.sin(angleRadians);
+                console.log(`Ball velocity initialized to (${ball.velocity.x.toFixed(2)}, ${ball.velocity.y.toFixed(2)})`);
+            }
 
-            // Add a brief glow effect if paddle was hit
-            if (isPaddleHit) {
+            // Reflect the ball's velocity vector based on the normal vector
+            function reflectVelocity(incident, normal) {
+                // Normalize the normal vector
+                let normLength = Math.hypot(normal.x, normal.y);
+                if (normLength === 0) {
+                    console.warn("Normal vector has zero length. Velocity not reflected.");
+                    return { x: incident.x, y: incident.y }; // Prevent division by zero
+                }
+                let normalUnit = { x: normal.x / normLength, y: normal.y / normLength };
+
+                // Compute dot product
+                let dot = incident.x * normalUnit.x + incident.y * normalUnit.y;
+
+                // Compute reflected vector
+                let reflected = {
+                    x: incident.x - 2 * dot * normalUnit.x,
+                    y: incident.y - 2 * dot * normalUnit.y
+                };
+
+                console.log(`Velocity reflected to (${reflected.x.toFixed(2)}, ${reflected.y.toFixed(2)})`);
+                return reflected;
+            }
+
+            // Draw heart outline with dotted line
+            function drawHeart() {
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]); // Dotted line pattern
+                ctx.stroke(heartPath);
+                ctx.setLineDash([]); // Reset to solid for other drawings
+                // Optional: Draw filled heart for visibility
+                // ctx.fillStyle = 'rgba(255, 0, 0, 0.1)';
+                // ctx.fill(heartPath);
+            }
+
+            // Draw paddle with increased thickness and consistent length
+            function drawPaddle() {
                 ctx.beginPath();
-                ctx.strokeStyle = 'yellow';
-                ctx.lineWidth = 30; // Slightly thicker for glow effect
-                ctx.shadowBlur = 40;
-                ctx.shadowColor = 'yellow';
+                ctx.strokeStyle = 'magenta';
+                ctx.lineWidth = 25; // Increased for better visibility
+                ctx.lineJoin = 'round';
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = 'magenta';
+                let startIndex = Math.floor(paddleStartIndex) % heartPoints.length;
+                let endIndex = (startIndex + paddleLength) % heartPoints.length;
+
+                // Handle wrap-around
                 if (startIndex < endIndex) {
                     ctx.moveTo(heartPoints[startIndex].x, heartPoints[startIndex].y);
                     for (let i = startIndex + 1; i <= endIndex; i++) {
@@ -449,344 +457,381 @@
                         ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
                     }
                 }
+
                 ctx.stroke();
-                ctx.shadowBlur = 0; // Reset shadow
-                isPaddleHit = false; // Reset the flag
-            }
 
-            ctx.shadowBlur = 0; // Reset shadow for other drawings
-        }
-
-        // Update target paddle index based on pointer position
-        function updateTargetPaddleIndex() {
-            let minDistance = Infinity;
-            let newTargetPaddleStart = targetPaddleStartIndex;
-            for (let i = 0; i < heartPoints.length; i++) {
-                let dx = pointerPosition.x - heartPoints[i].x;
-                let dy = pointerPosition.y - heartPoints[i].y;
-                let distance = dx * dx + dy * dy;
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    newTargetPaddleStart = i;
+                // Add a brief glow effect if paddle was hit
+                if (isPaddleHit) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = 'yellow';
+                    ctx.lineWidth = 30; // Slightly thicker for glow effect
+                    ctx.shadowBlur = 40;
+                    ctx.shadowColor = 'yellow';
+                    if (startIndex < endIndex) {
+                        ctx.moveTo(heartPoints[startIndex].x, heartPoints[startIndex].y);
+                        for (let i = startIndex + 1; i <= endIndex; i++) {
+                            ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
+                        }
+                    } else {
+                        ctx.moveTo(heartPoints[startIndex].x, heartPoints[startIndex].y);
+                        for (let i = startIndex + 1; i < heartPoints.length; i++) {
+                            ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
+                        }
+                        for (let i = 0; i <= endIndex; i++) {
+                            ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
+                        }
+                    }
+                    ctx.stroke();
+                    ctx.shadowBlur = 0; // Reset shadow
+                    isPaddleHit = false; // Reset the flag
                 }
-            }
-            targetPaddleStartIndex = newTargetPaddleStart;
-        }
 
-        // Update paddle based on keyboard input with time-based movement
-        function updatePaddleKeyboard(deltaTime) {
-            let movement = 0;
-            if (keyboardControl.left) {
-                movement -= keyboardMoveSpeed * deltaTime;
-            }
-            if (keyboardControl.right) {
-                movement += keyboardMoveSpeed * deltaTime;
-            }
-            targetPaddleStartIndex += movement;
-            targetPaddleStartIndex = (targetPaddleStartIndex + heartPoints.length) % heartPoints.length;
-        }
-
-        // Update paddle towards target index for smooth touch/mouse control
-        function updatePaddleTowardsTarget(deltaTime) {
-            if (Math.abs(targetPaddleStartIndex - paddleStartIndex) < 0.1) return; // Threshold to prevent jitter
-
-            let difference = targetPaddleStartIndex - paddleStartIndex;
-
-            // Handle wrap-around difference
-            if (difference > heartPoints.length / 2) {
-                difference -= heartPoints.length;
-            } else if (difference < -heartPoints.length / 2) {
-                difference += heartPoints.length;
+                ctx.shadowBlur = 0; // Reset shadow for other drawings
             }
 
-            let direction = difference > 0 ? 1 : -1;
-
-            let movement = paddleSpeed * deltaTime * 0.5; // Adjust multiplier for smoother movement
-
-            if (Math.abs(difference) < movement) {
-                paddleStartIndex = targetPaddleStartIndex;
-            } else {
-                paddleStartIndex += direction * movement;
-            }
-
-            // Wrap around if necessary
-            paddleStartIndex = (paddleStartIndex + heartPoints.length) % heartPoints.length;
-        }
-
-        // Update ball position and handle collisions
-        function updateBall() {
-            if (gameEnding || gameOver || paused) {
-                // Continue moving the ball off-screen or do nothing if paused
-                if (!paused) {
-                    ball.x += ball.velocity.x;
-                    ball.y += ball.velocity.y;
-
-                    // Check if the ball is completely off the screen
-                    if (ball.x < -ball.radius || ball.x > canvas.width + ball.radius ||
-                        ball.y < -ball.radius || ball.y > canvas.height + ball.radius) {
-                        // End the game after the ball has flown off-screen
-                        gameOver = true;
-                        cancelAnimationFrame(animationFrameId);
-                        document.getElementById('gameOver').style.display = 'block';
-                        document.getElementById('restartButton').style.display = 'block';
-                        // Remove 'playing' class to show cursor again
-                        document.body.classList.remove('playing');
+            // Update target paddle index based on pointer position
+            function updateTargetPaddleIndex() {
+                let minDistance = Infinity;
+                let newTargetPaddleStart = targetPaddleStartIndex;
+                for (let i = 0; i < heartPoints.length; i++) {
+                    let dx = pointerPosition.x - heartPoints[i].x;
+                    let dy = pointerPosition.y - heartPoints[i].y;
+                    let distance = dx * dx + dy * dy;
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        newTargetPaddleStart = i;
                     }
                 }
-                return; // Exit the function to prevent further collision checks
+                targetPaddleStartIndex = newTargetPaddleStart;
+                console.log(`Target paddle index updated to ${targetPaddleStartIndex}`);
             }
 
-            // Move the ball
-            ball.x += ball.velocity.x;
-            ball.y += ball.velocity.y;
-
-            // Check if the ball is outside the heart boundary
-            let isCurrentlyOutside = !ctx.isPointInPath(heartPath, ball.x, ball.y);
-
-            if (isCurrentlyOutside && !isBallOutside) {
-                // Ball has just moved outside - initiate game ending sequence
-                gameEnding = true;
-                return;
+            // Directly set paddle position to pointer (for mobile devices)
+            function setPaddleToPointer() {
+                let minDistance = Infinity;
+                let closestIndex = 0;
+                for (let i = 0; i < heartPoints.length; i++) {
+                    let dx = pointerPosition.x - heartPoints[i].x;
+                    let dy = pointerPosition.y - heartPoints[i].y;
+                    let distance = dx * dx + dy * dy;
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestIndex = i;
+                    }
+                }
+                paddleStartIndex = closestIndex;
+                targetPaddleStartIndex = closestIndex;
+                console.log(`Paddle position set to index ${closestIndex}`);
             }
 
-            // Update isBallOutside flag
-            isBallOutside = isCurrentlyOutside;
+            // Update paddle based on keyboard input with time-based movement
+            function updatePaddleKeyboard(deltaTime) {
+                let movement = 0;
+                if (keyboardControl.left) {
+                    movement -= keyboardMoveSpeed * deltaTime;
+                }
+                if (keyboardControl.right) {
+                    movement += keyboardMoveSpeed * deltaTime;
+                }
+                targetPaddleStartIndex += movement;
+                targetPaddleStartIndex = (targetPaddleStartIndex + heartPoints.length) % heartPoints.length;
+                console.log(`Keyboard movement: ${movement.toFixed(2)}, new target index: ${targetPaddleStartIndex}`);
+            }
 
-            // Check collision with paddle
-            if (isBallCollidingWithPaddle()) {
-                // Find the collision point
-                let collisionPoint = findCollisionPoint();
+            // Update paddle towards target index for smooth touch/mouse control (Non-Mobile)
+            function updatePaddleTowardsTarget(deltaTime) {
+                if (isMobile) return; // Skip smoothing for mobile devices
 
-                if (collisionPoint) {
-                    // Calculate normal vector at collision point
-                    let normalVector = { x: ball.x - collisionPoint.x, y: ball.y - collisionPoint.y };
+                if (Math.abs(targetPaddleStartIndex - paddleStartIndex) < 0.1) return; // Threshold to prevent jitter
 
-                    // Reflect the velocity vector
-                    let reflectedVelocity = reflectVelocity(ball.velocity, normalVector);
-                    ball.velocity = reflectedVelocity;
+                let difference = targetPaddleStartIndex - paddleStartIndex;
 
-                    // Increase score
-                    score++;
-                    updateScoreboard();
+                // Handle wrap-around difference
+                if (difference > heartPoints.length / 2) {
+                    difference -= heartPoints.length;
+                } else if (difference < -heartPoints.length / 2) {
+                    difference += heartPoints.length;
+                }
 
-                    // Increase ball speed slightly
-                    ball.speed += 0.2; // Adjust the increment as needed
-                    let speedRatio = ball.speed / Math.hypot(ball.velocity.x, ball.velocity.y);
-                    ball.velocity.x *= speedRatio;
-                    ball.velocity.y *= speedRatio;
+                let direction = difference > 0 ? 1 : -1;
 
-                    // Move ball slightly away from paddle to prevent sticking
-                    ball.x += ball.velocity.x * 2;
-                    ball.y += ball.velocity.y * 2;
+                let movement = paddleSpeed * deltaTime * 0.5; // Adjust multiplier for smoother movement
 
-                    // Set paddle hit flag for visual feedback
-                    isPaddleHit = true;
+                if (Math.abs(difference) < movement) {
+                    paddleStartIndex = targetPaddleStartIndex;
+                } else {
+                    paddleStartIndex += direction * movement;
+                }
+
+                // Wrap around if necessary
+                paddleStartIndex = (paddleStartIndex + heartPoints.length) % heartPoints.length;
+                console.log(`Paddle moved to index ${paddleStartIndex}`);
+            }
+
+            // Update ball position and handle collisions
+            function updateBall() {
+                if (gameEnding || gameOver || paused) {
+                    // Continue moving the ball off-screen or do nothing if paused
+                    if (!paused) {
+                        ball.x += ball.velocity.x;
+                        ball.y += ball.velocity.y;
+
+                        // Check if the ball is completely off the screen
+                        if (ball.x < -ball.radius || ball.x > canvas.width + ball.radius ||
+                            ball.y < -ball.radius || ball.y > canvas.height + ball.radius) {
+                            // End the game after the ball has flown off-screen
+                            gameOver = true;
+                            cancelAnimationFrame(animationFrameId);
+                            document.getElementById('gameOver').style.display = 'block';
+                            document.getElementById('restartButton').style.display = 'block';
+                            // Remove 'playing' class to show cursor again
+                            document.body.classList.remove('playing');
+                            console.log("Game over: Ball flew off-screen.");
+                        }
+                    }
+                    return; // Exit the function to prevent further collision checks
+                }
+
+                // Move the ball
+                ball.x += ball.velocity.x;
+                ball.y += ball.velocity.y;
+                console.log(`Ball position: (${ball.x.toFixed(2)}, ${ball.y.toFixed(2)})`);
+
+                // Check if the ball is outside the heart boundary
+                let isCurrentlyOutside = !ctx.isPointInPath(heartPath, ball.x, ball.y);
+
+                if (isCurrentlyOutside && !isBallOutside) {
+                    // Ball has just moved outside - initiate game ending sequence
+                    gameEnding = true;
+                    console.log("Ball moved outside the heart boundary.");
+                    return;
+                }
+
+                // Update isBallOutside flag
+                isBallOutside = isCurrentlyOutside;
+
+                // Check collision with paddle
+                if (isBallCollidingWithPaddle()) {
+                    // Find the collision point
+                    let collisionPoint = findCollisionPoint();
+
+                    if (collisionPoint) {
+                        // Calculate normal vector at collision point
+                        let normalVector = { x: ball.x - collisionPoint.x, y: ball.y - collisionPoint.y };
+
+                        // Reflect the velocity vector
+                        let reflectedVelocity = reflectVelocity(ball.velocity, normalVector);
+                        ball.velocity = reflectedVelocity;
+
+                        // Increase score
+                        score++;
+                        updateScoreboard();
+
+                        // Increase ball speed slightly
+                        ball.speed += 0.2; // Adjust the increment as needed
+                        let speedRatio = ball.speed / Math.hypot(ball.velocity.x, ball.velocity.y);
+                        ball.velocity.x *= speedRatio;
+                        ball.velocity.y *= speedRatio;
+
+                        // Move ball slightly away from paddle to prevent sticking
+                        ball.x += ball.velocity.x * 2;
+                        ball.y += ball.velocity.y * 2;
+
+                        // Set paddle hit flag for visual feedback
+                        isPaddleHit = true;
+                        console.log(`Paddle hit! New velocity: (${ball.velocity.x.toFixed(2)}, ${ball.velocity.y.toFixed(2)})`);
+                    }
                 }
             }
-        }
 
-        // Find the collision point between the ball and the paddle
-        function findCollisionPoint() {
-            let startIndex = Math.floor(paddleStartIndex) % heartPoints.length;
-            let endIndex = (startIndex + paddleLength) % heartPoints.length;
+            // Find the collision point between the ball and the paddle
+            function findCollisionPoint() {
+                let startIndex = Math.floor(paddleStartIndex) % heartPoints.length;
+                let endIndex = (startIndex + paddleLength) % heartPoints.length;
 
-            // Gather paddle points
-            let paddlePoints = [];
-            if (startIndex < endIndex) {
-                for (let i = startIndex; i <= endIndex; i++) {
-                    paddlePoints.push(heartPoints[i]);
+                // Gather paddle points
+                let paddlePoints = [];
+                if (startIndex < endIndex) {
+                    for (let i = startIndex; i <= endIndex; i++) {
+                        paddlePoints.push(heartPoints[i]);
+                    }
+                } else {
+                    for (let i = startIndex; i < heartPoints.length; i++) {
+                        paddlePoints.push(heartPoints[i]);
+                    }
+                    for (let i = 0; i <= endIndex; i++) {
+                        paddlePoints.push(heartPoints[i]);
+                    }
                 }
-            } else {
-                for (let i = startIndex; i < heartPoints.length; i++) {
-                    paddlePoints.push(heartPoints[i]);
+
+                // Find the closest paddle point to the ball
+                let minDistance = Infinity;
+                let closestPoint = null;
+                for (let point of paddlePoints) {
+                    let distance = Math.hypot(ball.x - point.x, ball.y - point.y);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestPoint = point;
+                    }
                 }
-                for (let i = 0; i <= endIndex; i++) {
-                    paddlePoints.push(heartPoints[i]);
+
+                // If the closest point is within collision range, return it
+                if (closestPoint && minDistance <= ball.radius + (ctx.lineWidth / 2)) {
+                    return closestPoint;
                 }
+
+                return null;
             }
 
-            // Find the closest paddle point to the ball
-            let minDistance = Infinity;
-            let closestPoint = null;
-            for (let point of paddlePoints) {
-                let distance = Math.hypot(ball.x - point.x, ball.y - point.y);
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    closestPoint = point;
-                }
+            // Check if ball is colliding with paddle
+            function isBallCollidingWithPaddle() {
+                return findCollisionPoint() !== null;
             }
 
-            // If the closest point is within collision range, return it
-            if (closestPoint && minDistance <= ball.radius + (ctx.lineWidth / 2)) {
-                return closestPoint;
+            // Draw ball
+            function drawBall() {
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius, 0, 2 * Math.PI);
+                ctx.fillStyle = 'magenta';
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = 'magenta';
+                ctx.fill();
+                ctx.shadowBlur = 0; // Reset shadow
             }
 
-            return null;
-        }
-
-        // Check if ball is colliding with paddle
-        function isBallCollidingWithPaddle() {
-            return findCollisionPoint() !== null;
-        }
-
-        // Draw ball
-        function drawBall() {
-            ctx.beginPath();
-            ctx.arc(ball.x, ball.y, ball.radius, 0, 2 * Math.PI);
-            ctx.fillStyle = 'magenta';
-            ctx.shadowBlur = 20;
-            ctx.shadowColor = 'magenta';
-            ctx.fill();
-            ctx.shadowBlur = 0; // Reset shadow
-        }
-
-        // Update scoreboard
-        function updateScoreboard() {
-            document.querySelector('#scoreboard .score').innerText = `Score: ${score}`;
-        }
-
-        // Pause the game
-        function pauseGame() {
-            paused = true;
-            cancelAnimationFrame(animationFrameId);
-            pausedOverlay.style.display = 'flex';
-            console.log('Game paused');
-        }
-
-        // Resume the game
-        function resumeGame() {
-            paused = false;
-            pausedOverlay.style.display = 'none';
-            lastFrameTime = performance.now(); // Reset the lastFrameTime to avoid large deltaTime
-            console.log('Game resumed');
-            gameLoop(); // Restart the game loop
-        }
-
-        // End game and show Game Over screen
-        function endGame() {
-            gameOver = true;
-            cancelAnimationFrame(animationFrameId);
-            document.getElementById('gameOver').style.display = 'block';
-            document.getElementById('restartButton').style.display = 'block';
-            // Remove 'playing' class to show cursor again
-            document.body.classList.remove('playing');
-        }
-
-        // Main game loop with deltaTime for smooth movement
-        let lastFrameTime = performance.now();
-        function gameLoop(currentTime = performance.now()) {
-            if (gameOver || paused) return;
-
-            // Calculate deltaTime in seconds
-            let deltaTime = (currentTime - lastFrameTime) / 1000;
-            lastFrameTime = currentTime;
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            drawHeart();
-            drawPaddle();
-            updateBall();
-            drawBall();
-            updateScoreboard();
-
-            // Handle keyboard input with deltaTime
-            updatePaddleKeyboard(deltaTime);
-
-            // Handle touch/mouse control towards target paddle index
-            updatePaddleTowardsTarget(deltaTime);
-
-            animationFrameId = requestAnimationFrame(gameLoop);
-        }
-
-        // Update paddle towards target index for smooth touch/mouse control
-        function updatePaddleTowardsTarget(deltaTime) {
-            if (Math.abs(targetPaddleStartIndex - paddleStartIndex) < 0.1) return; // Threshold to prevent jitter
-
-            let difference = targetPaddleStartIndex - paddleStartIndex;
-
-            // Handle wrap-around difference
-            if (difference > heartPoints.length / 2) {
-                difference -= heartPoints.length;
-            } else if (difference < -heartPoints.length / 2) {
-                difference += heartPoints.length;
+            // Update scoreboard
+            function updateScoreboard() {
+                document.querySelector('#scoreboard .score').innerText = `Score: ${score}`;
+                console.log(`Score updated to ${score}`);
             }
 
-            let direction = difference > 0 ? 1 : -1;
-
-            let movement = paddleSpeed * deltaTime * 0.5; // Adjust multiplier for smoother movement
-
-            if (Math.abs(difference) < movement) {
-                paddleStartIndex = targetPaddleStartIndex;
-            } else {
-                paddleStartIndex += direction * movement;
+            // Pause the game
+            function pauseGame() {
+                paused = true;
+                cancelAnimationFrame(animationFrameId);
+                pausedOverlay.style.display = 'flex';
+                console.log('Game paused.');
             }
 
-            // Wrap around if necessary
-            paddleStartIndex = (paddleStartIndex + heartPoints.length) % heartPoints.length;
-        }
+            // Resume the game
+            function resumeGame() {
+                paused = false;
+                pausedOverlay.style.display = 'none';
+                lastFrameTime = performance.now(); // Reset the lastFrameTime to avoid large deltaTime
+                console.log('Game resumed.');
+                gameLoop(); // Restart the game loop
+            }
 
-        // Start the game
-        function startGame() {
-            // Hide start button
-            document.getElementById('startButton').style.display = 'none';
-            // Add 'playing' class to hide cursor
-            document.body.classList.add('playing');
-            // Reset variables
-            score = 0;
-            gameStarted = true;
-            gameOver = false;
-            gameEnding = false;
-            paused = false;
-            ball.speed = 2.5; // Slower starting speed
-            setBallStartingPosition();
-            initializeBallVelocity(); // Set random initial velocity
-            updateScoreboard();
-            // Reset lastFrameTime for consistent deltaTime
-            lastFrameTime = performance.now();
-            // Hide paused overlay if visible
-            pausedOverlay.style.display = 'none';
-            // Initialize target paddle index
-            targetPaddleStartIndex = paddleStartIndex;
-            // Start game loop
-            gameLoop();
-            console.log('Game started');
-        }
+            // End game and show Game Over screen
+            function endGame() {
+                gameOver = true;
+                cancelAnimationFrame(animationFrameId);
+                document.getElementById('gameOver').style.display = 'block';
+                document.getElementById('restartButton').style.display = 'block';
+                // Remove 'playing' class to show cursor again
+                document.body.classList.remove('playing');
+                console.log("Game over.");
+            }
 
-        // Restart the game
-        function restartGame() {
-            // Hide game over and restart button
-            document.getElementById('gameOver').style.display = 'none';
-            document.getElementById('restartButton').style.display = 'none';
-            // Add 'playing' class to hide cursor
-            document.body.classList.add('playing');
-            // Reset variables
-            score = 0;
-            gameStarted = true;
-            gameOver = false;
-            gameEnding = false;
-            paused = false;
-            ball.speed = 2.5; // Slower starting speed
-            setBallStartingPosition();
-            initializeBallVelocity(); // Set random initial velocity
-            updateScoreboard();
-            // Reset lastFrameTime for consistent deltaTime
-            lastFrameTime = performance.now();
-            // Hide paused overlay if visible
-            pausedOverlay.style.display = 'none';
-            // Initialize target paddle index
-            targetPaddleStartIndex = paddleStartIndex;
-            // Start game loop
-            gameLoop();
-            console.log('Game restarted');
-        }
+            // Main game loop with deltaTime for smooth movement
+            let lastFrameTime = performance.now();
+            function gameLoop(currentTime = performance.now()) {
+                if (gameOver || paused) return;
 
-        // Initialize game on page load
-        resizeCanvas();
-        generateHeartPoints();
-        setBallStartingPosition(); // Ensure ball starts inside the heart
+                // Calculate deltaTime in seconds
+                let deltaTime = (currentTime - lastFrameTime) / 1000;
+                lastFrameTime = currentTime;
 
-        // Show start button
-        document.getElementById('startButton').style.display = 'block';
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                drawHeart();
+                drawPaddle();
+                updateBall();
+                drawBall();
+                updateScoreboard();
+
+                // Handle keyboard input with deltaTime
+                updatePaddleKeyboard(deltaTime);
+
+                // Handle touch/mouse control towards target paddle index
+                updatePaddleTowardsTarget(deltaTime);
+
+                animationFrameId = requestAnimationFrame(gameLoop);
+            }
+
+            // Select buttons
+            const startButton = document.getElementById('startButton');
+            const restartButton = document.getElementById('restartButton');
+
+            // Add event listeners
+            startButton.addEventListener('click', startGame);
+            restartButton.addEventListener('click', restartGame);
+
+            // Define startGame and restartGame normally
+            function startGame() {
+                console.log("Start Game button clicked.");
+                // Hide start button
+                startButton.style.display = 'none';
+                // Add 'playing' class to hide cursor
+                document.body.classList.add('playing');
+                // Reset variables
+                score = 0;
+                gameStarted = true;
+                gameOver = false;
+                gameEnding = false;
+                paused = false;
+                ball.speed = 2.5; // Slower starting speed
+                setBallStartingPosition();
+                initializeBallVelocity(); // Set random initial velocity
+                updateScoreboard();
+                // Reset lastFrameTime for consistent deltaTime
+                lastFrameTime = performance.now();
+                // Hide paused overlay if visible
+                pausedOverlay.style.display = 'none';
+                // Initialize target paddle index
+                targetPaddleStartIndex = paddleStartIndex;
+                // Start game loop
+                gameLoop();
+                console.log('Game started.');
+            }
+
+            function restartGame() {
+                console.log("Restart Game button clicked.");
+                // Hide game over and restart button
+                document.getElementById('gameOver').style.display = 'none';
+                restartButton.style.display = 'none';
+                // Add 'playing' class to hide cursor
+                document.body.classList.add('playing');
+                // Reset variables
+                score = 0;
+                gameStarted = true;
+                gameOver = false;
+                gameEnding = false;
+                paused = false;
+                ball.speed = 2.5; // Slower starting speed
+                setBallStartingPosition();
+                initializeBallVelocity(); // Set random initial velocity
+                updateScoreboard();
+                // Reset lastFrameTime for consistent deltaTime
+                lastFrameTime = performance.now();
+                // Hide paused overlay if visible
+                pausedOverlay.style.display = 'none';
+                // Initialize target paddle index
+                targetPaddleStartIndex = paddleStartIndex;
+                // Start game loop
+                gameLoop();
+                console.log('Game restarted.');
+            }
+
+            // Initialize game on page load
+            resizeCanvas();
+            generateHeartPoints();
+            setBallStartingPosition(); // Ensure ball starts inside the heart
+
+            // Show start button
+            startButton.style.display = 'block';
+            console.log("Start Game button displayed.");
+        });
     </script>
 </body>
 </html>
