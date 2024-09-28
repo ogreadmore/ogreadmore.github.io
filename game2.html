@@ -64,7 +64,7 @@
 
         #restartButton {
             position: absolute;
-            top: 55%; /* Positioned 20px below the GAME OVER message */
+            top: 55%; /* Positioned 15% below the GAME OVER message */
             left: 50%;
             transform: translate(-50%, -50%);
             background-color: transparent;
@@ -194,6 +194,7 @@
         const paddlePixelLength = 400; // Doubled desired physical paddle length in pixels
         let paddleLength = 0; // Number of points in the paddle, to be calculated
         let paddleStartIndex = 0.0; // Allow floating point for smooth movement
+        let targetPaddleStartIndex = 0.0; // Target index for smooth paddle movement
         let score = 0;
         let gameStarted = false;
         let gameOver = false;
@@ -216,8 +217,9 @@
         // Keyboard controls
         let keyboardControl = { left: false, right: false };
 
-        // Paddle movement speed in points per second
-        const paddleSpeed = 200; // Adjust as needed for desired speed
+        // Paddle movement speeds
+        const paddleSpeed = 150; // Used for moving towards target
+        const keyboardMoveSpeed = 100; // Speed for keyboard controls (points per second)
 
         // Flag to track if the ball is currently outside the heart
         let isBallOutside = false;
@@ -233,7 +235,7 @@
             pointerPosition.x = e.clientX;
             pointerPosition.y = e.clientY;
             if (gameStarted && !gameOver && !gameEnding && !paused) {
-                updatePaddleIndex();
+                updateTargetPaddleIndex();
             }
         });
 
@@ -243,7 +245,7 @@
             pointerPosition.x = e.touches[0].clientX;
             pointerPosition.y = e.touches[0].clientY;
             if (gameStarted && !gameOver && !gameEnding && !paused) {
-                updatePaddleIndex();
+                updateTargetPaddleIndex();
             }
         }, { passive: false });
 
@@ -455,35 +457,60 @@
             ctx.shadowBlur = 0; // Reset shadow for other drawings
         }
 
-        // Update paddle index based on pointer position
-        function updatePaddleIndex() {
+        // Update target paddle index based on pointer position
+        function updateTargetPaddleIndex() {
             let minDistance = Infinity;
-            let newPaddleStart = paddleStartIndex;
+            let newTargetPaddleStart = targetPaddleStartIndex;
             for (let i = 0; i < heartPoints.length; i++) {
                 let dx = pointerPosition.x - heartPoints[i].x;
                 let dy = pointerPosition.y - heartPoints[i].y;
                 let distance = dx * dx + dy * dy;
                 if (distance < minDistance) {
                     minDistance = distance;
-                    newPaddleStart = i;
+                    newTargetPaddleStart = i;
                 }
             }
-            paddleStartIndex = newPaddleStart;
+            targetPaddleStartIndex = newTargetPaddleStart;
         }
 
         // Update paddle based on keyboard input with time-based movement
         function updatePaddleKeyboard(deltaTime) {
             let movement = 0;
             if (keyboardControl.left) {
-                movement -= paddleSpeed * deltaTime;
+                movement -= keyboardMoveSpeed * deltaTime;
             }
             if (keyboardControl.right) {
-                movement += paddleSpeed * deltaTime;
+                movement += keyboardMoveSpeed * deltaTime;
             }
-            paddleStartIndex = (paddleStartIndex + movement) % heartPoints.length;
-            if (paddleStartIndex < 0) {
-                paddleStartIndex += heartPoints.length;
+            targetPaddleStartIndex += movement;
+            targetPaddleStartIndex = (targetPaddleStartIndex + heartPoints.length) % heartPoints.length;
+        }
+
+        // Update paddle towards target index for smooth touch/mouse control
+        function updatePaddleTowardsTarget(deltaTime) {
+            if (Math.abs(targetPaddleStartIndex - paddleStartIndex) < 0.1) return; // Threshold to prevent jitter
+
+            let difference = targetPaddleStartIndex - paddleStartIndex;
+
+            // Handle wrap-around difference
+            if (difference > heartPoints.length / 2) {
+                difference -= heartPoints.length;
+            } else if (difference < -heartPoints.length / 2) {
+                difference += heartPoints.length;
             }
+
+            let direction = difference > 0 ? 1 : -1;
+
+            let movement = paddleSpeed * deltaTime * 0.5; // Adjust multiplier for smoother movement
+
+            if (Math.abs(difference) < movement) {
+                paddleStartIndex = targetPaddleStartIndex;
+            } else {
+                paddleStartIndex += direction * movement;
+            }
+
+            // Wrap around if necessary
+            paddleStartIndex = (paddleStartIndex + heartPoints.length) % heartPoints.length;
         }
 
         // Update ball position and handle collisions
@@ -623,7 +650,6 @@
             paused = true;
             cancelAnimationFrame(animationFrameId);
             pausedOverlay.style.display = 'flex';
-            // Optionally, show a message or change styles
             console.log('Game paused');
         }
 
@@ -666,7 +692,37 @@
             // Handle keyboard input with deltaTime
             updatePaddleKeyboard(deltaTime);
 
+            // Handle touch/mouse control towards target paddle index
+            updatePaddleTowardsTarget(deltaTime);
+
             animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        // Update paddle towards target index for smooth touch/mouse control
+        function updatePaddleTowardsTarget(deltaTime) {
+            if (Math.abs(targetPaddleStartIndex - paddleStartIndex) < 0.1) return; // Threshold to prevent jitter
+
+            let difference = targetPaddleStartIndex - paddleStartIndex;
+
+            // Handle wrap-around difference
+            if (difference > heartPoints.length / 2) {
+                difference -= heartPoints.length;
+            } else if (difference < -heartPoints.length / 2) {
+                difference += heartPoints.length;
+            }
+
+            let direction = difference > 0 ? 1 : -1;
+
+            let movement = paddleSpeed * deltaTime * 0.5; // Adjust multiplier for smoother movement
+
+            if (Math.abs(difference) < movement) {
+                paddleStartIndex = targetPaddleStartIndex;
+            } else {
+                paddleStartIndex += direction * movement;
+            }
+
+            // Wrap around if necessary
+            paddleStartIndex = (paddleStartIndex + heartPoints.length) % heartPoints.length;
         }
 
         // Start the game
@@ -689,6 +745,8 @@
             lastFrameTime = performance.now();
             // Hide paused overlay if visible
             pausedOverlay.style.display = 'none';
+            // Initialize target paddle index
+            targetPaddleStartIndex = paddleStartIndex;
             // Start game loop
             gameLoop();
             console.log('Game started');
@@ -715,6 +773,8 @@
             lastFrameTime = performance.now();
             // Hide paused overlay if visible
             pausedOverlay.style.display = 'none';
+            // Initialize target paddle index
+            targetPaddleStartIndex = paddleStartIndex;
             // Start game loop
             gameLoop();
             console.log('Game restarted');
