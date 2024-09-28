@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Heart Pong Game - Corrected Version</title>
+    <title>Heart Pong Game - Enhanced Version</title>
     <style>
         body {
             margin: 0;
@@ -10,8 +10,14 @@
             position: relative;
             height: 100vh;
             width: 100vw;
+            /* Remove cursor: none; to allow cursor visibility when not playing */
+        }
+
+        /* Hide cursor only when the game is playing */
+        body.playing {
             cursor: none;
         }
+
         #gameCanvas {
             position: absolute;
             top: 0;
@@ -19,6 +25,7 @@
             background-color: #000;
             z-index: 5;
         }
+
         #scoreboard {
             position: absolute;
             top: 5%;
@@ -28,7 +35,9 @@
             font-size: 2vh;
             user-select: none;
             z-index: 10;
+            text-align: left;
         }
+
         #startButton, #restartButton {
             position: absolute;
             top: 50%;
@@ -45,9 +54,11 @@
             user-select: none;
             z-index: 15;
         }
+
         #startButton:hover, #restartButton:hover {
             background-color: rgba(255, 255, 255, 0.1);
         }
+
         #gameOver {
             position: absolute;
             top: 40%;
@@ -60,6 +71,7 @@
             pointer-events: none;
             font-family: 'Press Start 2P', cursive;
         }
+
         /* Media Query for Mobile Devices */
         @media only screen and (max-width: 768px) {
             #scoreboard {
@@ -79,7 +91,11 @@
 </head>
 <body>
     <!-- Scoreboard -->
-    <div id="scoreboard">Score: 0<br>Misses Left: 3</div>
+    <div id="scoreboard">
+        <div>Heart Centered</div>
+        <div>Score: 0</div>
+        <div>Misses Left: 3</div>
+    </div>
     <!-- Game Over and Buttons -->
     <div id="gameOver">GAME OVER</div>
     <div id="startButton" onclick="startGame()">START GAME</div>
@@ -95,7 +111,7 @@
         let heartPath = new Path2D();
         let paddleIndex = 0;
         const paddleLength = 50; // Number of points that make up the paddle
-        const paddleSpeed = 5; // Paddle movement speed
+        const paddleSpeed = 5; // Paddle movement speed for keyboard
         let score = 0;
         let misses = 0;
         const maxMisses = 3;
@@ -108,7 +124,7 @@
             x: 0,
             y: 0,
             radius: 8,
-            speed: 3, // Slower initial speed
+            speed: 3, // Initial speed
             angle: Math.PI / 4 // 45 degrees
         };
 
@@ -118,6 +134,13 @@
         // Mouse and touch controls
         let pointerPosition = { x: canvas.width / 2, y: canvas.height / 2 };
 
+        // Keyboard controls
+        let keyboardControl = { left: false, right: false };
+
+        // Flag to track if the ball is currently outside the heart
+        let isBallOutside = false;
+
+        // Event listeners for mouse
         canvas.addEventListener('mousemove', function (e) {
             pointerPosition.x = e.clientX;
             pointerPosition.y = e.clientY;
@@ -126,6 +149,7 @@
             }
         });
 
+        // Event listeners for touch
         canvas.addEventListener('touchmove', function (e) {
             e.preventDefault();
             pointerPosition.x = e.touches[0].clientX;
@@ -134,6 +158,25 @@
                 updatePaddleIndex();
             }
         }, { passive: false });
+
+        // Event listeners for keyboard
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                keyboardControl.left = true;
+            }
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                keyboardControl.right = true;
+            }
+        });
+
+        document.addEventListener('keyup', function(e) {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                keyboardControl.left = false;
+            }
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                keyboardControl.right = false;
+            }
+        });
 
         // Resize canvas to fit the window
         function resizeCanvas() {
@@ -149,7 +192,7 @@
         // Generate heart shape points
         function generateHeartPoints() {
             heartPoints = [];
-            for (let t = 0; t < 2 * Math.PI; t += 0.01) {
+            for (let t = 0; t < 2 * Math.PI; t += 0.005) { // Increased resolution for smoother heart
                 let x = 16 * Math.pow(Math.sin(t), 3);
                 let y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
                 heartPoints.push({ x: x, y: -y });
@@ -187,20 +230,23 @@
                     }
                 }
             }
+            isBallOutside = false; // Reset the outside flag
         }
 
-        // Draw heart outline
+        // Draw heart outline with dotted line
         function drawHeart() {
             ctx.strokeStyle = '#fff';
             ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]); // Dotted line pattern
             ctx.stroke(heartPath);
+            ctx.setLineDash([]); // Reset to solid for other drawings
         }
 
-        // Draw paddle
+        // Draw paddle with increased thickness
         function drawPaddle() {
             ctx.beginPath();
             ctx.strokeStyle = 'magenta';
-            ctx.lineWidth = 5;
+            ctx.lineWidth = 10; // Increased from 5 to 10
             ctx.lineJoin = 'round';
             ctx.shadowBlur = 20;
             ctx.shadowColor = 'magenta';
@@ -239,6 +285,23 @@
             }
         }
 
+        // Update paddle based on keyboard input
+        function updatePaddleKeyboard() {
+            let updated = false;
+            if (keyboardControl.left) {
+                paddleIndex = (paddleIndex - paddleSpeed) % heartPoints.length;
+                if (paddleIndex < 0) paddleIndex += heartPoints.length;
+                updated = true;
+            }
+            if (keyboardControl.right) {
+                paddleIndex = (paddleIndex + paddleSpeed) % heartPoints.length;
+                updated = true;
+            }
+            if (updated) {
+                // Optional: Add smoothing or limits here
+            }
+        }
+
         // Update ball position and handle collisions
         function updateBall() {
             let dx = ball.speed * Math.cos(ball.angle);
@@ -247,35 +310,42 @@
             ball.x += dx;
             ball.y += dy;
 
-            // Check collision with heart boundary
-            if (!ctx.isPointInPath(heartPath, ball.x, ball.y)) {
-                // Find nearest point on heart boundary
-                let minDistance = Infinity;
-                let nearestPoint = null;
-                for (let point of heartPoints) {
-                    let distance = Math.hypot(ball.x - point.x, ball.y - point.y);
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        nearestPoint = point;
-                    }
-                }
+            // Check if the ball is outside the heart boundary
+            let isCurrentlyOutside = !ctx.isPointInPath(heartPath, ball.x, ball.y);
 
-                // Calculate normal at collision point
-                let normalAngle = Math.atan2(ball.y - nearestPoint.y, ball.x - nearestPoint.x);
-                ball.angle = reflectAngle(ball.angle, normalAngle);
-
-                // Increase miss count
+            if (isCurrentlyOutside && !isBallOutside) {
+                // Ball has just moved outside
                 misses++;
                 updateScoreboard();
 
-                // Check for game over
                 if (misses >= maxMisses) {
-                    endGame();
-                }
+                    endGameWithBallFlying();
+                } else {
+                    // Find nearest point on heart boundary
+                    let minDistance = Infinity;
+                    let nearestPoint = null;
+                    for (let point of heartPoints) {
+                        let distance = Math.hypot(ball.x - point.x, ball.y - point.y);
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            nearestPoint = point;
+                        }
+                    }
 
-                // Move ball slightly inside the heart to prevent sticking
-                ball.x += 2 * Math.cos(ball.angle);
-                ball.y += 2 * Math.sin(ball.angle);
+                    // Calculate normal at collision point
+                    let normalAngle = Math.atan2(ball.y - nearestPoint.y, ball.x - nearestPoint.x);
+                    ball.angle = reflectAngle(ball.angle, normalAngle);
+
+                    // Prevent multiple miss increments by setting the flag
+                    isBallOutside = true;
+
+                    // Move ball slightly inside the heart to prevent multiple misses
+                    ball.x += 2 * Math.cos(ball.angle);
+                    ball.y += 2 * Math.sin(ball.angle);
+                }
+            } else if (!isCurrentlyOutside && isBallOutside) {
+                // Ball has moved back inside
+                isBallOutside = false;
             }
 
             // Check collision with paddle
@@ -287,6 +357,9 @@
                 // Increase score
                 score++;
                 updateScoreboard();
+
+                // Increase ball speed slightly
+                ball.speed += 0.2; // Adjust the increment as needed
 
                 // Move ball slightly away from paddle to prevent sticking
                 ball.x += 2 * Math.cos(ball.angle);
@@ -320,8 +393,9 @@
 
             for (let idx of indices) {
                 let point = heartPoints[idx];
+                // Adjust collision detection based on increased paddle thickness
                 let distance = Math.hypot(ball.x - point.x, ball.y - point.y);
-                if (distance <= ball.radius + ctx.lineWidth / 2) {
+                if (distance <= ball.radius + (ctx.lineWidth / 2)) {
                     return true;
                 }
             }
@@ -350,7 +424,29 @@
 
         // Update scoreboard
         function updateScoreboard() {
-            document.getElementById('scoreboard').innerHTML = `Score: ${score}<br>Misses Left: ${maxMisses - misses}`;
+            document.getElementById('scoreboard').innerHTML = `
+                <div>Heart Centered</div>
+                <div>Score: ${score}</div>
+                <div>Misses Left: ${Math.max(maxMisses - misses, 0)}</div>
+            `;
+        }
+
+        // End game by allowing the ball to fly out and then showing game over screen
+        function endGameWithBallFlying() {
+            // Disable further paddle movement
+            keyboardControl.left = false;
+            keyboardControl.right = false;
+
+            // Allow the ball to continue moving off the screen
+            // Set a timeout to end the game after a brief period
+            setTimeout(() => {
+                gameOver = true;
+                cancelAnimationFrame(animationFrameId);
+                document.getElementById('gameOver').style.display = 'block';
+                document.getElementById('restartButton').style.display = 'block';
+                // Remove 'playing' class to show cursor again
+                document.body.classList.remove('playing');
+            }, 1000); // 1 second delay
         }
 
         // Main game loop
@@ -364,6 +460,9 @@
             drawBall();
             updateScoreboard();
 
+            // Handle keyboard input
+            updatePaddleKeyboard();
+
             animationFrameId = requestAnimationFrame(gameLoop);
         }
 
@@ -371,11 +470,14 @@
         function startGame() {
             // Hide start button
             document.getElementById('startButton').style.display = 'none';
+            // Add 'playing' class to hide cursor
+            document.body.classList.add('playing');
             // Reset variables
             score = 0;
             misses = 0;
             gameStarted = true;
             gameOver = false;
+            ball.speed = 3; // Reset speed
             setBallStartingPosition();
             ball.angle = Math.PI / 4; // Reset ball angle
             updateScoreboard();
@@ -383,26 +485,19 @@
             gameLoop();
         }
 
-        // End the game
-        function endGame() {
-            gameOver = true;
-            // Cancel animation frame
-            cancelAnimationFrame(animationFrameId);
-            // Show game over and restart button
-            document.getElementById('gameOver').style.display = 'block';
-            document.getElementById('restartButton').style.display = 'block';
-        }
-
         // Restart the game
         function restartGame() {
             // Hide game over and restart button
             document.getElementById('gameOver').style.display = 'none';
             document.getElementById('restartButton').style.display = 'none';
+            // Add 'playing' class to hide cursor
+            document.body.classList.add('playing');
             // Reset variables
             score = 0;
             misses = 0;
             gameStarted = true;
             gameOver = false;
+            ball.speed = 3; // Reset speed
             setBallStartingPosition();
             ball.angle = Math.PI / 4; // Reset ball angle
             updateScoreboard();
