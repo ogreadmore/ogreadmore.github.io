@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>heart centered</title>
+    <title>Heart Centered</title>
     <style>
         body {
             margin: 0;
@@ -165,19 +165,19 @@
 <body>
     <!-- Scoreboard -->
     <div id="scoreboard">
-        <div class="title">heart centered</div>
-        <div class="score">score: 0</div>
+        <div class="title">Heart Centered</div>
+        <div class="score">Score: 0</div>
     </div>
     <!-- Game Over and Restart Button -->
-    <div id="gameOver">game over</div>
-    <div id="restartButton">restart</div>
+    <div id="gameOver">GAME OVER</div>
+    <div id="restartButton">RESTART</div>
     <!-- Start Button -->
-    <div id="startButton">start game</div>
+    <div id="startButton">START GAME</div>
     <!-- Paused Overlay -->
     <div id="pausedOverlay">
         <div id="pausedOverlayContent">
-            <div>paused</div>
-            <div style="font-size: 2vh; margin-top: 2vh;">move your mouse back to resume</div>
+            <div>PAUSED</div>
+            <div style="font-size: 2vh; margin-top: 2vh;">Move your mouse back to resume</div>
         </div>
     </div>
     <!-- Game Canvas -->
@@ -199,7 +199,7 @@
             let heartPath = new Path2D();
             let heartPoints = [];
             const desiredArcLength = 1; // Desired distance between points in pixels
-            const paddlePixelLength = 400; // Doubled desired physical paddle length in pixels
+            const paddlePixelLength = 400; // Desired physical paddle length in pixels
             let paddleLength = 0; // Number of points in the paddle, to be calculated
             let paddleStartIndex = 0.0; // Allow floating point for smooth movement
             let targetPaddleStartIndex = 0.0; // Target index for smooth paddle movement
@@ -207,7 +207,7 @@
             let gameStarted = false;
             let gameOver = false;
             let gameEnding = false; // Flag to manage game ending sequence
-            let paused = false; // New flag to manage paused state
+            let paused = false; // Flag to manage paused state
             let animationFrameId;
 
             // Ball properties
@@ -616,24 +616,50 @@
                 console.log(`Paddle moved to index ${paddleStartIndex.toFixed(2)}`);
             }
 
-            // Function to check if two line segments (p1-p2 and p3-p4) intersect
-            function getLineIntersection(p1, p2, p3, p4) {
-                const denominator = ((p4.y - p3.y) * (p2.x - p1.x)) - ((p4.x - p3.x) * (p2.y - p1.y));
-                if (denominator === 0) {
-                    return null; // Parallel lines
+            // Function to check if a circle (ball) intersects with a line segment
+            function detectCircleLineSegmentIntersection(ball, prevBall, segment) {
+                const x1 = segment.start.x;
+                const y1 = segment.start.y;
+                const x2 = segment.end.x;
+                const y2 = segment.end.y;
+
+                const dx = ball.x - prevBall.x;
+                const dy = ball.y - prevBall.y;
+
+                const fx = prevBall.x - x1;
+                const fy = prevBall.y - y1;
+
+                const segDx = x2 - x1;
+                const segDy = y2 - y1;
+
+                const a = dx * dx + dy * dy;
+                const b = 2 * (fx * dx + fy * dy);
+                const c = (fx * fx + fy * fy) - ball.radius * ball.radius;
+
+                let discriminant = b * b - 4 * a * c;
+
+                if (discriminant < 0) {
+                    // No intersection
+                    return null;
                 }
 
-                const ua = (((p4.x - p3.x) * (p1.y - p3.y)) - ((p4.y - p3.y) * (p1.x - p3.x))) / denominator;
-                const ub = (((p2.x - p1.x) * (p1.y - p3.y)) - ((p2.y - p1.y) * (p1.x - p3.x))) / denominator;
+                discriminant = Math.sqrt(discriminant);
 
-                if (ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1) {
-                    // Intersection point
-                    const x = p1.x + ua * (p2.x - p1.x);
-                    const y = p1.y + ua * (p2.y - p1.y);
-                    return { x, y };
+                let t1 = (-b - discriminant) / (2 * a);
+                let t2 = (-b + discriminant) / (2 * a);
+
+                if ((t1 >= 0 && t1 <= 1) || (t2 >= 0 && t2 <= 1)) {
+                    let t = t1;
+                    if (t1 < 0 || t1 > 1) t = t2;
+                    if (t < 0 || t > 1) return null;
+
+                    const collisionX = prevBall.x + dx * t;
+                    const collisionY = prevBall.y + dy * t;
+
+                    return { x: collisionX, y: collisionY };
                 }
 
-                return null; // No intersection
+                return null;
             }
 
             // Function to retrieve all line segments of the paddle
@@ -723,13 +749,7 @@
                 let paddleSegments = getPaddleSegments();
 
                 for (let segment of paddleSegments) {
-                    let intersection = getLineIntersection(
-                        { x: ball.prevX, y: ball.prevY },
-                        { x: ball.x, y: ball.y },
-                        { x: segment.start.x, y: segment.start.y },
-                        { x: segment.end.x, y: segment.end.y }
-                    );
-
+                    let intersection = detectCircleLineSegmentIntersection(ball, { x: ball.prevX, y: ball.prevY }, segment);
                     if (intersection) {
                         collisionDetected = true;
                         collisionPoint = intersection;
