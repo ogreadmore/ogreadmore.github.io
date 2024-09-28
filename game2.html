@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Heart Pong Game - Enhanced Version</title>
+    <title>Heart Pong Game - Enhanced Collision Detection</title>
     <style>
         body {
             margin: 0;
@@ -216,8 +216,13 @@
                 y: 0,
                 radius: 10, // Increased for better visibility
                 speed: 2.5, // Reduced from 3 for slower starting speed
-                velocity: { x: 0, y: 0 } // Velocity vector
+                velocity: { x: 0, y: 0 }, // Velocity vector
+                prevX: 0, // Previous X position (for CCD)
+                prevY: 0  // Previous Y position (for CCD)
             };
+
+            // Maximum ball speed to prevent skipping collisions
+            const MAX_BALL_SPEED = 10; // Adjust as needed
 
             // Pointer (mouse or touch) controls
             let pointerPosition = { x: canvas.width / 2, y: canvas.height / 2 };
@@ -242,17 +247,31 @@
             const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             console.log("Is mobile device:", isMobile);
 
+            // Throttle function to limit the rate of function calls (optional, can help performance)
+            function throttle(func, limit) {
+                let inThrottle;
+                return function() {
+                    const args = arguments;
+                    const context = this;
+                    if (!inThrottle) {
+                        func.apply(context, args);
+                        inThrottle = true;
+                        setTimeout(() => inThrottle = false, limit);
+                    }
+                }
+            }
+
             // Event listeners for mouse
-            canvas.addEventListener('mousemove', function (e) {
+            canvas.addEventListener('mousemove', throttle(function (e) {
                 pointerPosition.x = e.clientX;
                 pointerPosition.y = e.clientY;
                 if (gameStarted && !gameOver && !gameEnding && !paused && !isMobile) {
                     updateTargetPaddleIndex();
                 }
-            });
+            }, 16)); // Throttle to ~60fps
 
             // Event listeners for touch
-            canvas.addEventListener('touchmove', function (e) {
+            canvas.addEventListener('touchmove', throttle(function (e) {
                 e.preventDefault();
                 if (e.touches.length > 0) {
                     pointerPosition.x = e.touches[0].clientX;
@@ -262,7 +281,7 @@
                         setPaddleToPointer();
                     }
                 }
-            }, { passive: false });
+            }, 16), { passive: false }); // Throttle to ~60fps
 
             // Event listeners for keyboard
             document.addEventListener('keydown', function(e) {
@@ -419,6 +438,21 @@
                 return reflected;
             }
 
+            // Calculate the normal vector of a paddle segment
+            function calculateNormal(segment) {
+                // Calculate the direction vector of the segment
+                let dx = segment.end.x - segment.start.x;
+                let dy = segment.end.y - segment.start.y;
+                
+                // Calculate the normal vector (perpendicular to the direction)
+                let normal = { x: -dy, y: dx };
+                
+                // Normalize the normal vector
+                let length = Math.hypot(normal.x, normal.y);
+                if (length === 0) return { x: 0, y: 0 };
+                return { x: normal.x / length, y: normal.y / length };
+            }
+
             // Draw heart outline with dotted line
             function drawHeart() {
                 ctx.strokeStyle = '#fff';
@@ -508,22 +542,36 @@
                 console.log(`Desktop: Target paddle index updated to ${targetPaddleStartIndex}`);
             }
 
-            // Directly set paddle position to pointer (for mobile devices)
+            // Directly set paddle target based on touch angle (for mobile devices)
             function setPaddleToPointer() {
-                let minDistance = Infinity;
+                // Calculate angle from heart center to touch position
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const dx = pointerPosition.x - centerX;
+                const dy = centerY - pointerPosition.y; // Inverted y-axis for angle calculation
+                let angle = Math.atan2(dy, dx);
+                if (angle < 0) angle += 2 * Math.PI; // Normalize angle to [0, 2π]
+                console.log(`Touch angle: ${(angle * 180 / Math.PI).toFixed(2)} degrees`);
+
+                // Find the closest heart point based on angle
                 let closestIndex = 0;
-                for (let i = 0; i < heartPoints.length; i++) {
-                    let dx = pointerPosition.x - heartPoints[i].x;
-                    let dy = pointerPosition.y - heartPoints[i].y;
-                    let distance = dx * dx + dy * dy;
-                    if (distance < minDistance) {
-                        minDistance = distance;
+                let minAngleDiff = Infinity;
+                const totalPoints = heartPoints.length;
+                for (let i = 0; i < totalPoints; i++) {
+                    // Assuming heartPoints are ordered from 0 to 2π
+                    let point = heartPoints[i];
+                    let pointAngle = Math.atan2(centerY - point.y, point.x - centerX);
+                    if (pointAngle < 0) pointAngle += 2 * Math.PI;
+                    let angleDiff = Math.abs(angle - pointAngle);
+                    angleDiff = Math.min(angleDiff, 2 * Math.PI - angleDiff); // Handle wrap-around
+                    if (angleDiff < minAngleDiff) {
+                        minAngleDiff = angleDiff;
                         closestIndex = i;
                     }
                 }
-                // Only update target index to allow smooth movement
+
                 targetPaddleStartIndex = closestIndex;
-                console.log(`Mobile: Target paddle index set to ${targetPaddleStartIndex}`);
+                console.log(`Mobile: Target paddle index set to ${targetPaddleStartIndex} based on angle`);
             }
 
             // Update paddle based on keyboard input with time-based movement
@@ -568,11 +616,65 @@
                 console.log(`Paddle moved to index ${paddleStartIndex.toFixed(2)}`);
             }
 
+            // Function to check if two line segments (p1-p2 and p3-p4) intersect
+            function getLineIntersection(p1, p2, p3, p4) {
+                const denominator = ((p4.y - p3.y) * (p2.x - p1.x)) - ((p4.x - p3.x) * (p2.y - p1.y));
+                if (denominator === 0) {
+                    return null; // Parallel lines
+                }
+
+                const ua = (((p4.x - p3.x) * (p1.y - p3.y)) - ((p4.y - p3.y) * (p1.x - p3.x))) / denominator;
+                const ub = (((p2.x - p1.x) * (p1.y - p3.y)) - ((p2.y - p1.y) * (p1.x - p3.x))) / denominator;
+
+                if (ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1) {
+                    // Intersection point
+                    const x = p1.x + ua * (p2.x - p1.x);
+                    const y = p1.y + ua * (p2.y - p1.y);
+                    return { x, y };
+                }
+
+                return null; // No intersection
+            }
+
+            // Function to retrieve all line segments of the paddle
+            function getPaddleSegments() {
+                let segments = [];
+                let startIndex = Math.floor(paddleStartIndex) % heartPoints.length;
+                let endIndex = (startIndex + paddleLength) % heartPoints.length;
+
+                if (startIndex < endIndex) {
+                    for (let i = startIndex; i < endIndex; i++) {
+                        segments.push({
+                            start: heartPoints[i],
+                            end: heartPoints[i + 1]
+                        });
+                    }
+                } else {
+                    // Wrap-around case
+                    for (let i = startIndex; i < heartPoints.length - 1; i++) {
+                        segments.push({
+                            start: heartPoints[i],
+                            end: heartPoints[i + 1]
+                        });
+                    }
+                    for (let i = 0; i < endIndex; i++) {
+                        segments.push({
+                            start: heartPoints[i],
+                            end: heartPoints[i + 1]
+                        });
+                    }
+                }
+
+                return segments;
+            }
+
             // Update ball position and handle collisions
             function updateBall() {
                 if (gameEnding || gameOver || paused) {
                     // Continue moving the ball off-screen or do nothing if paused
                     if (!paused) {
+                        ball.prevX = ball.x;
+                        ball.prevY = ball.y;
                         ball.x += ball.velocity.x;
                         ball.y += ball.velocity.y;
 
@@ -592,6 +694,10 @@
                     return; // Exit the function to prevent further collision checks
                 }
 
+                // Store previous position
+                ball.prevX = ball.x;
+                ball.prevY = ball.y;
+
                 // Move the ball
                 ball.x += ball.velocity.x;
                 ball.y += ball.velocity.y;
@@ -610,41 +716,89 @@
                 // Update isBallOutside flag
                 isBallOutside = isCurrentlyOutside;
 
-                // Check collision with paddle
-                if (isBallCollidingWithPaddle()) {
-                    // Find the collision point
-                    let collisionPoint = findCollisionPoint();
+                // Continuous Collision Detection (CCD)
+                let collisionDetected = false;
+                let collisionPoint = null;
+                let collidedSegment = null;
+                let paddleSegments = getPaddleSegments();
 
-                    if (collisionPoint) {
-                        // Calculate normal vector at collision point
-                        let normalVector = { x: ball.x - collisionPoint.x, y: ball.y - collisionPoint.y };
+                for (let segment of paddleSegments) {
+                    let intersection = getLineIntersection(
+                        { x: ball.prevX, y: ball.prevY },
+                        { x: ball.x, y: ball.y },
+                        { x: segment.start.x, y: segment.start.y },
+                        { x: segment.end.x, y: segment.end.y }
+                    );
 
-                        // Reflect the velocity vector
-                        let reflectedVelocity = reflectVelocity(ball.velocity, normalVector);
-                        ball.velocity = reflectedVelocity;
+                    if (intersection) {
+                        collisionDetected = true;
+                        collisionPoint = intersection;
+                        collidedSegment = segment;
+                        console.log(`Collision detected at (${collisionPoint.x.toFixed(2)}, ${collisionPoint.y.toFixed(2)})`);
+                        break; // Exit loop after first collision
+                    }
+                }
+
+                if (collisionDetected && collisionPoint && collidedSegment) {
+                    // Calculate the normal based on the paddle segment
+                    let normalVector = calculateNormal(collidedSegment);
+                    console.log(`Normal Vector: (${normalVector.x.toFixed(2)}, ${normalVector.y.toFixed(2)})`);
+
+                    // Reflect the velocity vector based on the normal vector
+                    ball.velocity = reflectVelocity(ball.velocity, normalVector);
+
+                    // Adjust the ball's position to be just outside the paddle
+                    ball.x = collisionPoint.x + normalVector.x * (ball.radius + 1);
+                    ball.y = collisionPoint.y + normalVector.y * (ball.radius + 1);
+                    console.log(`Ball position adjusted to (${ball.x.toFixed(2)}, ${ball.y.toFixed(2)})`);
+
+                    // Increase score
+                    score++;
+                    updateScoreboard();
+
+                    // Increase ball speed slightly, ensuring it doesn't exceed MAX_BALL_SPEED
+                    ball.speed = Math.min(ball.speed + 0.2, MAX_BALL_SPEED);
+                    let speedRatio = ball.speed / Math.hypot(ball.velocity.x, ball.velocity.y);
+                    ball.velocity.x *= speedRatio;
+                    ball.velocity.y *= speedRatio;
+                    console.log(`Ball speed updated to ${ball.speed}`);
+
+                    // Set paddle hit flag for visual feedback
+                    isPaddleHit = true;
+                    console.log(`Paddle hit via CCD! New velocity: (${ball.velocity.x.toFixed(2)}, ${ball.velocity.y.toFixed(2)})`);
+                }
+
+                // If collision wasn't detected via CCD, check for discrete collision as a fallback
+                if (!collisionDetected && isBallCollidingWithPaddle()) {
+                    let fallbackCollisionPoint = findCollisionPoint();
+                    if (fallbackCollisionPoint) {
+                        let normalVector = { x: ball.x - fallbackCollisionPoint.x, y: ball.y - fallbackCollisionPoint.y };
+                        ball.velocity = reflectVelocity(ball.velocity, normalVector);
+
+                        // Move the ball slightly away from paddle
+                        ball.x += ball.velocity.x * 2;
+                        ball.y += ball.velocity.y * 2;
+                        console.log(`Ball position after fallback adjustment to (${ball.x.toFixed(2)}, ${ball.y.toFixed(2)})`);
 
                         // Increase score
                         score++;
                         updateScoreboard();
 
-                        // Increase ball speed slightly
-                        ball.speed += 0.2; // Adjust the increment as needed
-                        let speedRatio = ball.speed / Math.hypot(ball.velocity.x, ball.velocity.y);
-                        ball.velocity.x *= speedRatio;
-                        ball.velocity.y *= speedRatio;
-
-                        // Move ball slightly away from paddle to prevent sticking
-                        ball.x += ball.velocity.x * 2;
-                        ball.y += ball.velocity.y * 2;
+                        // Increase ball speed slightly, ensuring it doesn't exceed MAX_BALL_SPEED
+                        ball.speed = Math.min(ball.speed + 0.2, MAX_BALL_SPEED);
+                        let speedRatioFallback = ball.speed / Math.hypot(ball.velocity.x, ball.velocity.y);
+                        ball.velocity.x *= speedRatioFallback;
+                        ball.velocity.y *= speedRatioFallback;
+                        console.log(`Ball speed updated to ${ball.speed}`);
 
                         // Set paddle hit flag for visual feedback
                         isPaddleHit = true;
-                        console.log(`Paddle hit! New velocity: (${ball.velocity.x.toFixed(2)}, ${ball.velocity.y.toFixed(2)})`);
+                        console.log(`Paddle hit via fallback! New velocity: (${ball.velocity.x.toFixed(2)}, ${ball.velocity.y.toFixed(2)})`);
                     }
                 }
             }
 
-            // Find the collision point between the ball and the paddle
+            // Find the collision point between the ball and the paddle (discrete collision detection)
             function findCollisionPoint() {
                 let startIndex = Math.floor(paddleStartIndex) % heartPoints.length;
                 let endIndex = (startIndex + paddleLength) % heartPoints.length;
