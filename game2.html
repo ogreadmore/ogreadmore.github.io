@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Heart Pong Game - Enhanced Version</title>
+    <title>heart centered</title>
     <style>
         body {
             margin: 0;
@@ -10,7 +10,7 @@
             position: relative;
             height: 100vh;
             width: 100vw;
-            /* Remove cursor: none; to allow cursor visibility when not playing */
+            /* Cursor visibility handled via 'playing' class */
         }
 
         /* Hide cursor only when the game is playing */
@@ -92,9 +92,8 @@
 <body>
     <!-- Scoreboard -->
     <div id="scoreboard">
-        <div>Heart Centered</div>
-        <div>Score: 0</div>
-        <div>Misses Left: 3</div>
+        <div>heart centered</div>
+        <div>score: 0</div>
     </div>
     <!-- Game Over and Buttons -->
     <div id="gameOver">GAME OVER</div>
@@ -109,27 +108,24 @@
 
         // Game variables
         let heartPath = new Path2D();
-        let paddleIndex = 0;
-        const paddleLength = 50; // Number of points that make up the paddle
-        const paddleSpeed = 5; // Paddle movement speed for keyboard
+        let heartPoints = [];
+        const totalHeartPoints = 1000; // Increased for smoother heart
+        let paddleStartIndex = 0;
+        const paddleLength = 100; // Length of the paddle in number of points
         let score = 0;
-        let misses = 0;
-        const maxMisses = 3;
         let gameStarted = false;
         let gameOver = false;
+        let gameEnding = false; // Flag to manage game ending sequence
         let animationFrameId;
 
         // Ball properties
         let ball = {
             x: 0,
             y: 0,
-            radius: 8,
-            speed: 3, // Initial speed
-            angle: Math.PI / 4 // 45 degrees
+            radius: 10, // Increased for better visibility
+            speed: 3, // Reduced from 4 for slower starting speed
+            velocity: { x: 0, y: 0 } // Velocity vector
         };
-
-        // Heart shape points
-        let heartPoints = [];
 
         // Mouse and touch controls
         let pointerPosition = { x: canvas.width / 2, y: canvas.height / 2 };
@@ -140,11 +136,14 @@
         // Flag to track if the ball is currently outside the heart
         let isBallOutside = false;
 
+        // Flag to track if the paddle was hit (for visual feedback)
+        let isPaddleHit = false;
+
         // Event listeners for mouse
         canvas.addEventListener('mousemove', function (e) {
             pointerPosition.x = e.clientX;
             pointerPosition.y = e.clientY;
-            if (gameStarted && !gameOver) {
+            if (gameStarted && !gameOver && !gameEnding) {
                 updatePaddleIndex();
             }
         });
@@ -154,7 +153,7 @@
             e.preventDefault();
             pointerPosition.x = e.touches[0].clientX;
             pointerPosition.y = e.touches[0].clientY;
-            if (gameStarted && !gameOver) {
+            if (gameStarted && !gameOver && !gameEnding) {
                 updatePaddleIndex();
             }
         }, { passive: false });
@@ -192,10 +191,11 @@
         // Generate heart shape points
         function generateHeartPoints() {
             heartPoints = [];
-            for (let t = 0; t < 2 * Math.PI; t += 0.005) { // Increased resolution for smoother heart
+            for (let t = 0; t < 2 * Math.PI; t += (2 * Math.PI) / totalHeartPoints) {
+                // Heart shape parametric equations
                 let x = 16 * Math.pow(Math.sin(t), 3);
                 let y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
-                heartPoints.push({ x: x, y: -y });
+                heartPoints.push({ x: x, y: -y }); // Invert y for canvas coordinates
             }
 
             // Scale and center the heart
@@ -220,46 +220,67 @@
             ball.x = canvas.width / 2;
             ball.y = canvas.height / 2;
 
-            // If the center is not inside the heart, adjust position
-            if (!ctx.isPointInPath(heartPath, ball.x, ball.y)) {
-                for (let point of heartPoints) {
-                    if (ctx.isPointInPath(heartPath, point.x, point.y)) {
-                        ball.x = point.x;
-                        ball.y = point.y;
-                        break;
-                    }
-                }
+            // Initialize velocity if not set
+            if (!gameStarted) {
+                initializeBallVelocity();
             }
-            isBallOutside = false; // Reset the outside flag
+        }
+
+        // Initialize ball velocity with a random angle
+        function initializeBallVelocity() {
+            let angleDegrees = Math.random() * 120 + 30; // 30 to 150 degrees
+            let angleRadians = angleDegrees * (Math.PI / 180);
+            ball.velocity.x = ball.speed * Math.cos(angleRadians);
+            ball.velocity.y = ball.speed * Math.sin(angleRadians);
+        }
+
+        // Reflect the ball's velocity vector based on the normal vector
+        function reflectVelocity(incident, normal) {
+            // Normalize the normal vector
+            let normLength = Math.hypot(normal.x, normal.y);
+            if (normLength === 0) return { x: incident.x, y: incident.y }; // Prevent division by zero
+            let normalUnit = { x: normal.x / normLength, y: normal.y / normLength };
+
+            // Compute dot product
+            let dot = incident.x * normalUnit.x + incident.y * normalUnit.y;
+
+            // Compute reflected vector
+            let reflected = {
+                x: incident.x - 2 * dot * normalUnit.x,
+                y: incident.y - 2 * dot * normalUnit.y
+            };
+
+            return reflected;
         }
 
         // Draw heart outline with dotted line
         function drawHeart() {
             ctx.strokeStyle = '#fff';
             ctx.lineWidth = 2;
-            ctx.setLineDash([4, 4]); // Dotted line pattern
+            ctx.setLineDash([5, 5]); // Dotted line pattern
             ctx.stroke(heartPath);
             ctx.setLineDash([]); // Reset to solid for other drawings
         }
 
-        // Draw paddle with increased thickness
+        // Draw paddle with increased thickness and consistent length
         function drawPaddle() {
             ctx.beginPath();
             ctx.strokeStyle = 'magenta';
-            ctx.lineWidth = 10; // Increased from 5 to 10
+            ctx.lineWidth = 25; // Increased for better visibility
             ctx.lineJoin = 'round';
             ctx.shadowBlur = 20;
             ctx.shadowColor = 'magenta';
-            let startIndex = paddleIndex;
-            let endIndex = (paddleIndex + paddleLength) % heartPoints.length;
-            ctx.moveTo(heartPoints[startIndex].x, heartPoints[startIndex].y);
+            let endIndex = (paddleStartIndex + paddleLength) % heartPoints.length;
 
-            if (endIndex > startIndex) {
-                for (let i = startIndex + 1; i <= endIndex; i++) {
+            // Handle wrap-around
+            if (paddleStartIndex < endIndex) {
+                ctx.moveTo(heartPoints[paddleStartIndex].x, heartPoints[paddleStartIndex].y);
+                for (let i = paddleStartIndex + 1; i <= endIndex; i++) {
                     ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
                 }
             } else {
-                for (let i = startIndex + 1; i < heartPoints.length; i++) {
+                ctx.moveTo(heartPoints[paddleStartIndex].x, heartPoints[paddleStartIndex].y);
+                for (let i = paddleStartIndex + 1; i < heartPoints.length; i++) {
                     ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
                 }
                 for (let i = 0; i <= endIndex; i++) {
@@ -268,147 +289,170 @@
             }
 
             ctx.stroke();
-            ctx.shadowBlur = 0; // Reset shadow
+
+            // Add a brief glow effect if paddle was hit
+            if (isPaddleHit) {
+                ctx.beginPath();
+                ctx.strokeStyle = 'yellow';
+                ctx.lineWidth = 30; // Slightly thicker for glow effect
+                ctx.shadowBlur = 40;
+                ctx.shadowColor = 'yellow';
+                if (paddleStartIndex < endIndex) {
+                    ctx.moveTo(heartPoints[paddleStartIndex].x, heartPoints[paddleStartIndex].y);
+                    for (let i = paddleStartIndex + 1; i <= endIndex; i++) {
+                        ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
+                    }
+                } else {
+                    ctx.moveTo(heartPoints[paddleStartIndex].x, heartPoints[paddleStartIndex].y);
+                    for (let i = paddleStartIndex + 1; i < heartPoints.length; i++) {
+                        ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
+                    }
+                    for (let i = 0; i <= endIndex; i++) {
+                        ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
+                    }
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0; // Reset shadow
+                isPaddleHit = false; // Reset the flag
+            }
+
+            ctx.shadowBlur = 0; // Reset shadow for other drawings
         }
 
         // Update paddle index based on pointer position
         function updatePaddleIndex() {
             let minDistance = Infinity;
+            let newPaddleStart = paddleStartIndex;
             for (let i = 0; i < heartPoints.length; i++) {
                 let dx = pointerPosition.x - heartPoints[i].x;
                 let dy = pointerPosition.y - heartPoints[i].y;
                 let distance = dx * dx + dy * dy;
                 if (distance < minDistance) {
                     minDistance = distance;
-                    paddleIndex = i;
+                    newPaddleStart = i;
                 }
             }
+            paddleStartIndex = newPaddleStart;
         }
 
         // Update paddle based on keyboard input
         function updatePaddleKeyboard() {
-            let updated = false;
             if (keyboardControl.left) {
-                paddleIndex = (paddleIndex - paddleSpeed) % heartPoints.length;
-                if (paddleIndex < 0) paddleIndex += heartPoints.length;
-                updated = true;
+                paddleStartIndex = (paddleStartIndex - 5 + heartPoints.length) % heartPoints.length;
             }
             if (keyboardControl.right) {
-                paddleIndex = (paddleIndex + paddleSpeed) % heartPoints.length;
-                updated = true;
-            }
-            if (updated) {
-                // Optional: Add smoothing or limits here
+                paddleStartIndex = (paddleStartIndex + 5) % heartPoints.length;
             }
         }
 
         // Update ball position and handle collisions
         function updateBall() {
-            let dx = ball.speed * Math.cos(ball.angle);
-            let dy = ball.speed * Math.sin(ball.angle);
+            if (gameEnding || gameOver) {
+                // Continue moving the ball off-screen
+                ball.x += ball.velocity.x;
+                ball.y += ball.velocity.y;
 
-            ball.x += dx;
-            ball.y += dy;
+                // Check if the ball is completely off the screen
+                if (ball.x < -ball.radius || ball.x > canvas.width + ball.radius ||
+                    ball.y < -ball.radius || ball.y > canvas.height + ball.radius) {
+                    // End the game after the ball has flown off-screen
+                    gameOver = true;
+                    cancelAnimationFrame(animationFrameId);
+                    document.getElementById('gameOver').style.display = 'block';
+                    document.getElementById('restartButton').style.display = 'block';
+                    // Remove 'playing' class to show cursor again
+                    document.body.classList.remove('playing');
+                }
+                return; // Exit the function to prevent further collision checks
+            }
+
+            // Move the ball
+            ball.x += ball.velocity.x;
+            ball.y += ball.velocity.y;
 
             // Check if the ball is outside the heart boundary
             let isCurrentlyOutside = !ctx.isPointInPath(heartPath, ball.x, ball.y);
 
             if (isCurrentlyOutside && !isBallOutside) {
-                // Ball has just moved outside
-                misses++;
-                updateScoreboard();
-
-                if (misses >= maxMisses) {
-                    endGameWithBallFlying();
-                } else {
-                    // Find nearest point on heart boundary
-                    let minDistance = Infinity;
-                    let nearestPoint = null;
-                    for (let point of heartPoints) {
-                        let distance = Math.hypot(ball.x - point.x, ball.y - point.y);
-                        if (distance < minDistance) {
-                            minDistance = distance;
-                            nearestPoint = point;
-                        }
-                    }
-
-                    // Calculate normal at collision point
-                    let normalAngle = Math.atan2(ball.y - nearestPoint.y, ball.x - nearestPoint.x);
-                    ball.angle = reflectAngle(ball.angle, normalAngle);
-
-                    // Prevent multiple miss increments by setting the flag
-                    isBallOutside = true;
-
-                    // Move ball slightly inside the heart to prevent multiple misses
-                    ball.x += 2 * Math.cos(ball.angle);
-                    ball.y += 2 * Math.sin(ball.angle);
-                }
-            } else if (!isCurrentlyOutside && isBallOutside) {
-                // Ball has moved back inside
-                isBallOutside = false;
+                // Ball has just moved outside - initiate game ending sequence
+                gameEnding = true;
+                return;
             }
 
             // Check collision with paddle
             if (isBallCollidingWithPaddle()) {
-                // Calculate normal at collision point
-                let normalAngle = getPaddleNormalAngle();
-                ball.angle = reflectAngle(ball.angle, normalAngle);
+                // Find the collision point
+                let collisionPoint = findCollisionPoint();
 
-                // Increase score
-                score++;
-                updateScoreboard();
+                if (collisionPoint) {
+                    // Calculate normal vector at collision point
+                    let normalVector = { x: ball.x - collisionPoint.x, y: ball.y - collisionPoint.y };
 
-                // Increase ball speed slightly
-                ball.speed += 0.2; // Adjust the increment as needed
+                    // Reflect the velocity vector
+                    let reflectedVelocity = reflectVelocity(ball.velocity, normalVector);
+                    ball.velocity = reflectedVelocity;
 
-                // Move ball slightly away from paddle to prevent sticking
-                ball.x += 2 * Math.cos(ball.angle);
-                ball.y += 2 * Math.sin(ball.angle);
+                    // Increase score
+                    score++;
+                    updateScoreboard();
+
+                    // Increase ball speed slightly
+                    ball.speed += 0.2; // Adjust the increment as needed
+                    let speedRatio = ball.speed / Math.hypot(ball.velocity.x, ball.velocity.y);
+                    ball.velocity.x *= speedRatio;
+                    ball.velocity.y *= speedRatio;
+
+                    // Move ball slightly away from paddle to prevent sticking
+                    ball.x += ball.velocity.x * 2;
+                    ball.y += ball.velocity.y * 2;
+
+                    // Set paddle hit flag for visual feedback
+                    isPaddleHit = true;
+                }
             }
         }
 
-        // Reflect angle based on normal
-        function reflectAngle(incidentAngle, normalAngle) {
-            return (2 * normalAngle - incidentAngle + Math.PI) % (2 * Math.PI);
+        // Find the collision point between the ball and the paddle
+        function findCollisionPoint() {
+            let endIndex = (paddleStartIndex + paddleLength) % heartPoints.length;
+
+            // Gather paddle points
+            let paddlePoints = [];
+            if (paddleStartIndex < endIndex) {
+                for (let i = paddleStartIndex; i <= endIndex; i++) {
+                    paddlePoints.push(heartPoints[i]);
+                }
+            } else {
+                for (let i = paddleStartIndex; i < heartPoints.length; i++) {
+                    paddlePoints.push(heartPoints[i]);
+                }
+                for (let i = 0; i <= endIndex; i++) {
+                    paddlePoints.push(heartPoints[i]);
+                }
+            }
+
+            // Find the closest paddle point to the ball
+            let minDistance = Infinity;
+            let closestPoint = null;
+            for (let point of paddlePoints) {
+                let distance = Math.hypot(ball.x - point.x, ball.y - point.y);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestPoint = point;
+                }
+            }
+
+            // If the closest point is within collision range, return it
+            if (closestPoint && minDistance <= ball.radius + (ctx.lineWidth / 2)) {
+                return closestPoint;
+            }
+
+            return null;
         }
 
         // Check if ball is colliding with paddle
         function isBallCollidingWithPaddle() {
-            let indices = [];
-            let startIndex = paddleIndex;
-            let endIndex = (paddleIndex + paddleLength) % heartPoints.length;
-
-            if (endIndex > startIndex) {
-                for (let i = startIndex; i <= endIndex; i++) {
-                    indices.push(i);
-                }
-            } else {
-                for (let i = startIndex; i < heartPoints.length; i++) {
-                    indices.push(i);
-                }
-                for (let i = 0; i <= endIndex; i++) {
-                    indices.push(i);
-                }
-            }
-
-            for (let idx of indices) {
-                let point = heartPoints[idx];
-                // Adjust collision detection based on increased paddle thickness
-                let distance = Math.hypot(ball.x - point.x, ball.y - point.y);
-                if (distance <= ball.radius + (ctx.lineWidth / 2)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        // Get normal angle at paddle collision point
-        function getPaddleNormalAngle() {
-            let idx = (paddleIndex + Math.floor(paddleLength / 2)) % heartPoints.length;
-            let currentPoint = heartPoints[idx];
-            let nextPoint = heartPoints[(idx + 1) % heartPoints.length];
-            let angle = Math.atan2(nextPoint.y - currentPoint.y, nextPoint.x - currentPoint.x);
-            return (angle + Math.PI / 2) % (2 * Math.PI);
+            return findCollisionPoint() !== null;
         }
 
         // Draw ball
@@ -425,28 +469,19 @@
         // Update scoreboard
         function updateScoreboard() {
             document.getElementById('scoreboard').innerHTML = `
-                <div>Heart Centered</div>
-                <div>Score: ${score}</div>
-                <div>Misses Left: ${Math.max(maxMisses - misses, 0)}</div>
+                <div>heart centered</div>
+                <div>score: ${score}</div>
             `;
         }
 
-        // End game by allowing the ball to fly out and then showing game over screen
-        function endGameWithBallFlying() {
-            // Disable further paddle movement
-            keyboardControl.left = false;
-            keyboardControl.right = false;
-
-            // Allow the ball to continue moving off the screen
-            // Set a timeout to end the game after a brief period
-            setTimeout(() => {
-                gameOver = true;
-                cancelAnimationFrame(animationFrameId);
-                document.getElementById('gameOver').style.display = 'block';
-                document.getElementById('restartButton').style.display = 'block';
-                // Remove 'playing' class to show cursor again
-                document.body.classList.remove('playing');
-            }, 1000); // 1 second delay
+        // End game and show Game Over screen
+        function endGame() {
+            gameOver = true;
+            cancelAnimationFrame(animationFrameId);
+            document.getElementById('gameOver').style.display = 'block';
+            document.getElementById('restartButton').style.display = 'block';
+            // Remove 'playing' class to show cursor again
+            document.body.classList.remove('playing');
         }
 
         // Main game loop
@@ -474,12 +509,12 @@
             document.body.classList.add('playing');
             // Reset variables
             score = 0;
-            misses = 0;
             gameStarted = true;
             gameOver = false;
-            ball.speed = 3; // Reset speed
+            gameEnding = false;
+            ball.speed = 3; // Slower starting speed
             setBallStartingPosition();
-            ball.angle = Math.PI / 4; // Reset ball angle
+            initializeBallVelocity(); // Set random initial velocity
             updateScoreboard();
             // Start game loop
             gameLoop();
@@ -494,18 +529,18 @@
             document.body.classList.add('playing');
             // Reset variables
             score = 0;
-            misses = 0;
             gameStarted = true;
             gameOver = false;
-            ball.speed = 3; // Reset speed
+            gameEnding = false;
+            ball.speed = 3; // Slower starting speed
             setBallStartingPosition();
-            ball.angle = Math.PI / 4; // Reset ball angle
+            initializeBallVelocity(); // Set random initial velocity
             updateScoreboard();
             // Start game loop
             gameLoop();
         }
 
-        // Initialize game
+        // Initialize game on page load
         resizeCanvas();
         generateHeartPoints();
         setBallStartingPosition(); // Ensure ball starts inside the heart
