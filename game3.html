@@ -372,16 +372,17 @@
                 shoot();
             }
 
-            // Mouse controls
+            // Touch controls
             if (touch.active) {
                 // Touchscreen controls
-                var offset = 75; // Offset to position the ship above the finger
                 var dx = touch.x - player.prevX;
                 var dy = touch.y - player.prevY;
-                if (dx !== 0 || dy !== 0) {
+                var distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance > 0) {
                     player.angle = Math.atan2(dy, dx);
                 }
 
+                var offset = -50; // Negative offset to position the ship behind the finger
                 player.x = touch.x + Math.cos(player.angle) * offset;
                 player.y = touch.y + Math.sin(player.angle) * offset;
 
@@ -390,7 +391,7 @@
                 player.prevX = touch.x;
                 player.prevY = touch.y;
             } else {
-                // Calculate the angle towards the mouse position
+                // Mouse controls
                 var dx = mouse.x - player.x;
                 var dy = mouse.y - player.y;
                 var angleToMouse = Math.atan2(dy, dx);
