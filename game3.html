@@ -231,9 +231,7 @@
             lastShotTime: 0,
             projectileSize: 20,
             size: 60, // Increased size
-            firepower: 1, // Number of heart-eye faces collected
-            prevX: 0,
-            prevY: 0
+            firepower: 1 // Number of heart-eye faces collected
         };
 
         var projectiles = [];
@@ -242,8 +240,6 @@
         var mouse = {
             x: canvas.width / 2,
             y: canvas.height / 2,
-            prevX: canvas.width / 2,
-            prevY: canvas.height / 2,
             leftDown: false
         };
 
@@ -295,8 +291,6 @@
             touch.x = e.touches[0].clientX - rect.left;
             touch.y = e.touches[0].clientY - rect.top;
             touch.active = true;
-            player.prevX = touch.x;
-            player.prevY = touch.y;
         });
 
         canvas.addEventListener('touchmove', function(e) {
@@ -372,41 +366,53 @@
                 shoot();
             }
 
-            // Mouse controls
+            // Touch controls
             if (touch.active) {
                 // Touchscreen controls
-                var offset = 75; // Offset to position the ship above the finger
-                var dx = touch.x - player.prevX;
-                var dy = touch.y - player.prevY;
-                if (dx !== 0 || dy !== 0) {
-                    player.angle = Math.atan2(dy, dx);
-                }
+                var offset = -400; // Negative offset to position the ship behind the finger
 
-                player.x = touch.x + Math.cos(player.angle) * offset;
-                player.y = touch.y + Math.sin(player.angle) * offset;
+                // Calculate the angle from the ship to the touch point
+                var dx = touch.x - player.x;
+                var dy = touch.y - player.y;
+                var angleToTouch = Math.atan2(dy, dx);
+
+                // Desired position is behind the touch point by offset pixels
+                var desiredX = touch.x + Math.cos(angleToTouch) * offset;
+                var desiredY = touch.y + Math.sin(angleToTouch) * offset;
+
+                // Smoothly move the player towards the desired position
+                var smoothingFactor = 0.1; // Adjust between 0 (no movement) and 1 (instant movement)
+                player.x += (desiredX - player.x) * smoothingFactor;
+                player.y += (desiredY - player.y) * smoothingFactor;
+
+                // Set the player's angle towards the touch point
+                player.angle = angleToTouch;
 
                 shoot();
-
-                player.prevX = touch.x;
-                player.prevY = touch.y;
-            } else {
-                // Calculate the angle towards the mouse position
+            } else if (mouse.leftDown) {
+                // Mouse controls
                 var dx = mouse.x - player.x;
                 var dy = mouse.y - player.y;
                 var angleToMouse = Math.atan2(dy, dx);
 
-                // Calculate the position 50 pixels behind the mouse cursor
+                // Desired position is behind the mouse cursor by desiredDistance pixels
                 var desiredDistance = 50;
-                player.x = mouse.x - Math.cos(angleToMouse) * desiredDistance;
-                player.y = mouse.y - Math.sin(angleToMouse) * desiredDistance;
+                var desiredX = mouse.x - Math.cos(angleToMouse) * desiredDistance;
+                var desiredY = mouse.y - Math.sin(angleToMouse) * desiredDistance;
+
+                // Smoothly move the player towards the desired position
+                var smoothingFactor = 0.1;
+                player.x += (desiredX - player.x) * smoothingFactor;
+                player.y += (desiredY - player.y) * smoothingFactor;
 
                 // Set player angle towards the mouse cursor
                 player.angle = angleToMouse;
 
-                // Left mouse button to shoot
-                if (mouse.leftDown) {
-                    shoot();
-                }
+                shoot();
+            } else {
+                // No input; keep the ship in its current position
+                // Optionally, apply friction or slow down the ship
+                player.speed *= 0.98; // Apply friction to gradually slow down the ship
             }
 
             // Update player position based on speed and angle (for keyboard movement)
@@ -494,11 +500,12 @@
                         // Angry face splits into 4 confused faces
                         for (var k = 0; k < 4; k++) {
                             var angle = Math.random() * Math.PI * 2;
+                            var speed = 150; // Speed for confused faces
                             enemies.push({
                                 x: e.x,
                                 y: e.y,
-                                vx: Math.cos(angle) * 100,
-                                vy: Math.sin(angle) * 100,
+                                vx: Math.cos(angle) * speed,
+                                vy: Math.sin(angle) * speed,
                                 size: e.originalSize / 2,
                                 originalSize: e.originalSize / 2,
                                 type: 'confused',
@@ -516,8 +523,22 @@
                     // Enlarge the size slightly during 'wow' state
                     e.size = e.originalSize * 1.2;
                 } else {
+                    // Update enemy position
                     e.x += e.vx * deltaTime;
                     e.y += e.vy * deltaTime;
+
+                    // Only angry asteroids seek the player
+                    if (e.type === 'angry') {
+                        // Update enemy velocity to seek the player
+                        var dx = player.x - e.x;
+                        var dy = player.y - e.y;
+                        var angleToPlayer = Math.atan2(dy, dx);
+
+                        // Adjust velocity to move towards the player
+                        var speed = e.speed;
+                        e.vx = Math.cos(angleToPlayer) * speed;
+                        e.vy = Math.sin(angleToPlayer) * speed;
+                    }
                 }
 
                 // Handle heart-eye emoji fade out
@@ -573,8 +594,10 @@
                 y = canvas.height + size;
             }
 
-            // Set angle towards the center of the canvas
-            angle = Math.atan2(canvas.height / 2 - y, canvas.width / 2 - x);
+            // Set angle towards the player
+            var dx = player.x - x;
+            var dy = player.y - y;
+            angle = Math.atan2(dy, dx);
 
             var vx = Math.cos(angle) * speed;
             var vy = Math.sin(angle) * speed;
@@ -584,6 +607,7 @@
                 y: y,
                 vx: vx,
                 vy: vy,
+                speed: speed,
                 size: size,
                 originalSize: size,
                 type: 'angry', // 'angry', 'confused', 'heart', 'wow'
