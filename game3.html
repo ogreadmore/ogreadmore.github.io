@@ -295,8 +295,6 @@
             touch.x = e.touches[0].clientX - rect.left;
             touch.y = e.touches[0].clientY - rect.top;
             touch.active = true;
-            player.prevX = touch.x;
-            player.prevY = touch.y;
         });
 
         canvas.addEventListener('touchmove', function(e) {
@@ -375,21 +373,26 @@
             // Touch controls
             if (touch.active) {
                 // Touchscreen controls
-                var dx = touch.x - player.prevX;
-                var dy = touch.y - player.prevY;
-                var distance = Math.sqrt(dx * dx + dy * dy);
-                if (distance > 0) {
-                    player.angle = Math.atan2(dy, dx);
-                }
+                var offset = -200; // Negative offset to position the ship behind the finger
 
-                var offset = -50; // Negative offset to position the ship behind the finger
-                player.x = touch.x + Math.cos(player.angle) * offset;
-                player.y = touch.y + Math.sin(player.angle) * offset;
+                // Calculate the angle from the ship to the touch point
+                var dx = touch.x - player.x;
+                var dy = touch.y - player.y;
+                var angleToTouch = Math.atan2(dy, dx);
+
+                // Desired position is behind the touch point by offset pixels
+                var desiredX = touch.x + Math.cos(angleToTouch) * offset;
+                var desiredY = touch.y + Math.sin(angleToTouch) * offset;
+
+                // Smoothly move the player towards the desired position
+                var smoothingFactor = 0.1; // Adjust between 0 (no movement) and 1 (instant movement)
+                player.x += (desiredX - player.x) * smoothingFactor;
+                player.y += (desiredY - player.y) * smoothingFactor;
+
+                // Set the player's angle towards the touch point
+                player.angle = angleToTouch;
 
                 shoot();
-
-                player.prevX = touch.x;
-                player.prevY = touch.y;
             } else {
                 // Mouse controls
                 var dx = mouse.x - player.x;
