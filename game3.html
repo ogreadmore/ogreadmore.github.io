@@ -232,7 +232,7 @@
             fireRate: 300, // milliseconds between shots
             lastShotTime: 0,
             projectileSize: 20,
-            size: 40,
+            size: 60, // Increased size
             firepower: 1 // Number of heart-eye faces collected
         };
 
@@ -375,8 +375,18 @@
                 // Touchscreen controls
                 player.x = touch.x;
                 player.y = touch.y;
-                player.angle = 0; // Optional: set angle if needed
+
+                // Calculate angle based on movement direction
+                var dx = touch.x - player.prevX;
+                var dy = touch.y - player.prevY;
+                if (dx !== 0 || dy !== 0) {
+                    player.angle = Math.atan2(dy, dx);
+                }
+
                 shoot();
+
+                player.prevX = touch.x;
+                player.prevY = touch.y;
             } else {
                 // Calculate the angle towards the mouse position
                 var dx = mouse.x - player.x;
@@ -491,7 +501,8 @@
                                 originalSize: e.originalSize / 2,
                                 type: 'confused',
                                 state: 'normal',
-                                hitDuration: 0
+                                hitDuration: 0,
+                                spawnTime: now
                             });
                         }
                         continue;
@@ -501,6 +512,27 @@
                 } else {
                     e.x += e.vx * deltaTime;
                     e.y += e.vy * deltaTime;
+                }
+
+                // Handle heart-eye emoji fade out
+                if (e.type === 'heart') {
+                    e.lifeTime += deltaTime;
+                    if (e.lifeTime >= 3 && !e.fading) {
+                        e.fading = true;
+                        e.blinkTimer = 0;
+                    }
+
+                    if (e.fading) {
+                        e.blinkTimer += deltaTime;
+                        if (e.blinkTimer >= 0.5) {
+                            e.visible = !e.visible;
+                            e.blinkTimer = 0;
+                        }
+                        if (e.lifeTime >= 6) {
+                            enemies.splice(i, 1);
+                            continue;
+                        }
+                    }
                 }
 
                 // Wrap around screen
@@ -513,7 +545,7 @@
 
         // Spawn enemy off-screen
         function spawnEnemy() {
-            var size = 120; // Increased size for angry faces
+            var size = 150; // Increased size for angry faces
             var speed = (50 + 10 * player.level); // Enemies get faster each level
 
             // Randomly select a side to spawn from
@@ -549,7 +581,11 @@
                 originalSize: size,
                 type: 'angry', // 'angry', 'confused', 'heart', 'wow'
                 state: 'normal', // 'normal', 'hit'
-                hitDuration: 0 // Duration since hit
+                hitDuration: 0, // Duration since hit
+                lifeTime: 0, // For heart-eye emojis
+                fading: false,
+                blinkTimer: 0,
+                visible: true
             });
         }
 
@@ -577,6 +613,9 @@
                         } else if (e.type === 'confused') {
                             // Confused face turns into heart-eye face
                             e.type = 'heart';
+                            e.lifeTime = 0;
+                            e.fading = false;
+                            e.visible = true;
                             player.score += 2;
                             updateUI();
                         }
@@ -626,7 +665,7 @@
             ctx.save();
             ctx.translate(player.x, player.y);
             ctx.rotate(player.angle + Math.PI / 2); // Rotate to pointy end forward
-            ctx.font = '40px Arial';
+            ctx.font = player.size + 'px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText('❤️', 0, 0);
@@ -648,23 +687,25 @@
             // Draw enemies
             for (var i = 0; i < enemies.length; i++) {
                 var e = enemies[i];
-                ctx.save();
-                ctx.translate(e.x, e.y);
-                ctx.font = e.size + 'px Arial';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                var emoji = '';
-                if (e.type === 'angry') {
-                    emoji = '😠';
-                } else if (e.type === 'confused') {
-                    emoji = '😕';
-                } else if (e.type === 'heart') {
-                    emoji = '😍';
-                } else if (e.type === 'wow') {
-                    emoji = '😮';
+                if (e.type !== 'heart' || e.visible) {
+                    ctx.save();
+                    ctx.translate(e.x, e.y);
+                    ctx.font = e.size + 'px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    var emoji = '';
+                    if (e.type === 'angry') {
+                        emoji = '😠';
+                    } else if (e.type === 'confused') {
+                        emoji = '😕';
+                    } else if (e.type === 'heart') {
+                        emoji = '😍';
+                    } else if (e.type === 'wow') {
+                        emoji = '😮';
+                    }
+                    ctx.fillText(emoji, 0, 0);
+                    ctx.restore();
                 }
-                ctx.fillText(emoji, 0, 0);
-                ctx.restore();
             }
         }
 
