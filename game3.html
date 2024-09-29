@@ -122,20 +122,26 @@
         }
 
         /* Joystick Styles */
-        #joystickContainer {
+        #leftJoystickContainer, #rightJoystickContainer {
             position: absolute;
             bottom: 20%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 200px; /* Increased size */
-            height: 200px; /* Increased size */
+            width: 200px;
+            height: 200px;
             z-index: 20;
-            display: none; /* Hidden by default */
+            display: none;
             opacity: 0.5;
             touch-action: none;
         }
 
-        #joystickBase {
+        #leftJoystickContainer {
+            left: 10%;
+        }
+
+        #rightJoystickContainer {
+            right: 10%;
+        }
+
+        #leftJoystickBase, #rightJoystickBase {
             position: absolute;
             width: 100%;
             height: 100%;
@@ -144,7 +150,7 @@
             opacity: 0.3;
         }
 
-        #joystickThumb {
+        #leftJoystickThumb, #rightJoystickThumb {
             position: absolute;
             width: 80px; /* Adjusted size */
             height: 80px; /* Adjusted size */
@@ -156,7 +162,7 @@
 
         /* Show Joystick and Adjustments on Mobile Devices */
         @media (hover: none) and (pointer: coarse) {
-            #joystickContainer {
+            #leftJoystickContainer, #rightJoystickContainer {
                 display: block;
             }
 
@@ -204,10 +210,14 @@
     <canvas id="backgroundCanvas"></canvas>
     <!-- Game Canvas -->
     <canvas id="gameCanvas"></canvas>
-    <!-- Joystick for Mobile Devices -->
-    <div id="joystickContainer">
-        <div id="joystickBase"></div>
-        <div id="joystickThumb"></div>
+    <!-- Joysticks for Mobile Devices -->
+    <div id="leftJoystickContainer">
+        <div id="leftJoystickBase"></div>
+        <div id="leftJoystickThumb"></div>
+    </div>
+    <div id="rightJoystickContainer">
+        <div id="rightJoystickBase"></div>
+        <div id="rightJoystickThumb"></div>
     </div>
     <script>
         // Initialize variables
@@ -287,6 +297,7 @@
             x: canvas.width / 2,
             y: canvas.height / 2,
             angle: 0,
+            shootAngle: 0, // Added for gun direction
             speed: 0,
             rotation: 0,
             score: 0,
@@ -309,7 +320,16 @@
             leftDown: false
         };
 
-        var joystick = {
+        var leftJoystick = {
+            active: false,
+            identifier: null,
+            startX: 0,
+            startY: 0,
+            x: 0,
+            y: 0
+        };
+
+        var rightJoystick = {
             active: false,
             identifier: null,
             startX: 0,
@@ -340,6 +360,11 @@
             var rect = canvas.getBoundingClientRect();
             mouse.x = e.clientX - rect.left;
             mouse.y = e.clientY - rect.top;
+
+            // Update shooting angle
+            var dx = mouse.x - player.x;
+            var dy = mouse.y - player.y;
+            player.shootAngle = Math.atan2(dy, dx);
         });
 
         canvas.addEventListener('mousedown', function(e) {
@@ -357,65 +382,128 @@
         });
 
         // Joystick controls
-        var joystickContainer = document.getElementById('joystickContainer');
-        var joystickThumb = document.getElementById('joystickThumb');
+        var leftJoystickContainer = document.getElementById('leftJoystickContainer');
+        var leftJoystickThumb = document.getElementById('leftJoystickThumb');
 
-        joystickContainer.addEventListener('touchstart', function(e) {
+        var rightJoystickContainer = document.getElementById('rightJoystickContainer');
+        var rightJoystickThumb = document.getElementById('rightJoystickThumb');
+
+        // Left joystick event listeners
+        leftJoystickContainer.addEventListener('touchstart', function(e) {
             e.preventDefault();
             var touch = e.targetTouches[0];
-            joystick.active = true;
-            joystick.identifier = touch.identifier;
-            joystick.startX = touch.pageX;
-            joystick.startY = touch.pageY;
-            joystick.x = 0;
-            joystick.y = 0;
+            leftJoystick.active = true;
+            leftJoystick.identifier = touch.identifier;
+            leftJoystick.startX = touch.pageX;
+            leftJoystick.startY = touch.pageY;
+            leftJoystick.x = 0;
+            leftJoystick.y = 0;
         });
 
-        joystickContainer.addEventListener('touchmove', function(e) {
+        leftJoystickContainer.addEventListener('touchmove', function(e) {
             e.preventDefault();
             for (var i = 0; i < e.changedTouches.length; i++) {
                 var touch = e.changedTouches[i];
-                if (touch.identifier === joystick.identifier) {
-                    joystick.x = touch.pageX - joystick.startX;
-                    joystick.y = touch.pageY - joystick.startY;
+                if (touch.identifier === leftJoystick.identifier) {
+                    leftJoystick.x = touch.pageX - leftJoystick.startX;
+                    leftJoystick.y = touch.pageY - leftJoystick.startY;
 
                     // Limit joystick movement
                     var maxDistance = 80; // Adjusted based on new joystick size
-                    var distance = Math.sqrt(joystick.x * joystick.x + joystick.y * joystick.y);
+                    var distance = Math.sqrt(leftJoystick.x * leftJoystick.x + leftJoystick.y * leftJoystick.y);
                     if (distance > maxDistance) {
-                        var angle = Math.atan2(joystick.y, joystick.x);
-                        joystick.x = Math.cos(angle) * maxDistance;
-                        joystick.y = Math.sin(angle) * maxDistance;
+                        var angle = Math.atan2(leftJoystick.y, leftJoystick.x);
+                        leftJoystick.x = Math.cos(angle) * maxDistance;
+                        leftJoystick.y = Math.sin(angle) * maxDistance;
                     }
 
-                    joystickThumb.style.transform = 'translate(' + joystick.x + 'px, ' + joystick.y + 'px)';
+                    leftJoystickThumb.style.transform = 'translate(' + leftJoystick.x + 'px, ' + leftJoystick.y + 'px)';
                     break;
                 }
             }
         });
 
-        joystickContainer.addEventListener('touchend', function(e) {
+        leftJoystickContainer.addEventListener('touchend', function(e) {
             e.preventDefault();
             for (var i = 0; i < e.changedTouches.length; i++) {
                 var touch = e.changedTouches[i];
-                if (touch.identifier === joystick.identifier) {
-                    joystick.active = false;
-                    joystick.identifier = null;
-                    joystick.x = 0;
-                    joystick.y = 0;
-                    joystickThumb.style.transform = 'translate(0, 0)';
+                if (touch.identifier === leftJoystick.identifier) {
+                    leftJoystick.active = false;
+                    leftJoystick.identifier = null;
+                    leftJoystick.x = 0;
+                    leftJoystick.y = 0;
+                    leftJoystickThumb.style.transform = 'translate(0, 0)';
                     break;
                 }
             }
         });
 
-        joystickContainer.addEventListener('touchcancel', function(e) {
+        leftJoystickContainer.addEventListener('touchcancel', function(e) {
             e.preventDefault();
-            joystick.active = false;
-            joystick.identifier = null;
-            joystick.x = 0;
-            joystick.y = 0;
-            joystickThumb.style.transform = 'translate(0, 0)';
+            leftJoystick.active = false;
+            leftJoystick.identifier = null;
+            leftJoystick.x = 0;
+            leftJoystick.y = 0;
+            leftJoystickThumb.style.transform = 'translate(0, 0)';
+        });
+
+        // Right joystick event listeners
+        rightJoystickContainer.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            var touch = e.targetTouches[0];
+            rightJoystick.active = true;
+            rightJoystick.identifier = touch.identifier;
+            rightJoystick.startX = touch.pageX;
+            rightJoystick.startY = touch.pageY;
+            rightJoystick.x = 0;
+            rightJoystick.y = 0;
+        });
+
+        rightJoystickContainer.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            for (var i = 0; i < e.changedTouches.length; i++) {
+                var touch = e.changedTouches[i];
+                if (touch.identifier === rightJoystick.identifier) {
+                    rightJoystick.x = touch.pageX - rightJoystick.startX;
+                    rightJoystick.y = touch.pageY - rightJoystick.startY;
+
+                    // Limit joystick movement
+                    var maxDistance = 80; // Adjusted based on new joystick size
+                    var distance = Math.sqrt(rightJoystick.x * rightJoystick.x + rightJoystick.y * rightJoystick.y);
+                    if (distance > maxDistance) {
+                        var angle = Math.atan2(rightJoystick.y, rightJoystick.x);
+                        rightJoystick.x = Math.cos(angle) * maxDistance;
+                        rightJoystick.y = Math.sin(angle) * maxDistance;
+                    }
+
+                    rightJoystickThumb.style.transform = 'translate(' + rightJoystick.x + 'px, ' + rightJoystick.y + 'px)';
+                    break;
+                }
+            }
+        });
+
+        rightJoystickContainer.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            for (var i = 0; i < e.changedTouches.length; i++) {
+                var touch = e.changedTouches[i];
+                if (touch.identifier === rightJoystick.identifier) {
+                    rightJoystick.active = false;
+                    rightJoystick.identifier = null;
+                    rightJoystick.x = 0;
+                    rightJoystick.y = 0;
+                    rightJoystickThumb.style.transform = 'translate(0, 0)';
+                    break;
+                }
+            }
+        });
+
+        rightJoystickContainer.addEventListener('touchcancel', function(e) {
+            e.preventDefault();
+            rightJoystick.active = false;
+            rightJoystick.identifier = null;
+            rightJoystick.x = 0;
+            rightJoystick.y = 0;
+            rightJoystickThumb.style.transform = 'translate(0, 0)';
         });
 
         // Start and Restart buttons
@@ -493,10 +581,10 @@
                 shoot();
             }
 
-            // Joystick controls with variable speed
-            if (joystick.active) {
-                var dx = joystick.x;
-                var dy = joystick.y;
+            // Left joystick controls movement
+            if (leftJoystick.active) {
+                var dx = leftJoystick.x;
+                var dy = leftJoystick.y;
 
                 var distance = Math.sqrt(dx * dx + dy * dy);
                 var maxDistance = 80; // Should match the joystick's maxDistance in touchmove
@@ -510,33 +598,31 @@
                     player.x += (dx / distance) * moveSpeed * deltaTime;
                     player.y += (dy / distance) * moveSpeed * deltaTime;
 
-                    // Set player angle
+                    // Set player angle for movement direction
                     player.angle = Math.atan2(dy, dx);
+                }
+            }
+
+            // Right joystick controls shooting direction
+            if (rightJoystick.active) {
+                var dx = rightJoystick.x;
+                var dy = rightJoystick.y;
+
+                var distance = Math.sqrt(dx * dx + dy * dy);
+                var maxDistance = 80; // Should match the joystick's maxDistance in touchmove
+
+                if (distance > 0) {
+                    // Set player shooting angle
+                    player.shootAngle = Math.atan2(dy, dx);
 
                     // Shoot
                     shoot();
                 }
             }
 
-            // Mouse controls
+            // Mouse controls for shooting
             if (mouse.leftDown) {
-                var dx = mouse.x - player.x;
-                var dy = mouse.y - player.y;
-                var angleToMouse = Math.atan2(dy, dx);
-
-                // Desired position is behind the mouse cursor by desiredDistance pixels
-                var desiredDistance = 50;
-                var desiredX = mouse.x - Math.cos(angleToMouse) * desiredDistance;
-                var desiredY = mouse.y - Math.sin(angleToMouse) * desiredDistance;
-
-                // Smoothly move the player towards the desired position
-                var smoothingFactor = 0.1;
-                player.x += (desiredX - player.x) * smoothingFactor;
-                player.y += (desiredY - player.y) * smoothingFactor;
-
-                // Set player angle towards the mouse cursor
-                player.angle = angleToMouse;
-
+                // Shoot
                 shoot();
             }
 
@@ -561,7 +647,7 @@
                 var spreadAngle = (player.firepower / maxFirepower) * maxSpreadAngle;
                 spreadAngle = Math.min(spreadAngle, maxSpreadAngle);
 
-                var startAngle = player.angle - spreadAngle / 2;
+                var startAngle = player.shootAngle - spreadAngle / 2;
                 var angleIncrement = numProjectiles > 1 ? spreadAngle / (numProjectiles - 1) : 0;
 
                 for (var i = 0; i < numProjectiles; i++) {
