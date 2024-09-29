@@ -106,8 +106,68 @@
             background-color: rgba(255, 255, 255, 0.1);
         }
 
-        /* Media Query for Mobile Devices */
+        /* D-Pad Styles */
+        #dPad {
+            position: absolute;
+            bottom: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 150px;
+            z-index: 20;
+            display: none; /* Hidden by default */
+            opacity: 0.5;
+            touch-action: none;
+        }
+
+        /* D-Pad Buttons */
+        .dPadButton {
+            position: absolute;
+            background-color: #fff;
+            opacity: 0.3;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            user-select: none;
+        }
+
+        #dPadUp {
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        #dPadDown {
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        #dPadLeft {
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+        }
+
+        #dPadRight {
+            top: 50%;
+            right: 0;
+            transform: translateY(-50%);
+        }
+
+        /* Show D-Pad on Mobile Devices */
         @media only screen and (max-width: 768px) {
+            #dPad {
+                display: block;
+            }
+
+            /* Adjust Start and Restart Buttons for Mobile */
+            #startButton, #restartButton {
+                font-size: 1.5rem;
+                padding: 10px 20px;
+            }
+
+            /* Adjust Scoreboard for Mobile */
             #scoreboard .title {
                 font-size: 3vh;
             }
@@ -118,11 +178,6 @@
 
             #gameOver {
                 font-size: 4vh;
-            }
-
-            #startButton, #restartButton {
-                font-size: 1.5rem;
-                padding: 10px 20px;
             }
         }
     </style>
@@ -141,6 +196,13 @@
     <div id="restartButton">Restart</div>
     <!-- Start Button -->
     <div id="startButton">Start Game</div>
+    <!-- D-Pad for Mobile Devices -->
+    <div id="dPad">
+        <div id="dPadUp" class="dPadButton"></div>
+        <div id="dPadDown" class="dPadButton"></div>
+        <div id="dPadLeft" class="dPadButton"></div>
+        <div id="dPadRight" class="dPadButton"></div>
+    </div>
     <!-- Background Canvas -->
     <canvas id="backgroundCanvas"></canvas>
     <!-- Game Canvas -->
@@ -249,6 +311,13 @@
             active: false
         };
 
+        var dPad = {
+            up: false,
+            down: false,
+            left: false,
+            right: false
+        };
+
         var lastTime = 0;
         var enemySpawnRate = 2000; // milliseconds between spawns
         var lastEnemySpawnTime = 0;
@@ -284,26 +353,31 @@
             }
         });
 
-        // Touch controls
-        canvas.addEventListener('touchstart', function(e) {
-            e.preventDefault();
-            var rect = canvas.getBoundingClientRect();
-            touch.x = e.touches[0].clientX - rect.left;
-            touch.y = e.touches[0].clientY - rect.top;
-            touch.active = true;
-        });
+        // D-Pad controls
+        var dPadElements = {
+            up: document.getElementById('dPadUp'),
+            down: document.getElementById('dPadDown'),
+            left: document.getElementById('dPadLeft'),
+            right: document.getElementById('dPadRight')
+        };
 
-        canvas.addEventListener('touchmove', function(e) {
-            e.preventDefault();
-            var rect = canvas.getBoundingClientRect();
-            touch.x = e.touches[0].clientX - rect.left;
-            touch.y = e.touches[0].clientY - rect.top;
-        });
-
-        canvas.addEventListener('touchend', function(e) {
-            e.preventDefault();
-            touch.active = false;
-        });
+        for (var dir in dPadElements) {
+            (function(direction) {
+                var elem = dPadElements[direction];
+                elem.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    dPad[direction] = true;
+                });
+                elem.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    dPad[direction] = false;
+                });
+                elem.addEventListener('touchcancel', function(e) {
+                    e.preventDefault();
+                    dPad[direction] = false;
+                });
+            })(dir);
+        }
 
         // Start and Restart buttons
         var startButton = document.getElementById('startButton');
@@ -366,7 +440,25 @@
                 shoot();
             }
 
-            // Touch controls
+            // D-Pad controls
+            if (dPad.up) {
+                player.y -= 200 * deltaTime;
+                shoot();
+            }
+            if (dPad.down) {
+                player.y += 200 * deltaTime;
+                shoot();
+            }
+            if (dPad.left) {
+                player.x -= 200 * deltaTime;
+                shoot();
+            }
+            if (dPad.right) {
+                player.x += 200 * deltaTime;
+                shoot();
+            }
+
+            // Touch controls (if you still want to use touch for movement)
             if (touch.active) {
                 // Touchscreen controls
                 var offset = -400; // Negative offset to position the ship behind the finger
@@ -381,7 +473,7 @@
                 var desiredY = touch.y + Math.sin(angleToTouch) * offset;
 
                 // Smoothly move the player towards the desired position
-                var smoothingFactor = 0.05; // Adjust between 0 (no movement) and 1 (instant movement)
+                var smoothingFactor = 0.1; // Adjust between 0 (no movement) and 1 (instant movement)
                 player.x += (desiredX - player.x) * smoothingFactor;
                 player.y += (desiredY - player.y) * smoothingFactor;
 
@@ -416,7 +508,7 @@
             }
 
             // Update player position based on speed and angle (for keyboard movement)
-            if (keys['ArrowUp'] || keys['ArrowDown']) {
+            if (keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight']) {
                 player.x += Math.cos(player.angle) * player.speed * deltaTime;
                 player.y += Math.sin(player.angle) * player.speed * deltaTime;
 
