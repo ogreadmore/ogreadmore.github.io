@@ -106,12 +106,12 @@
             background-color: rgba(255, 255, 255, 0.1);
         }
 
-        /* D-Pad Styles */
-        #dPad {
+        /* Joystick Styles */
+        #joystickContainer {
             position: absolute;
             bottom: 5%;
             left: 50%;
-            transform: translateX(-50%);
+            transform: translate(-50%, 100px); /* Move 100px higher */
             width: 150px;
             height: 150px;
             z-index: 20;
@@ -120,44 +120,28 @@
             touch-action: none;
         }
 
-        /* D-Pad Buttons */
-        .dPadButton {
+        #joystickBase {
             position: absolute;
-            background-color: #fff;
-            opacity: 0.3;
+            width: 100%;
+            height: 100%;
+            background-color: #ccc;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            user-select: none;
+            opacity: 0.3;
         }
 
-        #dPadUp {
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
+        #joystickThumb {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background-color: #fff;
+            border-radius: 50%;
+            top: 45px;
+            left: 45px;
         }
 
-        #dPadDown {
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-
-        #dPadLeft {
-            top: 50%;
-            left: 0;
-            transform: translateY(-50%);
-        }
-
-        #dPadRight {
-            top: 50%;
-            right: 0;
-            transform: translateY(-50%);
-        }
-
-        /* Show D-Pad on Mobile Devices */
+        /* Show Joystick on Mobile Devices */
         @media (hover: none) and (pointer: coarse) {
-            #dPad {
+            #joystickContainer {
                 display: block;
             }
 
@@ -200,12 +184,10 @@
     <canvas id="backgroundCanvas"></canvas>
     <!-- Game Canvas -->
     <canvas id="gameCanvas"></canvas>
-    <!-- D-Pad for Mobile Devices -->
-    <div id="dPad">
-        <div id="dPadUp" class="dPadButton"></div>
-        <div id="dPadDown" class="dPadButton"></div>
-        <div id="dPadLeft" class="dPadButton"></div>
-        <div id="dPadRight" class="dPadButton"></div>
+    <!-- Joystick for Mobile Devices -->
+    <div id="joystickContainer">
+        <div id="joystickBase"></div>
+        <div id="joystickThumb"></div>
     </div>
     <script>
         // Initialize variables
@@ -305,11 +287,13 @@
             leftDown: false
         };
 
-        var dPad = {
-            up: false,
-            down: false,
-            left: false,
-            right: false
+        var joystick = {
+            active: false,
+            identifier: null,
+            startX: 0,
+            startY: 0,
+            x: 0,
+            y: 0
         };
 
         var lastTime = 0;
@@ -347,34 +331,67 @@
             }
         });
 
-        // D-Pad controls
-        var dPadElements = {
-            up: document.getElementById('dPadUp'),
-            down: document.getElementById('dPadDown'),
-            left: document.getElementById('dPadLeft'),
-            right: document.getElementById('dPadRight')
-        };
+        // Joystick controls
+        var joystickContainer = document.getElementById('joystickContainer');
+        var joystickThumb = document.getElementById('joystickThumb');
 
-        for (var dir in dPadElements) {
-            (function(direction) {
-                var elem = dPadElements[direction];
-                elem.addEventListener('touchstart', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    dPad[direction] = true;
-                });
-                elem.addEventListener('touchend', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    dPad[direction] = false;
-                });
-                elem.addEventListener('touchcancel', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    dPad[direction] = false;
-                });
-            })(dir);
-        }
+        joystickContainer.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            var touch = e.targetTouches[0];
+            joystick.active = true;
+            joystick.identifier = touch.identifier;
+            joystick.startX = touch.pageX;
+            joystick.startY = touch.pageY;
+            joystick.x = 0;
+            joystick.y = 0;
+        });
+
+        joystickContainer.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            for (var i = 0; i < e.changedTouches.length; i++) {
+                var touch = e.changedTouches[i];
+                if (touch.identifier === joystick.identifier) {
+                    joystick.x = touch.pageX - joystick.startX;
+                    joystick.y = touch.pageY - joystick.startY;
+
+                    // Limit joystick movement
+                    var maxDistance = 50;
+                    var distance = Math.sqrt(joystick.x * joystick.x + joystick.y * joystick.y);
+                    if (distance > maxDistance) {
+                        var angle = Math.atan2(joystick.y, joystick.x);
+                        joystick.x = Math.cos(angle) * maxDistance;
+                        joystick.y = Math.sin(angle) * maxDistance;
+                    }
+
+                    joystickThumb.style.transform = 'translate(' + joystick.x + 'px, ' + joystick.y + 'px)';
+                    break;
+                }
+            }
+        });
+
+        joystickContainer.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            for (var i = 0; i < e.changedTouches.length; i++) {
+                var touch = e.changedTouches[i];
+                if (touch.identifier === joystick.identifier) {
+                    joystick.active = false;
+                    joystick.identifier = null;
+                    joystick.x = 0;
+                    joystick.y = 0;
+                    joystickThumb.style.transform = 'translate(0, 0)';
+                    break;
+                }
+            }
+        });
+
+        joystickContainer.addEventListener('touchcancel', function(e) {
+            e.preventDefault();
+            joystick.active = false;
+            joystick.identifier = null;
+            joystick.x = 0;
+            joystick.y = 0;
+            joystickThumb.style.transform = 'translate(0, 0)';
+        });
 
         // Start and Restart buttons
         var startButton = document.getElementById('startButton');
@@ -418,7 +435,7 @@
 
         // Handle input
         function handleInput(deltaTime) {
-            var moveSpeed = 200; // Movement speed for D-Pad and touch
+            var moveSpeed = 200; // Movement speed
 
             // Keyboard controls
             if (keys['ArrowLeft']) {
@@ -441,29 +458,19 @@
                 shoot();
             }
 
-            // D-Pad controls
-            var dPadActive = false;
-            if (dPad.up) {
-                player.y -= moveSpeed * deltaTime;
-                player.angle = -Math.PI / 2; // Up
-                dPadActive = true;
-            }
-            if (dPad.down) {
-                player.y += moveSpeed * deltaTime;
-                player.angle = Math.PI / 2; // Down
-                dPadActive = true;
-            }
-            if (dPad.left) {
-                player.x -= moveSpeed * deltaTime;
-                player.angle = Math.PI; // Left
-                dPadActive = true;
-            }
-            if (dPad.right) {
-                player.x += moveSpeed * deltaTime;
-                player.angle = 0; // Right
-                dPadActive = true;
-            }
-            if (dPadActive) {
+            // Joystick controls
+            if (joystick.active) {
+                var dx = joystick.x;
+                var dy = joystick.y;
+
+                // Apply movement
+                player.x += dx * deltaTime * 2; // Adjust speed as needed
+                player.y += dy * deltaTime * 2;
+
+                // Set player angle
+                player.angle = Math.atan2(dy, dx);
+
+                // Shoot
                 shoot();
             }
 
