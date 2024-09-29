@@ -156,7 +156,7 @@
         }
 
         /* Show D-Pad on Mobile Devices */
-        @media only screen and (max-width: 768px) {
+        @media (hover: none) and (pointer: coarse) {
             #dPad {
                 display: block;
             }
@@ -196,6 +196,10 @@
     <div id="restartButton">Restart</div>
     <!-- Start Button -->
     <div id="startButton">Start Game</div>
+    <!-- Background Canvas -->
+    <canvas id="backgroundCanvas"></canvas>
+    <!-- Game Canvas -->
+    <canvas id="gameCanvas"></canvas>
     <!-- D-Pad for Mobile Devices -->
     <div id="dPad">
         <div id="dPadUp" class="dPadButton"></div>
@@ -203,10 +207,6 @@
         <div id="dPadLeft" class="dPadButton"></div>
         <div id="dPadRight" class="dPadButton"></div>
     </div>
-    <!-- Background Canvas -->
-    <canvas id="backgroundCanvas"></canvas>
-    <!-- Game Canvas -->
-    <canvas id="gameCanvas"></canvas>
     <script>
         // Initialize variables
         var gameStarted = false;
@@ -305,12 +305,6 @@
             leftDown: false
         };
 
-        var touch = {
-            x: 0,
-            y: 0,
-            active: false
-        };
-
         var dPad = {
             up: false,
             down: false,
@@ -366,14 +360,17 @@
                 var elem = dPadElements[direction];
                 elem.addEventListener('touchstart', function(e) {
                     e.preventDefault();
+                    e.stopPropagation();
                     dPad[direction] = true;
                 });
                 elem.addEventListener('touchend', function(e) {
                     e.preventDefault();
+                    e.stopPropagation();
                     dPad[direction] = false;
                 });
                 elem.addEventListener('touchcancel', function(e) {
                     e.preventDefault();
+                    e.stopPropagation();
                     dPad[direction] = false;
                 });
             })(dir);
@@ -421,68 +418,57 @@
 
         // Handle input
         function handleInput(deltaTime) {
+            var moveSpeed = 200; // Movement speed for D-Pad and touch
+
             // Keyboard controls
             if (keys['ArrowLeft']) {
-                player.angle -= 2 * deltaTime; // Rotate at 2 radians per second
+                player.x -= moveSpeed * deltaTime;
+                player.angle = Math.PI; // Left
             }
             if (keys['ArrowRight']) {
-                player.angle += 2 * deltaTime;
+                player.x += moveSpeed * deltaTime;
+                player.angle = 0; // Right
             }
-
             if (keys['ArrowUp']) {
-                player.speed += 200 * deltaTime; // Increase speed
+                player.y -= moveSpeed * deltaTime;
+                player.angle = -Math.PI / 2; // Up
             }
             if (keys['ArrowDown']) {
-                player.speed -= 200 * deltaTime; // Decrease speed
+                player.y += moveSpeed * deltaTime;
+                player.angle = Math.PI / 2; // Down
             }
-
             if (keys['Space']) {
                 shoot();
             }
 
             // D-Pad controls
+            var dPadActive = false;
             if (dPad.up) {
-                player.y -= 200 * deltaTime;
-                shoot();
+                player.y -= moveSpeed * deltaTime;
+                player.angle = -Math.PI / 2; // Up
+                dPadActive = true;
             }
             if (dPad.down) {
-                player.y += 200 * deltaTime;
-                shoot();
+                player.y += moveSpeed * deltaTime;
+                player.angle = Math.PI / 2; // Down
+                dPadActive = true;
             }
             if (dPad.left) {
-                player.x -= 200 * deltaTime;
-                shoot();
+                player.x -= moveSpeed * deltaTime;
+                player.angle = Math.PI; // Left
+                dPadActive = true;
             }
             if (dPad.right) {
-                player.x += 200 * deltaTime;
+                player.x += moveSpeed * deltaTime;
+                player.angle = 0; // Right
+                dPadActive = true;
+            }
+            if (dPadActive) {
                 shoot();
             }
 
-            // Touch controls (if you still want to use touch for movement)
-            if (touch.active) {
-                // Touchscreen controls
-                var offset = -400; // Negative offset to position the ship behind the finger
-
-                // Calculate the angle from the ship to the touch point
-                var dx = touch.x - player.x;
-                var dy = touch.y - player.y;
-                var angleToTouch = Math.atan2(dy, dx);
-
-                // Desired position is behind the touch point by offset pixels
-                var desiredX = touch.x + Math.cos(angleToTouch) * offset;
-                var desiredY = touch.y + Math.sin(angleToTouch) * offset;
-
-                // Smoothly move the player towards the desired position
-                var smoothingFactor = 0.1; // Adjust between 0 (no movement) and 1 (instant movement)
-                player.x += (desiredX - player.x) * smoothingFactor;
-                player.y += (desiredY - player.y) * smoothingFactor;
-
-                // Set the player's angle towards the touch point
-                player.angle = angleToTouch;
-
-                shoot();
-            } else if (mouse.leftDown) {
-                // Mouse controls
+            // Mouse controls
+            if (mouse.leftDown) {
                 var dx = mouse.x - player.x;
                 var dy = mouse.y - player.y;
                 var angleToMouse = Math.atan2(dy, dx);
@@ -501,19 +487,6 @@
                 player.angle = angleToMouse;
 
                 shoot();
-            } else {
-                // No input; keep the ship in its current position
-                // Optionally, apply friction or slow down the ship
-                player.speed *= 0.98; // Apply friction to gradually slow down the ship
-            }
-
-            // Update player position based on speed and angle (for keyboard movement)
-            if (keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight']) {
-                player.x += Math.cos(player.angle) * player.speed * deltaTime;
-                player.y += Math.sin(player.angle) * player.speed * deltaTime;
-
-                // Apply friction
-                player.speed *= 0.99;
             }
 
             // Wrap around screen
