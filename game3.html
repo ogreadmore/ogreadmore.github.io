@@ -382,7 +382,7 @@
                     player.angle = Math.atan2(dy, dx);
                 }
 
-                var offset = -50; // Negative offset to position the ship behind the finger
+                var offset = -200; // Negative offset to position the ship behind the finger
                 player.x = touch.x + Math.cos(player.angle) * offset;
                 player.y = touch.y + Math.sin(player.angle) * offset;
 
