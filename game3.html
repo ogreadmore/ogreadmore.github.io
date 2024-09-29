@@ -124,7 +124,7 @@
         /* Joystick Styles */
         #joystickContainer {
             position: absolute;
-            bottom: 20%; /* Adjusted position */
+            bottom: 20%;
             left: 50%;
             transform: translateX(-50%);
             width: 150px;
@@ -298,6 +298,8 @@
             firepower: 1 // Number of heart-eye faces collected
         };
 
+        var initialPlayerState = JSON.parse(JSON.stringify(player)); // For resetting weapon
+
         var projectiles = [];
         var enemies = [];
         var keys = {};
@@ -451,6 +453,12 @@
                 player.level++;
                 enemySpawnRate *= 0.9; // Enemies spawn faster
                 enemySizeMultiplier += 0.1; // Enemies get larger
+
+                // Reset player's weapon
+                player.firepower = initialPlayerState.firepower;
+                player.projectileSize = initialPlayerState.projectileSize;
+                player.fireRate = initialPlayerState.fireRate;
+
                 clearEnemies();
                 showLevelMessage(player.level);
                 updateUI();
@@ -631,7 +639,7 @@
                         e.x += e.vx * deltaTime;
                         e.y += e.vy * deltaTime;
 
-                        // Only angry asteroids seek the player
+                        // Only angry faces seek the player
                         if (e.type === 'angry') {
                             // Update enemy velocity to seek the player
                             var dx = player.x - e.x;
@@ -767,7 +775,9 @@
                     var dy = p.y - e.y;
                     var distance = Math.sqrt(dx * dx + dy * dy);
 
-                    if (distance < (p.size / 2) + (e.size / 2) * 0.6) {
+                    var collisionDistance = (p.size / 2) + (e.size / 2) * 0.9; // Adjusted for accuracy
+
+                    if (distance < collisionDistance) {
                         projectiles.splice(i, 1);
 
                         if (e.type === 'angry' && e.state === 'normal') {
@@ -800,7 +810,14 @@
                 var dy = player.y - e.y;
                 var distance = Math.sqrt(dx * dx + dy * dy);
 
-                if (distance < (player.size / 2) + (e.size / 2) * 0.6) {
+                var heartSize = player.size;
+                if (isMobileDevice()) {
+                    heartSize = player.size * 2; // Double size on mobile
+                }
+
+                var collisionDistance = (heartSize / 2) + (e.size / 2) * 0.9; // Adjusted for accuracy
+
+                if (distance < collisionDistance) {
                     if (e.type === 'heart') {
                         // Collect heart-eye face
                         enemies.splice(i, 1);
@@ -899,9 +916,12 @@
             gameOver = false;
             player.score = 0;
             player.level = 1;
-            player.fireRate = 300;
-            player.projectileSize = 20;
-            player.firepower = 1; // Reset firepower
+
+            // Reset player's weapon
+            player.firepower = initialPlayerState.firepower;
+            player.projectileSize = initialPlayerState.projectileSize;
+            player.fireRate = initialPlayerState.fireRate;
+
             enemySpawnRate = 2000;
             enemySizeMultiplier = 1; // Reset enemy size multiplier
             enemies = [];
@@ -919,9 +939,12 @@
             gameOver = false;
             player.score = 0;
             player.level = 1;
-            player.fireRate = 300;
-            player.projectileSize = 20;
-            player.firepower = 1; // Reset firepower
+
+            // Reset player's weapon
+            player.firepower = initialPlayerState.firepower;
+            player.projectileSize = initialPlayerState.projectileSize;
+            player.fireRate = initialPlayerState.fireRate;
+
             enemySpawnRate = 2000;
             enemySizeMultiplier = 1; // Reset enemy size multiplier
             enemies = [];
