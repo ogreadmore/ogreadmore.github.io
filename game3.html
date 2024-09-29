@@ -1,4 +1,8 @@
-<style>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Space Haters</title>
+    <style>
         body {
             margin: 0;
             overflow: hidden;
@@ -102,10 +106,25 @@
             background-color: rgba(255, 255, 255, 0.1);
         }
 
+        /* Level Message Styles */
+        .levelMessage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: magenta;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 5vh;
+            user-select: none;
+            z-index: 15;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+
         /* Joystick Styles */
         #joystickContainer {
             position: absolute;
-            bottom: 20%; /* Adjusted from 5% to 20% */
+            bottom: 20%; /* Adjusted position */
             left: 50%;
             transform: translateX(-50%);
             width: 150px;
@@ -135,10 +154,15 @@
             left: 45px;
         }
 
-        /* Show Joystick on Mobile Devices */
+        /* Show Joystick and Adjustments on Mobile Devices */
         @media (hover: none) and (pointer: coarse) {
             #joystickContainer {
                 display: block;
+            }
+
+            /* Double the size of the heart ship */
+            .mobile-heart {
+                font-size: 120px !important;
             }
 
             /* Adjust Start and Restart Buttons for Mobile */
@@ -295,6 +319,7 @@
         var lastTime = 0;
         var enemySpawnRate = 2000; // milliseconds between spawns
         var lastEnemySpawnTime = 0;
+        var enemySizeMultiplier = 1; // Enemies get larger each level
 
         // Event listeners for controls
         // Keyboard controls
@@ -425,13 +450,16 @@
             if (player.score >= player.level * 50) {
                 player.level++;
                 enemySpawnRate *= 0.9; // Enemies spawn faster
+                enemySizeMultiplier += 0.1; // Enemies get larger
+                clearEnemies();
+                showLevelMessage(player.level);
                 updateUI();
             }
         }
 
         // Handle input
         function handleInput(deltaTime) {
-            var moveSpeed = 200; // Movement speed
+            var moveSpeed = 400; // Increased movement speed
 
             // Keyboard controls
             if (keys['ArrowLeft']) {
@@ -460,8 +488,8 @@
                 var dy = joystick.y;
 
                 // Apply movement
-                player.x += dx * deltaTime * 2; // Adjust speed as needed
-                player.y += dy * deltaTime * 2;
+                player.x += dx * deltaTime * 4; // Increased sensitivity
+                player.y += dy * deltaTime * 4;
 
                 // Set player angle
                 player.angle = Math.atan2(dy, dx);
@@ -559,53 +587,62 @@
             for (var i = enemies.length - 1; i >= 0; i--) {
                 var e = enemies[i];
 
-                // Handle hit animation for 'wow' state
-                if (e.state === 'hit') {
-                    e.hitDuration += deltaTime;
-                    if (e.hitDuration >= 0.5) {
-                        // After 0.5 seconds, split into confused faces
+                // Handle enemy fade out
+                if (e.fadingOut) {
+                    e.opacity -= deltaTime;
+                    if (e.opacity <= 0) {
                         enemies.splice(i, 1);
-                        // Angry face splits into 4 confused faces
-                        for (var k = 0; k < 4; k++) {
-                            var angle = Math.random() * Math.PI * 2;
-                            var speed = 150; // Speed for confused faces
-                            enemies.push({
-                                x: e.x,
-                                y: e.y,
-                                vx: Math.cos(angle) * speed,
-                                vy: Math.sin(angle) * speed,
-                                size: e.originalSize / 2,
-                                originalSize: e.originalSize / 2,
-                                type: 'confused',
-                                state: 'normal',
-                                hitDuration: 0,
-                                lifeTime: 0, // For heart-eye emojis
-                                fading: false,
-                                blinkTimer: 0,
-                                visible: true,
-                                opacity: 1
-                            });
-                        }
                         continue;
                     }
-                    // Enlarge the size slightly during 'wow' state
-                    e.size = e.originalSize * 1.2;
                 } else {
-                    // Update enemy position
-                    e.x += e.vx * deltaTime;
-                    e.y += e.vy * deltaTime;
+                    // Handle hit animation for 'wow' state
+                    if (e.state === 'hit') {
+                        e.hitDuration += deltaTime;
+                        if (e.hitDuration >= 0.5) {
+                            // After 0.5 seconds, split into confused faces
+                            enemies.splice(i, 1);
+                            // Angry face splits into 4 confused faces
+                            for (var k = 0; k < 4; k++) {
+                                var angle = Math.random() * Math.PI * 2;
+                                var speed = 150; // Speed for confused faces
+                                enemies.push({
+                                    x: e.x,
+                                    y: e.y,
+                                    vx: Math.cos(angle) * speed,
+                                    vy: Math.sin(angle) * speed,
+                                    size: e.originalSize / 2,
+                                    originalSize: e.originalSize / 2,
+                                    type: 'confused',
+                                    state: 'normal',
+                                    hitDuration: 0,
+                                    lifeTime: 0, // For heart-eye emojis
+                                    fading: false,
+                                    blinkTimer: 0,
+                                    visible: true,
+                                    opacity: 1
+                                });
+                            }
+                            continue;
+                        }
+                        // Enlarge the size slightly during 'wow' state
+                        e.size = e.originalSize * 1.2;
+                    } else {
+                        // Update enemy position
+                        e.x += e.vx * deltaTime;
+                        e.y += e.vy * deltaTime;
 
-                    // Only angry asteroids seek the player
-                    if (e.type === 'angry') {
-                        // Update enemy velocity to seek the player
-                        var dx = player.x - e.x;
-                        var dy = player.y - e.y;
-                        var angleToPlayer = Math.atan2(dy, dx);
+                        // Only angry asteroids seek the player
+                        if (e.type === 'angry') {
+                            // Update enemy velocity to seek the player
+                            var dx = player.x - e.x;
+                            var dy = player.y - e.y;
+                            var angleToPlayer = Math.atan2(dy, dx);
 
-                        // Adjust velocity to move towards the player
-                        var speed = e.speed;
-                        e.vx = Math.cos(angleToPlayer) * speed;
-                        e.vy = Math.sin(angleToPlayer) * speed;
+                            // Adjust velocity to move towards the player
+                            var speed = e.speed;
+                            e.vx = Math.cos(angleToPlayer) * speed;
+                            e.vy = Math.sin(angleToPlayer) * speed;
+                        }
                     }
                 }
 
@@ -641,7 +678,7 @@
 
         // Spawn enemy off-screen
         function spawnEnemy() {
-            var size = 150; // Increased size for angry faces
+            var size = 150 * enemySizeMultiplier; // Increased size each level
             var speed = (50 + 10 * player.level); // Enemies get faster each level
 
             // Randomly select a side to spawn from
@@ -687,6 +724,36 @@
                 visible: true,
                 opacity: 1
             });
+        }
+
+        // Clear enemies when leveling up
+        function clearEnemies() {
+            // Fade out and remove all enemies
+            enemies.forEach(function(e) {
+                e.fadingOut = true;
+            });
+        }
+
+        // Show level message
+        function showLevelMessage(level) {
+            var levelMessage = document.createElement('div');
+            levelMessage.className = 'levelMessage';
+            levelMessage.innerText = 'Level ' + level;
+            document.body.appendChild(levelMessage);
+
+            // Fade in
+            setTimeout(function() {
+                levelMessage.style.opacity = '1';
+            }, 50);
+
+            // Fade out after 1 second
+            setTimeout(function() {
+                levelMessage.style.opacity = '0';
+                // Remove after fade out
+                setTimeout(function() {
+                    document.body.removeChild(levelMessage);
+                }, 1000);
+            }, 1500);
         }
 
         // Check collisions
@@ -760,7 +827,13 @@
             ctx.save();
             ctx.translate(player.x, player.y);
             ctx.rotate(player.angle + Math.PI / 2); // Rotate to pointy end forward
-            ctx.font = player.size + 'px Arial';
+
+            var heartSize = player.size;
+            if (isMobileDevice()) {
+                heartSize = player.size * 2; // Double size on mobile
+            }
+
+            ctx.font = heartSize + 'px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText('❤️', 0, 0);
@@ -800,15 +873,18 @@
                         emoji = '😮';
                     }
 
-                    if (e.type === 'heart' && e.fading) {
-                        ctx.globalAlpha = e.opacity;
-                    }
+                    ctx.globalAlpha = e.opacity !== undefined ? e.opacity : 1;
 
                     ctx.fillText(emoji, 0, 0);
                     ctx.restore();
                     ctx.globalAlpha = 1; // Reset alpha
                 }
             }
+        }
+
+        // Check if device is mobile
+        function isMobileDevice() {
+            return (typeof window.orientation !== "undefined") || (navigator.userAgent.indexOf('IEMobile') !== -1);
         }
 
         // Update UI elements
@@ -827,6 +903,7 @@
             player.projectileSize = 20;
             player.firepower = 1; // Reset firepower
             enemySpawnRate = 2000;
+            enemySizeMultiplier = 1; // Reset enemy size multiplier
             enemies = [];
             projectiles = [];
             updateUI();
@@ -846,6 +923,7 @@
             player.projectileSize = 20;
             player.firepower = 1; // Reset firepower
             enemySpawnRate = 2000;
+            enemySizeMultiplier = 1; // Reset enemy size multiplier
             enemies = [];
             projectiles = [];
             updateUI();
