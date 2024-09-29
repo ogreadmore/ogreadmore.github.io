@@ -381,7 +381,7 @@
                 var desiredY = touch.y + Math.sin(angleToTouch) * offset;
 
                 // Smoothly move the player towards the desired position
-                var smoothingFactor = 0.1; // Adjust between 0 (no movement) and 1 (instant movement)
+                var smoothingFactor = 0.05; // Adjust between 0 (no movement) and 1 (instant movement)
                 player.x += (desiredX - player.x) * smoothingFactor;
                 player.y += (desiredY - player.y) * smoothingFactor;
 
