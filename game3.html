@@ -233,7 +233,9 @@
             lastShotTime: 0,
             projectileSize: 20,
             size: 60, // Increased size
-            firepower: 1 // Number of heart-eye faces collected
+            firepower: 1, // Number of heart-eye faces collected
+            prevX: 0,
+            prevY: 0
         };
 
         var projectiles = [];
@@ -295,6 +297,8 @@
             touch.x = e.touches[0].clientX - rect.left;
             touch.y = e.touches[0].clientY - rect.top;
             touch.active = true;
+            player.prevX = touch.x;
+            player.prevY = touch.y;
         });
 
         canvas.addEventListener('touchmove', function(e) {
@@ -373,15 +377,15 @@
             // Mouse controls
             if (touch.active) {
                 // Touchscreen controls
-                player.x = touch.x;
-                player.y = touch.y;
-
-                // Calculate angle based on movement direction
+                var offset = 50; // Offset to position the ship above the finger
                 var dx = touch.x - player.prevX;
                 var dy = touch.y - player.prevY;
                 if (dx !== 0 || dy !== 0) {
                     player.angle = Math.atan2(dy, dx);
                 }
+
+                player.x = touch.x + Math.cos(player.angle) * offset;
+                player.y = touch.y + Math.sin(player.angle) * offset;
 
                 shoot();
 
@@ -502,7 +506,11 @@
                                 type: 'confused',
                                 state: 'normal',
                                 hitDuration: 0,
-                                spawnTime: now
+                                lifeTime: 0, // For heart-eye emojis
+                                fading: false,
+                                blinkTimer: 0,
+                                visible: true,
+                                opacity: 1
                             });
                         }
                         continue;
@@ -517,18 +525,19 @@
                 // Handle heart-eye emoji fade out
                 if (e.type === 'heart') {
                     e.lifeTime += deltaTime;
-                    if (e.lifeTime >= 3 && !e.fading) {
+                    if (e.lifeTime >= 2 && !e.fading) {
                         e.fading = true;
                         e.blinkTimer = 0;
                     }
 
                     if (e.fading) {
                         e.blinkTimer += deltaTime;
-                        if (e.blinkTimer >= 0.5) {
+                        e.opacity -= deltaTime / 3; // Fade out over 3 seconds
+                        if (e.blinkTimer >= 0.3) {
                             e.visible = !e.visible;
                             e.blinkTimer = 0;
                         }
-                        if (e.lifeTime >= 6) {
+                        if (e.lifeTime >= 5 || e.opacity <= 0) {
                             enemies.splice(i, 1);
                             continue;
                         }
@@ -585,7 +594,8 @@
                 lifeTime: 0, // For heart-eye emojis
                 fading: false,
                 blinkTimer: 0,
-                visible: true
+                visible: true,
+                opacity: 1
             });
         }
 
@@ -616,6 +626,7 @@
                             e.lifeTime = 0;
                             e.fading = false;
                             e.visible = true;
+                            e.opacity = 1;
                             player.score += 2;
                             updateUI();
                         }
@@ -687,12 +698,13 @@
             // Draw enemies
             for (var i = 0; i < enemies.length; i++) {
                 var e = enemies[i];
-                if (e.type !== 'heart' || e.visible) {
+                if (e.visible) {
                     ctx.save();
                     ctx.translate(e.x, e.y);
                     ctx.font = e.size + 'px Arial';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
+
                     var emoji = '';
                     if (e.type === 'angry') {
                         emoji = '😠';
@@ -703,8 +715,14 @@
                     } else if (e.type === 'wow') {
                         emoji = '😮';
                     }
+
+                    if (e.type === 'heart' && e.fading) {
+                        ctx.globalAlpha = e.opacity;
+                    }
+
                     ctx.fillText(emoji, 0, 0);
                     ctx.restore();
+                    ctx.globalAlpha = 1; // Reset alpha
                 }
             }
         }
