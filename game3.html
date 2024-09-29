@@ -231,9 +231,7 @@
             lastShotTime: 0,
             projectileSize: 20,
             size: 60, // Increased size
-            firepower: 1, // Number of heart-eye faces collected
-            prevX: 0,
-            prevY: 0
+            firepower: 1 // Number of heart-eye faces collected
         };
 
         var projectiles = [];
@@ -242,8 +240,6 @@
         var mouse = {
             x: canvas.width / 2,
             y: canvas.height / 2,
-            prevX: canvas.width / 2,
-            prevY: canvas.height / 2,
             leftDown: false
         };
 
@@ -393,24 +389,30 @@
                 player.angle = angleToTouch;
 
                 shoot();
-            } else {
+            } else if (mouse.leftDown) {
                 // Mouse controls
                 var dx = mouse.x - player.x;
                 var dy = mouse.y - player.y;
                 var angleToMouse = Math.atan2(dy, dx);
 
-                // Calculate the position 50 pixels behind the mouse cursor
+                // Desired position is behind the mouse cursor by desiredDistance pixels
                 var desiredDistance = 50;
-                player.x = mouse.x - Math.cos(angleToMouse) * desiredDistance;
-                player.y = mouse.y - Math.sin(angleToMouse) * desiredDistance;
+                var desiredX = mouse.x - Math.cos(angleToMouse) * desiredDistance;
+                var desiredY = mouse.y - Math.sin(angleToMouse) * desiredDistance;
+
+                // Smoothly move the player towards the desired position
+                var smoothingFactor = 0.1;
+                player.x += (desiredX - player.x) * smoothingFactor;
+                player.y += (desiredY - player.y) * smoothingFactor;
 
                 // Set player angle towards the mouse cursor
                 player.angle = angleToMouse;
 
-                // Left mouse button to shoot
-                if (mouse.leftDown) {
-                    shoot();
-                }
+                shoot();
+            } else {
+                // No input; keep the ship in its current position
+                // Optionally, apply friction or slow down the ship
+                player.speed *= 0.98; // Apply friction to gradually slow down the ship
             }
 
             // Update player position based on speed and angle (for keyboard movement)
@@ -520,6 +522,16 @@
                     // Enlarge the size slightly during 'wow' state
                     e.size = e.originalSize * 1.2;
                 } else {
+                    // Update enemy velocity to seek the player
+                    var dx = player.x - e.x;
+                    var dy = player.y - e.y;
+                    var angleToPlayer = Math.atan2(dy, dx);
+
+                    // Adjust velocity to move towards the player
+                    var speed = e.speed;
+                    e.vx = Math.cos(angleToPlayer) * speed;
+                    e.vy = Math.sin(angleToPlayer) * speed;
+
                     e.x += e.vx * deltaTime;
                     e.y += e.vy * deltaTime;
                 }
@@ -561,7 +573,7 @@
 
             // Randomly select a side to spawn from
             var side = Math.floor(Math.random() * 4); // 0: left, 1: top, 2: right, 3: bottom
-            var x, y, angle;
+            var x, y;
 
             if (side === 0) { // Left
                 x = -size;
@@ -577,17 +589,19 @@
                 y = canvas.height + size;
             }
 
-            // Set angle towards the center of the canvas
-            angle = Math.atan2(canvas.height / 2 - y, canvas.width / 2 - x);
-
-            var vx = Math.cos(angle) * speed;
-            var vy = Math.sin(angle) * speed;
+            // Set initial velocity towards the player
+            var dx = player.x - x;
+            var dy = player.y - y;
+            var angleToPlayer = Math.atan2(dy, dx);
+            var vx = Math.cos(angleToPlayer) * speed;
+            var vy = Math.sin(angleToPlayer) * speed;
 
             enemies.push({
                 x: x,
                 y: y,
                 vx: vx,
                 vy: vy,
+                speed: speed,
                 size: size,
                 originalSize: size,
                 type: 'angry', // 'angry', 'confused', 'heart', 'wow'
@@ -769,3 +783,4 @@
     </script>
 </body>
 </html>
+
