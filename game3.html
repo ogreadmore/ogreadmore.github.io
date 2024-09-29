@@ -134,7 +134,6 @@
     <div id="scoreboard">
         <div class="title">Space Haters</div>
         <div class="score">Score: 0</div>
-        <div class="lives">Lives: 3</div>
         <div class="level">Level: 1</div>
     </div>
     <!-- Game Over and Restart Button -->
@@ -226,7 +225,6 @@
             angle: 0,
             speed: 0,
             rotation: 0,
-            lives: 3,
             score: 0,
             level: 1,
             fireRate: 300, // milliseconds between shots
@@ -377,7 +375,7 @@
             // Mouse controls
             if (touch.active) {
                 // Touchscreen controls
-                var offset = 50; // Offset to position the ship above the finger
+                var offset = 75; // Offset to position the ship above the finger
                 var dx = touch.x - player.prevX;
                 var dy = touch.y - player.prevY;
                 if (dx !== 0 || dy !== 0) {
@@ -652,16 +650,10 @@
                         player.firepower += 1; // Increase firepower
                         updateUI();
                     } else if (e.type !== 'wow') {
-                        // Lose a life
-                        enemies.splice(i, 1);
-                        player.lives--;
-                        updateUI();
-                        if (player.lives <= 0) {
-                            // Game over
-                            gameOver = true;
-                            document.getElementById('gameOver').style.display = 'block';
-                            document.getElementById('restartButton').style.display = 'block';
-                        }
+                        // Game over
+                        gameOver = true;
+                        document.getElementById('gameOver').style.display = 'block';
+                        document.getElementById('restartButton').style.display = 'block';
                     }
                 }
             }
@@ -730,7 +722,6 @@
         // Update UI elements
         function updateUI() {
             document.querySelector('#scoreboard .score').innerText = 'Score: ' + player.score;
-            document.querySelector('#scoreboard .lives').innerText = 'Lives: ' + player.lives;
             document.querySelector('#scoreboard .level').innerText = 'Level: ' + player.level;
         }
 
@@ -738,7 +729,6 @@
         function startGame() {
             gameStarted = true;
             gameOver = false;
-            player.lives = 3;
             player.score = 0;
             player.level = 1;
             player.fireRate = 300;
@@ -758,7 +748,6 @@
         // Restart the game
         function restartGame() {
             gameOver = false;
-            player.lives = 3;
             player.score = 0;
             player.level = 1;
             player.fireRate = 300;
