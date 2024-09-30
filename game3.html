@@ -166,6 +166,15 @@
         @media (hover: none) and (pointer: coarse) {
             #leftJoystickContainer, #rightJoystickContainer {
                 display: block;
+                width: 400px;   /* Doubled size */
+                height: 400px;  /* Doubled size */
+            }
+
+            #leftJoystickThumb, #rightJoystickThumb {
+                width: 160px;   /* Doubled size */
+                height: 160px;  /* Doubled size */
+                top: 120px;     /* Adjusted position */
+                left: 120px;    /* Adjusted position */
             }
 
             /* Adjust the size of the heart ship on mobile */
@@ -541,8 +550,8 @@
             updateEnemies(deltaTime);
             checkCollisions();
 
-            // Level up after destroying 10 large asteroids
-            if (largeAsteroidsDestroyed >= 10) {
+            // Level up after destroying 5 large asteroids
+            if (largeAsteroidsDestroyed >= 5) {
                 player.level++;
                 largeAsteroidsDestroyed = 0; // Reset counter
                 enemySpawnRate *= 0.9; // Enemies spawn faster
@@ -644,11 +653,11 @@
                 player.lastShotTime = now;
 
                 var maxFirepower = 20; // Maximum firepower level
-                var numProjectiles = 1 + Math.floor((player.firepower - 1) / 2); // Increase projectiles every 2 firepower
-                numProjectiles = Math.min(numProjectiles, 10); // Cap the maximum number of projectiles
+                var numProjectiles = Math.min(player.firepower, 10); // Increase projectiles directly with firepower
+                numProjectiles = Math.max(numProjectiles, 1); // Ensure at least 1 projectile
 
                 var maxSpreadAngle = Math.PI / 4; // Maximum spread angle (45 degrees)
-                var spreadAngle = (player.firepower / maxFirepower) * maxSpreadAngle;
+                var spreadAngle = (player.firepower - 1) * (maxSpreadAngle / (maxFirepower - 1));
                 spreadAngle = Math.min(spreadAngle, maxSpreadAngle);
 
                 var startAngle = player.shootAngle - spreadAngle / 2;
