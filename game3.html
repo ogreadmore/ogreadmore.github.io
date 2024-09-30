@@ -46,6 +46,7 @@
 
         #scoreboard .score {
             font-size: 2.5vh;
+            margin-bottom: 20px; /* Added space between score and level */
         }
 
         /* Game Over and Restart Button Styles */
@@ -197,15 +198,15 @@
 <body>
     <!-- Scoreboard -->
     <div id="scoreboard">
-        <div class="title">Space Haters</div>
-        <div class="score">Score: 0</div>
-        <div class="level">Level: 1</div>
+        <div class="title">space haters</div>
+        <div class="score">score: 0</div>
+        <div class="level">level: 1</div>
     </div>
     <!-- Game Over and Restart Button -->
-    <div id="gameOver">GAME OVER</div>
-    <div id="restartButton">Restart</div>
+    <div id="gameOver">game over</div>
+    <div id="restartButton">restart</div>
     <!-- Start Button -->
-    <div id="startButton">Start Game</div>
+    <div id="startButton">start game</div>
     <!-- Background Canvas -->
     <canvas id="backgroundCanvas"></canvas>
     <!-- Game Canvas -->
@@ -590,9 +591,10 @@
                 var maxDistance = 80; // Should match the joystick's maxDistance in touchmove
 
                 if (distance > 0) {
-                    var speedFactor = distance / maxDistance; // Ranges from 0 to 1
+                    var normalizedDistance = distance / maxDistance;
+                    var speedFactor = Math.pow(normalizedDistance, 2); // Less sensitive near center
 
-                    var moveSpeed = baseMoveSpeed * speedFactor * 2; // Multiply by 2 for higher top speed
+                    var moveSpeed = baseMoveSpeed * speedFactor;
 
                     // Apply movement
                     player.x += (dx / distance) * moveSpeed * deltaTime;
@@ -844,7 +846,7 @@
         function showLevelMessage(level) {
             var levelMessage = document.createElement('div');
             levelMessage.className = 'levelMessage';
-            levelMessage.innerText = 'Level ' + level;
+            levelMessage.innerText = 'level ' + level;
             document.body.appendChild(levelMessage);
 
             // Fade in
@@ -1008,8 +1010,8 @@
 
         // Update UI elements
         function updateUI() {
-            document.querySelector('#scoreboard .score').innerText = 'Score: ' + player.score;
-            document.querySelector('#scoreboard .level').innerText = 'Level: ' + player.level;
+            document.querySelector('#scoreboard .score').innerText = 'score: ' + player.score;
+            document.querySelector('#scoreboard .level').innerText = 'level: ' + player.level;
         }
 
         // Start the game
