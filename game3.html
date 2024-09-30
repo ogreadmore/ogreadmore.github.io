@@ -168,9 +168,9 @@
                 display: block;
             }
 
-            /* Double the size of the heart ship */
+            /* Adjust the size of the heart ship on mobile */
             .mobile-heart {
-                font-size: 200px !important;
+                font-size: 150px !important; /* Slightly smaller size */
             }
 
             /* Adjust Start and Restart Buttons for Mobile */
@@ -300,7 +300,7 @@
             x: canvas.width / 2,
             y: canvas.height / 2,
             angle: 0,
-            shootAngle: 0, // Added for gun direction
+            shootAngle: 0,
             speed: 0,
             rotation: 0,
             score: 0,
@@ -412,7 +412,7 @@
                     leftJoystick.y = touch.pageY - leftJoystick.startY;
 
                     // Limit joystick movement and add resistance
-                    var maxDistance = 80; // Adjusted based on new joystick size
+                    var maxDistance = 80;
                     var distance = Math.sqrt(leftJoystick.x * leftJoystick.x + leftJoystick.y * leftJoystick.y);
                     if (distance > maxDistance) {
                         var angle = Math.atan2(leftJoystick.y, leftJoystick.x);
@@ -723,12 +723,13 @@
                                 type: 'dizzy',
                                 state: 'normal',
                                 hitDuration: 0,
-                                lifeTime: 0, // For heart-eye emojis
+                                lifeTime: 0,
                                 fading: false,
                                 blinkTimer: 0,
                                 visible: true,
                                 opacity: 1,
-                                hitPoints: 2 // Dizzy faces require 2 hits
+                                hitPoints: 2,
+                                vibrateTimer: 0
                             });
                         }
                         continue;
@@ -751,6 +752,19 @@
                         var speed = e.speed;
                         e.vx = Math.cos(angleToPlayer) * speed;
                         e.vy = Math.sin(angleToPlayer) * speed;
+                    }
+
+                    // Handle vibration effect
+                    if (e.vibrate) {
+                        e.vibrateTimer += deltaTime;
+                        var vibrateAmount = Math.sin(e.vibrateTimer * 50) * 5;
+                        e.vibrateOffsetX = vibrateAmount;
+                        e.vibrateOffsetY = -vibrateAmount;
+                        if (e.vibrateTimer >= 0.2) {
+                            e.vibrate = false;
+                            e.vibrateOffsetX = 0;
+                            e.vibrateOffsetY = 0;
+                        }
                     }
                 }
 
@@ -831,7 +845,11 @@
                 blinkTimer: 0,
                 visible: true,
                 opacity: 1,
-                hitPoints: 3 // Angry face requires 3 hits
+                hitPoints: 3, // Angry face requires 3 hits
+                vibrate: false,
+                vibrateTimer: 0,
+                vibrateOffsetX: 0,
+                vibrateOffsetY: 0
             });
         }
 
@@ -883,6 +901,15 @@
 
                         e.hitPoints--;
 
+                        // Start vibration
+                        e.vibrate = true;
+                        e.vibrateTimer = 0;
+
+                        if (e.type === 'angry') {
+                            // Grow slightly with each hit
+                            e.size += e.originalSize * 0.05;
+                        }
+
                         if (e.hitPoints <= 0) {
                             if (e.type === 'angry' && e.state === 'normal') {
                                 // Start exploding process
@@ -923,7 +950,7 @@
 
                 var heartSize = player.size;
                 if (isMobileDevice()) {
-                    heartSize = player.size * 2; // Double size on mobile
+                    heartSize = player.size * 1.5; // Slightly smaller on mobile
                 }
 
                 var collisionDistance = (heartSize / 2) + (e.size / 2) * 0.9;
@@ -958,7 +985,7 @@
 
             var heartSize = player.size;
             if (isMobileDevice()) {
-                heartSize = player.size * 2; // Double size on mobile
+                heartSize = player.size * 1.5; // Slightly smaller on mobile
             }
 
             ctx.font = heartSize + 'px Arial';
@@ -985,7 +1012,7 @@
                 var e = enemies[i];
                 if (e.visible) {
                     ctx.save();
-                    ctx.translate(e.x, e.y);
+                    ctx.translate(e.x + (e.vibrateOffsetX || 0), e.y + (e.vibrateOffsetY || 0));
                     ctx.font = e.size + 'px Arial';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
