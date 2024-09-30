@@ -126,9 +126,9 @@
         /* Joystick Styles */
         #leftJoystickContainer, #rightJoystickContainer {
             position: absolute;
-            bottom: 20%;
-            width: 200px;
-            height: 200px;
+            bottom: 10%; /* Moved closer to the edge */
+            width: 300px;  /* Reduced size */
+            height: 300px; /* Reduced size */
             z-index: 20;
             display: none;
             opacity: 0.5;
@@ -136,11 +136,11 @@
         }
 
         #leftJoystickContainer {
-            left: 10%;
+            left: 5%; /* Closer to the left edge */
         }
 
         #rightJoystickContainer {
-            right: 10%;
+            right: 5%; /* Closer to the right edge */
         }
 
         #leftJoystickBase, #rightJoystickBase {
@@ -154,27 +154,18 @@
 
         #leftJoystickThumb, #rightJoystickThumb {
             position: absolute;
-            width: 80px;
-            height: 80px;
+            width: 120px;   /* Adjusted size */
+            height: 120px;  /* Adjusted size */
+            top: 90px;      /* Adjusted position */
+            left: 90px;     /* Adjusted position */
             background-color: #fff;
             border-radius: 50%;
-            top: 60px;
-            left: 60px;
         }
 
         /* Show Joystick and Adjustments on Mobile Devices */
         @media (hover: none) and (pointer: coarse) {
             #leftJoystickContainer, #rightJoystickContainer {
                 display: block;
-                width: 400px;   /* Doubled size */
-                height: 400px;  /* Doubled size */
-            }
-
-            #leftJoystickThumb, #rightJoystickThumb {
-                width: 160px;   /* Doubled size */
-                height: 160px;  /* Doubled size */
-                top: 120px;     /* Adjusted position */
-                left: 120px;    /* Adjusted position */
             }
 
             /* Adjust the size of the heart ship on mobile */
@@ -421,7 +412,7 @@
                     leftJoystick.y = touch.pageY - leftJoystick.startY;
 
                     // Limit joystick movement and add resistance
-                    var maxDistance = 80;
+                    var maxDistance = 100; // Adjusted based on new joystick size
                     var distance = Math.sqrt(leftJoystick.x * leftJoystick.x + leftJoystick.y * leftJoystick.y);
                     if (distance > maxDistance) {
                         var angle = Math.atan2(leftJoystick.y, leftJoystick.x);
@@ -480,7 +471,7 @@
                     rightJoystick.y = touch.pageY - rightJoystick.startY;
 
                     // Limit joystick movement
-                    var maxDistance = 80;
+                    var maxDistance = 100;
                     var distance = Math.sqrt(rightJoystick.x * rightJoystick.x + rightJoystick.y * rightJoystick.y);
                     if (distance > maxDistance) {
                         var angle = Math.atan2(rightJoystick.y, rightJoystick.x);
@@ -599,7 +590,7 @@
                 var dy = leftJoystick.y;
 
                 var distance = Math.sqrt(dx * dx + dy * dy);
-                var maxDistance = 80;
+                var maxDistance = 100;
 
                 if (distance > 0) {
                     var normalizedDistance = distance / maxDistance;
@@ -622,7 +613,7 @@
                 var dy = rightJoystick.y;
 
                 var distance = Math.sqrt(dx * dx + dy * dy);
-                var maxDistance = 80;
+                var maxDistance = 100;
 
                 if (distance > 0) {
                     // Set player shooting angle
