@@ -564,19 +564,19 @@
             var baseMoveSpeed = 400; // Base movement speed
 
             // Keyboard controls
-            if (keys['ArrowLeft']) {
+            if (keys['ArrowLeft'] || keys['KeyA']) {
                 player.x -= baseMoveSpeed * deltaTime;
                 player.angle = Math.PI; // Left
             }
-            if (keys['ArrowRight']) {
+            if (keys['ArrowRight'] || keys['KeyD']) {
                 player.x += baseMoveSpeed * deltaTime;
                 player.angle = 0; // Right
             }
-            if (keys['ArrowUp']) {
+            if (keys['ArrowUp'] || keys['KeyW']) {
                 player.y -= baseMoveSpeed * deltaTime;
                 player.angle = -Math.PI / 2; // Up
             }
-            if (keys['ArrowDown']) {
+            if (keys['ArrowDown'] || keys['KeyS']) {
                 player.y += baseMoveSpeed * deltaTime;
                 player.angle = Math.PI / 2; // Down
             }
@@ -709,33 +709,12 @@
                     if (e.hitDuration >= 0.3) {
                         // After duration, split into dizzy faces
                         enemies.splice(i, 1);
-                        // Angry face splits into 4 dizzy faces
-                        for (var k = 0; k < 4; k++) {
-                            var angle = Math.random() * Math.PI * 2;
-                            var speed = 150; // Speed for dizzy faces
-                            enemies.push({
-                                x: e.x,
-                                y: e.y,
-                                vx: Math.cos(angle) * speed,
-                                vy: Math.sin(angle) * speed,
-                                size: e.originalSize / 2,
-                                originalSize: e.originalSize / 2,
-                                type: 'dizzy',
-                                state: 'normal',
-                                hitDuration: 0,
-                                lifeTime: 0,
-                                fading: false,
-                                blinkTimer: 0,
-                                visible: true,
-                                opacity: 1,
-                                hitPoints: 2,
-                                vibrateTimer: 0
-                            });
-                        }
+                        // Angry face shows WOW emoji before splitting
+                        createDizzyFaces(e.x, e.y, e.originalSize / 2);
                         continue;
                     }
                     // Enlarge the size slightly during 'exploding' state
-                    e.size = e.originalSize * 1.2;
+                    e.size = e.originalSize * 1.5;
                 } else {
                     // Update enemy position
                     e.x += e.vx * deltaTime;
@@ -765,6 +744,13 @@
                             e.vibrateOffsetX = 0;
                             e.vibrateOffsetY = 0;
                         }
+                    }
+
+                    // Update dizzy faces with wavy paths
+                    if (e.type === 'dizzy') {
+                        e.waveTimer += deltaTime;
+                        e.x += Math.cos(e.waveTimer * e.waveFrequency) * e.waveAmplitude * deltaTime;
+                        e.y += Math.sin(e.waveTimer * e.waveFrequency) * e.waveAmplitude * deltaTime;
                     }
                 }
 
@@ -853,6 +839,41 @@
             });
         }
 
+        // Create dizzy faces after angry face explodes
+        function createDizzyFaces(x, y, size) {
+            for (var k = 0; k < 4; k++) {
+                var angle = Math.random() * Math.PI * 2;
+                var speed = 150; // Speed for dizzy faces
+                var waveFrequency = Math.random() * 5 + 2; // Random frequency
+                var waveAmplitude = Math.random() * 50 + 20; // Random amplitude
+                enemies.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    speed: speed,
+                    size: size,
+                    originalSize: size,
+                    type: 'dizzy',
+                    state: 'normal',
+                    hitDuration: 0,
+                    lifeTime: 0,
+                    fading: false,
+                    blinkTimer: 0,
+                    visible: true,
+                    opacity: 1,
+                    hitPoints: 2, // Dizzy faces require 2 hits
+                    vibrate: false,
+                    vibrateTimer: 0,
+                    vibrateOffsetX: 0,
+                    vibrateOffsetY: 0,
+                    waveTimer: 0,
+                    waveFrequency: waveFrequency,
+                    waveAmplitude: waveAmplitude
+                });
+            }
+        }
+
         // Clear enemies when leveling up
         function clearEnemies() {
             // Fade out and remove all enemies
@@ -912,9 +933,10 @@
 
                         if (e.hitPoints <= 0) {
                             if (e.type === 'angry' && e.state === 'normal') {
-                                // Start exploding process
+                                // Change to 'exploding' state and display WOW emoji
                                 e.state = 'exploding';
                                 e.hitDuration = 0;
+                                e.type = 'wow'; // Temporarily set to wow for rendering
                                 largeAsteroidsDestroyed++;
                                 player.score += 5;
                                 updateUI();
@@ -1024,6 +1046,8 @@
                         emoji = '😵‍💫';
                     } else if (e.type === 'heart') {
                         emoji = '😍';
+                    } else if (e.type === 'wow') {
+                        emoji = '😮';
                     }
 
                     ctx.globalAlpha = e.opacity !== undefined ? e.opacity : 1;
