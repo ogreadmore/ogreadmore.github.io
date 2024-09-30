@@ -41,12 +41,13 @@
 
         #scoreboard .title {
             font-size: 4vh;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
         }
 
-        #scoreboard .score {
-            font-size: 2.5vh;
-            margin-bottom: 20px; /* Added space between score and level */
+        #scoreboard .score,
+        #scoreboard .level {
+            font-size: 3vh;
+            margin-bottom: 20px;
         }
 
         /* Game Over and Restart Button Styles */
@@ -153,12 +154,12 @@
 
         #leftJoystickThumb, #rightJoystickThumb {
             position: absolute;
-            width: 80px; /* Adjusted size */
-            height: 80px; /* Adjusted size */
+            width: 80px;
+            height: 80px;
             background-color: #fff;
             border-radius: 50%;
-            top: 60px; /* Centered based on new sizes */
-            left: 60px; /* Centered based on new sizes */
+            top: 60px;
+            left: 60px;
         }
 
         /* Show Joystick and Adjustments on Mobile Devices */
@@ -169,7 +170,7 @@
 
             /* Double the size of the heart ship */
             .mobile-heart {
-                font-size: 120px !important;
+                font-size: 200px !important;
             }
 
             /* Adjust Start and Restart Buttons for Mobile */
@@ -183,7 +184,8 @@
                 font-size: 3vh;
             }
 
-            #scoreboard .score {
+            #scoreboard .score,
+            #scoreboard .level {
                 font-size: 2vh;
             }
 
@@ -305,8 +307,8 @@
             level: 1,
             fireRate: 300, // milliseconds between shots
             lastShotTime: 0,
-            projectileSize: 20,
-            size: 60, // Increased size
+            projectileSize: 60, // Increased size
+            size: 100, // Increased player size
             firepower: 1 // Number of heart-eye faces collected
         };
 
@@ -409,7 +411,7 @@
                     leftJoystick.x = touch.pageX - leftJoystick.startX;
                     leftJoystick.y = touch.pageY - leftJoystick.startY;
 
-                    // Limit joystick movement
+                    // Limit joystick movement and add resistance
                     var maxDistance = 80; // Adjusted based on new joystick size
                     var distance = Math.sqrt(leftJoystick.x * leftJoystick.x + leftJoystick.y * leftJoystick.y);
                     if (distance > maxDistance) {
@@ -469,7 +471,7 @@
                     rightJoystick.y = touch.pageY - rightJoystick.startY;
 
                     // Limit joystick movement
-                    var maxDistance = 80; // Adjusted based on new joystick size
+                    var maxDistance = 80;
                     var distance = Math.sqrt(rightJoystick.x * rightJoystick.x + rightJoystick.y * rightJoystick.y);
                     if (distance > maxDistance) {
                         var angle = Math.atan2(rightJoystick.y, rightJoystick.x);
@@ -588,7 +590,7 @@
                 var dy = leftJoystick.y;
 
                 var distance = Math.sqrt(dx * dx + dy * dy);
-                var maxDistance = 80; // Should match the joystick's maxDistance in touchmove
+                var maxDistance = 80;
 
                 if (distance > 0) {
                     var normalizedDistance = distance / maxDistance;
@@ -611,7 +613,7 @@
                 var dy = rightJoystick.y;
 
                 var distance = Math.sqrt(dx * dx + dy * dy);
-                var maxDistance = 80; // Should match the joystick's maxDistance in touchmove
+                var maxDistance = 80;
 
                 if (distance > 0) {
                     // Set player shooting angle
@@ -702,55 +704,53 @@
                         enemies.splice(i, 1);
                         continue;
                     }
+                } else if (e.state === 'exploding') {
+                    e.hitDuration += deltaTime;
+                    if (e.hitDuration >= 0.3) {
+                        // After duration, split into dizzy faces
+                        enemies.splice(i, 1);
+                        // Angry face splits into 4 dizzy faces
+                        for (var k = 0; k < 4; k++) {
+                            var angle = Math.random() * Math.PI * 2;
+                            var speed = 150; // Speed for dizzy faces
+                            enemies.push({
+                                x: e.x,
+                                y: e.y,
+                                vx: Math.cos(angle) * speed,
+                                vy: Math.sin(angle) * speed,
+                                size: e.originalSize / 2,
+                                originalSize: e.originalSize / 2,
+                                type: 'dizzy',
+                                state: 'normal',
+                                hitDuration: 0,
+                                lifeTime: 0, // For heart-eye emojis
+                                fading: false,
+                                blinkTimer: 0,
+                                visible: true,
+                                opacity: 1,
+                                hitPoints: 2 // Dizzy faces require 2 hits
+                            });
+                        }
+                        continue;
+                    }
+                    // Enlarge the size slightly during 'exploding' state
+                    e.size = e.originalSize * 1.2;
                 } else {
-                    // Handle hit animation for 'wow' state
-                    if (e.state === 'hit') {
-                        e.hitDuration += deltaTime;
-                        if (e.hitDuration >= 0.3) { // Shortened duration
-                            // After duration, split into confused faces
-                            enemies.splice(i, 1);
-                            // Angry face splits into 4 confused faces
-                            for (var k = 0; k < 4; k++) {
-                                var angle = Math.random() * Math.PI * 2;
-                                var speed = 150; // Speed for confused faces
-                                enemies.push({
-                                    x: e.x,
-                                    y: e.y,
-                                    vx: Math.cos(angle) * speed,
-                                    vy: Math.sin(angle) * speed,
-                                    size: e.originalSize / 2,
-                                    originalSize: e.originalSize / 2,
-                                    type: 'confused',
-                                    state: 'normal',
-                                    hitDuration: 0,
-                                    lifeTime: 0, // For heart-eye emojis
-                                    fading: false,
-                                    blinkTimer: 0,
-                                    visible: true,
-                                    opacity: 1
-                                });
-                            }
-                            continue;
-                        }
-                        // Enlarge the size slightly during 'wow' state
-                        e.size = e.originalSize * 1.2;
-                    } else {
-                        // Update enemy position
-                        e.x += e.vx * deltaTime;
-                        e.y += e.vy * deltaTime;
+                    // Update enemy position
+                    e.x += e.vx * deltaTime;
+                    e.y += e.vy * deltaTime;
 
-                        // Only angry faces seek the player
-                        if (e.type === 'angry') {
-                            // Update enemy velocity to seek the player
-                            var dx = player.x - e.x;
-                            var dy = player.y - e.y;
-                            var angleToPlayer = Math.atan2(dy, dx);
+                    // Only angry faces seek the player
+                    if (e.type === 'angry') {
+                        // Update enemy velocity to seek the player
+                        var dx = player.x - e.x;
+                        var dy = player.y - e.y;
+                        var angleToPlayer = Math.atan2(dy, dx);
 
-                            // Adjust velocity to move towards the player
-                            var speed = e.speed;
-                            e.vx = Math.cos(angleToPlayer) * speed;
-                            e.vy = Math.sin(angleToPlayer) * speed;
-                        }
+                        // Adjust velocity to move towards the player
+                        var speed = e.speed;
+                        e.vx = Math.cos(angleToPlayer) * speed;
+                        e.vy = Math.sin(angleToPlayer) * speed;
                     }
                 }
 
@@ -765,7 +765,7 @@
                     if (e.fading) {
                         e.blinkTimer += deltaTime;
                         e.opacity -= deltaTime / 3; // Fade out over 3 seconds
-                        if (e.blinkTimer >= 0.3) {
+                        if (e.blinkTimer >= 0.05) { // Faster blinking
                             e.visible = !e.visible;
                             e.blinkTimer = 0;
                         }
@@ -823,14 +823,15 @@
                 speed: speed,
                 size: size,
                 originalSize: size,
-                type: 'angry', // 'angry', 'confused', 'heart', 'wow'
-                state: 'normal', // 'normal', 'hit'
-                hitDuration: 0, // Duration since hit
-                lifeTime: 0, // For heart-eye emojis
+                type: 'angry',
+                state: 'normal',
+                hitDuration: 0,
+                lifeTime: 0,
                 fading: false,
                 blinkTimer: 0,
                 visible: true,
-                opacity: 1
+                opacity: 1,
+                hitPoints: 3 // Angry face requires 3 hits
             });
         }
 
@@ -875,33 +876,39 @@
                     var dy = p.y - e.y;
                     var distance = Math.sqrt(dx * dx + dy * dy);
 
-                    var collisionDistance = (p.size / 2) + (e.size / 2) * 0.9; // Adjusted for accuracy
+                    var collisionDistance = (p.size / 2) + (e.size / 2) * 0.9;
 
                     if (distance < collisionDistance) {
                         projectiles.splice(i, 1);
 
-                        if (e.type === 'angry' && e.state === 'normal') {
-                            // Change to 'wow' state
-                            e.type = 'wow';
-                            e.state = 'hit';
-                            e.hitDuration = 0;
+                        e.hitPoints--;
 
-                            // Increment large asteroids destroyed counter
-                            largeAsteroidsDestroyed++;
-
-                            player.score += 5;
-                            updateUI();
-                        } else if (e.type === 'confused') {
-                            // Confused face turns into heart-eye face
-                            e.type = 'heart';
-                            e.lifeTime = 0;
-                            e.fading = false;
-                            e.visible = true;
-                            e.opacity = 1;
-                            player.score += 2;
-                            updateUI();
+                        if (e.hitPoints <= 0) {
+                            if (e.type === 'angry' && e.state === 'normal') {
+                                // Start exploding process
+                                e.state = 'exploding';
+                                e.hitDuration = 0;
+                                largeAsteroidsDestroyed++;
+                                player.score += 5;
+                                updateUI();
+                            } else if (e.type === 'dizzy' && e.state === 'normal') {
+                                // Transform into heart-eyed face
+                                e.type = 'heart';
+                                e.state = 'normal';
+                                e.hitPoints = 3; // Heart-eyed faces require 3 hits
+                                e.lifeTime = 0;
+                                e.fading = false;
+                                e.visible = true;
+                                e.opacity = 1;
+                                player.score += 2;
+                                updateUI();
+                            } else if (e.type === 'heart' && e.state === 'normal') {
+                                // Remove heart-eyed face after 3 hits
+                                enemies.splice(j, 1);
+                                player.score += 1;
+                                updateUI();
+                            }
                         }
-
                         break;
                     }
                 }
@@ -919,17 +926,17 @@
                     heartSize = player.size * 2; // Double size on mobile
                 }
 
-                var collisionDistance = (heartSize / 2) + (e.size / 2) * 0.9; // Adjusted for accuracy
+                var collisionDistance = (heartSize / 2) + (e.size / 2) * 0.9;
 
                 if (distance < collisionDistance) {
                     if (e.type === 'heart') {
-                        // Collect heart-eye face
+                        // Collect heart-eyed face
                         enemies.splice(i, 1);
                         player.score += 1;
                         player.projectileSize += 1;
                         player.firepower += 1; // Increase firepower
                         updateUI();
-                    } else if (e.type !== 'wow') {
+                    } else if (e.state !== 'exploding') {
                         // Game over
                         gameOver = true;
                         document.getElementById('gameOver').style.display = 'block';
@@ -957,7 +964,7 @@
             ctx.font = heartSize + 'px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('❤️', 0, 0);
+            ctx.fillText('🩷', 0, 0); // Use pink heart emoji
             ctx.restore();
 
             // Draw projectiles
@@ -969,7 +976,7 @@
                 ctx.font = p.size + 'px Arial';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText('💖', 0, 0);
+                ctx.fillText('💖', 0, 0); // Heart bullets
                 ctx.restore();
             }
 
@@ -986,12 +993,10 @@
                     var emoji = '';
                     if (e.type === 'angry') {
                         emoji = '😠';
-                    } else if (e.type === 'confused') {
-                        emoji = '😕';
+                    } else if (e.type === 'dizzy') {
+                        emoji = '😵‍💫';
                     } else if (e.type === 'heart') {
                         emoji = '😍';
-                    } else if (e.type === 'wow') {
-                        emoji = '😮';
                     }
 
                     ctx.globalAlpha = e.opacity !== undefined ? e.opacity : 1;
