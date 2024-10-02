@@ -215,6 +215,7 @@
   <div id="waveOverlay">wave 1!</div>
   
   <script>
+    // Get Elements
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const heartCursor = document.getElementById('heartCursor');
@@ -224,6 +225,7 @@
     const gameOverText = document.getElementById('gameOver');
     const restartButton = document.getElementById('restartButton');
 
+    // Initialize Variables
     let width = window.innerWidth;
     let height = window.innerHeight;
     canvas.width = width;
@@ -249,6 +251,7 @@
     let isPaused = false;
     let animationFrameId;
 
+    // Resize Game Function
     function resizeGame() {
       width = window.innerWidth;
       height = window.innerHeight;
@@ -275,16 +278,19 @@
     }
     resizeGame();
 
+    // Detect Mobile Device
     function isMobileDevice() {
       return typeof window.orientation !== 'undefined' || navigator.userAgent.indexOf('IEMobile') !== -1;
     }
 
+    // Hide or Show Cursors Based on Device
     if (isMobileDevice()) {
       heartCursor.style.display = 'none'; // Hide heartCursor on mobile to prevent tiny heart
     } else {
       customCursor.style.display = 'block';
     }
 
+    // Entity Class
     class Entity {
       constructor(x, y, vx, vy, isSad) {
         this.size = faceSize;
@@ -381,6 +387,7 @@
         }
       }
 
+      // Show Wave Overlay
       function showWaveOverlay(waveNumber) {
         waveOverlay.textContent = `wave ${waveNumber}!`;
         waveOverlay.style.opacity = '1';
@@ -389,6 +396,7 @@
         }, 2000);
       }
 
+      // Spawn New Entity
       function spawnEntity() {
         const size = faceSize;
         const x = Math.random() * (width - size) + size / 2;
@@ -398,6 +406,7 @@
         entities.push(new Entity(x, y, vx, vy, true));
       }
 
+      // Handle Touch Start (Mobile)
       function handleTouchStart(e) {
         isTouching = true;
         const touch = e.touches[0];
@@ -439,22 +448,26 @@
         });
       }
 
+      // Handle Touch Move (Mobile)
       function handleTouchMove(e) {
         const touch = e.touches[0];
         touchX = touch.clientX;
         touchY = touch.clientY;
       }
 
+      // Handle Touch End (Mobile)
       function handleTouchEnd(e) {
         isTouching = false;
         touchX = undefined;
         touchY = undefined;
       }
 
+      // Add Touch Event Listeners
       canvas.addEventListener('touchstart', handleTouchStart);
       canvas.addEventListener('touchmove', handleTouchMove);
       canvas.addEventListener('touchend', handleTouchEnd);
 
+      // Handle Mouse Down (Desktop)
       canvas.addEventListener('mousedown', function(e) {
         if (isMobileDevice()) return; // Ignore mouse events on mobile
 
@@ -490,20 +503,24 @@
         });
       });
 
+      // Handle Mouse Move (Desktop)
       canvas.addEventListener('mousemove', function(e) {
         if (isTouching) return;
         customCursor.style.left = e.clientX + 'px';
         customCursor.style.top = e.clientY + 'px';
       });
 
+      // Handle Mouse Leave (Desktop)
       canvas.addEventListener('mouseleave', function() {
         customCursor.style.opacity = '0';
       });
 
+      // Handle Mouse Enter (Desktop)
       canvas.addEventListener('mouseenter', function() {
         customCursor.style.opacity = '1';
       });
 
+      // Animate Cursor (Desktop)
       function animateCursor() {
         if (isMobileDevice()) return; // Only animate custom cursor on desktop
 
@@ -518,6 +535,7 @@
         }, 200); // Match the CSS transition duration
       }
 
+      // Show Big Heart on Mobile Taps
       function showBigHeart(x, y) {
         // Create a new div element for the big heart
         const bigHeart = document.createElement('div');
@@ -540,6 +558,7 @@
         }, 510); // 500ms for animation + 10ms buffer
       }
 
+      // Update Game Loop
       function update() {
         if (gameOver || isPaused) return;
 
@@ -568,6 +587,7 @@
         animationFrameId = requestAnimationFrame(update);
       }
 
+      // Update Game Statistics
       function updateGameStats() {
         document.getElementById('stats').innerHTML = `
           score: ${score}<br>
@@ -576,6 +596,7 @@
         `;
       }
 
+      // End Game Function
       function endGame() {
         gameOver = true;
         cancelAnimationFrame(animationFrameId);
@@ -583,6 +604,7 @@
         restartButton.style.display = 'block';
       }
 
+      // Start Game Function
       function startGame() {
         startButton.style.display = 'none';
         lastTime = Date.now(); // Reset lastTime
@@ -599,22 +621,23 @@
         update();
       }
 
+      // Restart Game Function
       function restartGame() {
         gameOverText.style.display = 'none';
         restartButton.style.display = 'none';
         startGame();
       }
 
-      // Ensure the game resizes properly when the window size changes
+      // Add Resize Event Listener
       window.addEventListener('resize', () => {
         resizeGame();
       });
 
-      // Initialize the game stats
+      // Initialize Game Statistics
       updateGameStats();
 
-      // Show the start button when the page loads
+      // Show Start Button on Page Load
       startButton.style.display = 'block';
-    </script>
+  </script>
 </body>
 </html>
