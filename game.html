@@ -191,13 +191,13 @@
 <body>
   <!-- Game Canvas -->
   <canvas id="gameCanvas"></canvas>
-  
+
   <!-- Custom Cursor for Desktop -->
   <div id="customCursor">🩷</div>
-  
+
   <!-- Heart cursor for mobile devices -->
   <img id="heartCursor" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><text y='50%' x='50%' dominant-baseline='middle' text-anchor='middle' font-size='100%'>🩷</text></svg>" alt="Heart Cursor">
-  
+
   <!-- Game Statistics and Controls -->
   <div id="gameStats">
     <div id="title">spread love</div>
@@ -210,15 +210,15 @@
       <!-- Removed pause and reset buttons as per request -->
     </div>
   </div>
-  
+
   <!-- Start and Restart Buttons -->
   <div id="startButton" onclick="startGame()">start game</div>
   <div id="gameOver">game over</div>
   <div id="restartButton" onclick="restartGame()" style="margin-top: 20px;">restart</div>
-  
+
   <!-- Wave Overlay -->
   <div id="waveOverlay">wave 1!</div>
-  
+
   <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -538,6 +538,30 @@
       if (isTouching) return;
       customCursor.style.left = e.clientX + 'px';
       customCursor.style.top = e.clientY + 'px';
+
+      touchX = e.clientX;
+      touchY = e.clientY;
+
+      // Update the touchX and touchY values inside the mousemove event handler
+      entities.forEach(entity => {
+        const dx = entity.x - touchX;
+        const dy = entity.y - touchY;
+        const distance = Math.hypot(dx, dy);
+        const detectionRadius = 200; // Detection radius for evasion
+
+        if (entity.isSad && !entity.hit && distance < detectionRadius) {
+          // Calculate normalized direction vector
+          const nx = dx / distance;
+          const ny = dy / distance;
+
+          // Calculate avoidance force based on distance
+          const avoidForce = (detectionRadius - distance) / detectionRadius; 
+
+          // Apply avoidance force to vx and vy
+          entity.vx += nx * avoidForce * 2 * speedMultiplier; // Increased force multiplier
+          entity.vy += ny * avoidForce * 2 * speedMultiplier; // Increased force multiplier
+        }
+      });
     });
 
     canvas.addEventListener('mouseleave', function() {
@@ -596,7 +620,33 @@
         lastWaveSpawnTime = now;
       }
 
+      // Update touch position (now inside the update function)
+      //touchX = customCursor.offsetLeft + customCursor.offsetWidth / 2; // Get cursor's center X
+      //touchY = customCursor.offsetTop + customCursor.offsetHeight / 2; // Get cursor's center Y
+
       entities.forEach(entity => {
+        // Touch avoidance logic (now outside of isTouching)
+        if (typeof touchX !== 'undefined' && typeof touchY !== 'undefined') {
+          let dx = entity.x - touchX;
+          let dy = entity.y - touchY;
+          let distance = Math.hypot(dx, dy);
+          let detectionRadius = 200; // Reduced detection radius for stronger evasion
+
+          if (distance < detectionRadius) {
+            // Calculate normalized direction vector
+            let nx = dx / distance;
+            let ny = dy / distance;
+
+            // Calculate avoidance force based on distance
+            let avoidForce = (detectionRadius - distance) / detectionRadius; 
+
+            // Apply stronger avoidance force to vx and vy
+            entity.vx += nx * avoidForce * 2 * speedMultiplier; // Increased force multiplier
+            entity.vy += ny * avoidForce * 2 * speedMultiplier; // Increased force multiplier
+          }
+        }
+
+        // Apply the updated velocity to the entity before update()
         entity.update(delta);
         entity.draw();
       });
