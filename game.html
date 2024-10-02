@@ -261,9 +261,9 @@
 
       faceSize = Math.min(width, height) / 10; // Base face size
       if (isMobileDevice()) {
-        faceSize *= 2; // Double the face size on mobile
+        faceSize *= 0.66; // Reduce the face size to two-thirds on mobile
       }
-      faceSize = Math.max(Math.min(faceSize, 90), 30); // Adjusted max size to 90 to accommodate increased faceSize
+      faceSize = Math.max(Math.min(faceSize, 90), 30); // Adjusted max size to 90 to accommodate faceSize
 
       heartCursor.style.width = faceSize * 2 + 'px';
       heartCursor.style.height = faceSize * 2 + 'px';
