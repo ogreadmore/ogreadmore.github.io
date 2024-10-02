@@ -12,11 +12,11 @@
       margin: 0;
       overflow: hidden;
       touch-action: none;
-      cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="120" width="120"><text y="90" x="60" text-anchor="middle" font-size="90">🩷</text></svg>') 60 60, auto;
+      cursor: none; /* Hide the default cursor */
       position: relative;
       height: 100vh;
       width: 100vw;
-      transition: cursor 0.1s; /* Smooth transition for cursor change */
+      transition: background-color 0.5s;
     }
     canvas {
       position: absolute;
@@ -27,11 +27,38 @@
       background-color: #f0f0f0;
       z-index: 5; /* Positioned below gameStats */
     }
+    /* Custom Cursor */
+    #customCursor {
+      position: absolute;
+      pointer-events: none;
+      z-index: 1000;
+      width: 60px; /* Original size */
+      height: 60px;
+      transform: translate(-50%, -50%) scale(1);
+      transition: transform 0.2s ease;
+      font-size: 60px;
+      line-height: 60px;
+      text-align: center;
+      user-select: none;
+      opacity: 1;
+    }
+    /* Active state for cursor animation */
+    #customCursor.active {
+      transform: translate(-50%, -50%) scale(1.75); /* Scale up by 25% */
+    }
     #heartCursor {
       position: absolute;
       pointer-events: none;
       display: none;
       z-index: 10;
+      width: 60px; /* Original size */
+      height: 60px;
+      transform: translate(-50%, -50%) scale(1);
+      transition: transform 0.2s ease;
+      font-size: 60px;
+      line-height: 60px;
+      text-align: center;
+      user-select: none;
     }
     #gameOver {
       position: absolute;
@@ -55,7 +82,7 @@
       padding: 20px 40px;
       border: 3px solid magenta;
       border-radius: 5px;
-      cursor: inherit; /* Inherit cursor from body */
+      cursor: pointer; /* Show pointer cursor for buttons */
       font-family: 'Press Start 2P', cursive;
       font-size: 2rem;
       display: none;
@@ -135,12 +162,19 @@
       #waveOverlay {
         font-size: 2.5vh; /* Half of 5vh */
       }
+      /* Hide custom cursor on mobile */
+      #customCursor {
+        display: none;
+      }
     }
   </style>
 </head>
 <body>
   <!-- Game Canvas -->
   <canvas id="gameCanvas"></canvas>
+  
+  <!-- Custom Cursor for Desktop -->
+  <div id="customCursor">🩷</div>
   
   <!-- Heart cursor for mobile devices -->
   <img id="heartCursor" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><text y='50%' x='50%' dominant-baseline='middle' text-anchor='middle' font-size='100%'>🩷</text></svg>" alt="Heart Cursor">
@@ -171,10 +205,10 @@
     const ctx = canvas.getContext('2d');
     const heartCursor = document.getElementById('heartCursor');
     const waveOverlay = document.getElementById('waveOverlay');
-
-    // Define cursor URLs
-    const originalCursor = "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"120\" width=\"120\"><text y=\"90\" x=\"60\" text-anchor=\"middle\" font-size=\"90\">🩷</text></svg>') 60 60, auto";
-    const clickCursor = "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"120\" width=\"120\"><text y=\"90\" x=\"60\" text-anchor=\"middle\" font-size=\"90\">💖</text></svg>') 60 60, auto";
+    const customCursor = document.getElementById('customCursor');
+    const startButton = document.getElementById('startButton');
+    const gameOverText = document.getElementById('gameOver');
+    const restartButton = document.getElementById('restartButton');
 
     let width = window.innerWidth;
     let height = window.innerHeight;
@@ -185,7 +219,7 @@
     let cursorCollisionRadius;
     let score = 0;
     let missed = 0;
-    let maxMissed = 3;
+    const maxMissed = 3;
     let entities = [];
     let lastTime = Date.now();
     let gameOver = false;
@@ -215,6 +249,11 @@
       heartCursor.style.marginTop = -faceSize + 'px';
 
       cursorCollisionRadius = faceSize;
+
+      // Update custom cursor size
+      customCursor.style.width = faceSize + 'px';
+      customCursor.style.height = faceSize + 'px';
+      customCursor.style.fontSize = faceSize + 'px';
     }
     resizeGame();
 
@@ -223,9 +262,9 @@
     }
 
     if (isMobileDevice()) {
-      document.body.style.cursor = 'none';
+      heartCursor.style.display = 'block';
     } else {
-      heartCursor.style.display = 'none';
+      customCursor.style.display = 'block';
     }
 
     class Entity {
@@ -380,6 +419,7 @@
       heartCursor.style.display = 'block';
       heartCursor.style.left = touchX + 'px';
       heartCursor.style.top = touchY + 'px';
+      heartCursor.style.transform = 'translate(-50%, -50%) scale(1)';
 
       entities.forEach(entity => {
         const dx = entity.x - touchX;
@@ -391,6 +431,9 @@
           entity.vy = -(Math.random() * 5 + 5) * speedMultiplier;
           score++;
           updateGameStats();
+
+          // Trigger cursor animation
+          animateCursor();
 
           // Check if it's time to increase the wave
           if (score % 10 === 0) {
@@ -424,13 +467,10 @@
     canvas.addEventListener('touchend', handleTouchEnd);
 
     canvas.addEventListener('mousedown', function(e) {
-      // Change cursor to 💖
-      if (!isMobileDevice()) {
-        document.body.style.cursor = clickCursor;
-        setTimeout(() => {
-          document.body.style.cursor = originalCursor;
-        }, 200); // Change back after 200ms
-      }
+      if (isMobileDevice()) return; // Ignore mouse events on mobile
+
+      // Trigger cursor animation
+      animateCursor();
 
       touchX = e.clientX;
       touchY = e.clientY;
@@ -442,9 +482,12 @@
         if (entity.isSad && !entity.hit && distance <= entity.size / 2 + cursorCollisionRadius) {
           entity.isSad = false;
           entity.vx = (Math.random() - 0.5) * 4 * speedMultiplier;
-          entity.vy = -(Math.random() * 5 + 5) * speedMultiplier;
+          entity.vy = -(Math.random() * 5 + 5) * speedMultiplier; // Corrected 'this.vy' to 'entity.vy'
           score++;
           updateGameStats();
+
+          // Trigger cursor animation
+          animateCursor();
 
           // Check if it's time to increase the wave
           if (score % 10 === 0) {
@@ -460,14 +503,31 @@
 
     canvas.addEventListener('mousemove', function(e) {
       if (isTouching) return;
-      touchX = e.clientX;
-      touchY = e.clientY;
+      customCursor.style.left = e.clientX + 'px';
+      customCursor.style.top = e.clientY + 'px';
     });
 
     canvas.addEventListener('mouseleave', function() {
-      touchX = undefined;
-      touchY = undefined;
+      customCursor.style.opacity = '0';
     });
+
+    canvas.addEventListener('mouseenter', function() {
+      customCursor.style.opacity = '1';
+    });
+
+    function animateCursor() {
+      if (isMobileDevice()) return; // Only animate custom cursor on desktop
+
+      // Add 'active' class to scale up and change to sparkly heart
+      customCursor.classList.add('active');
+      customCursor.textContent = '💖';
+
+      // After animation duration, revert to normal
+      setTimeout(() => {
+        customCursor.classList.remove('active');
+        customCursor.textContent = '🩷';
+      }, 200); // Match the CSS transition duration
+    }
 
     function update() {
       if (gameOver || isPaused) return;
@@ -507,34 +567,31 @@
 
     function endGame() {
       gameOver = true;
-      document.getElementById('gameOver').style.display = 'block';
-      document.getElementById('restartButton').style.display = 'block';
+      cancelAnimationFrame(animationFrameId);
+      gameOverText.style.display = 'block';
+      restartButton.style.display = 'block';
     }
 
     function startGame() {
-      document.getElementById('startButton').style.display = 'none';
+      startButton.style.display = 'none';
       lastTime = Date.now(); // Reset lastTime
       lastWaveSpawnTime = Date.now(); // Reset lastWaveSpawnTime
       gameOver = false;
+      score = 0;
+      missed = 0;
+      waveNumber = 1;
+      speedMultiplier = 0.8;
+      waveSpawnInterval = 1000;
+      entities = [];
+      updateGameStats();
       showWaveOverlay(waveNumber);
       update();
     }
 
     function restartGame() {
-      document.getElementById('gameOver').style.display = 'none';
-      document.getElementById('restartButton').style.display = 'none';
-      score = 0;
-      missed = 0;
-      waveNumber = 1;
-      entities = [];
-      speedMultiplier = 0.8;
-      waveSpawnInterval = 1000;
-      gameOver = false;
-      lastTime = Date.now(); // Reset lastTime
-      lastWaveSpawnTime = Date.now(); // Reset lastWaveSpawnTime
-      updateGameStats();
-      showWaveOverlay(waveNumber);
-      update();
+      gameOverText.style.display = 'none';
+      restartButton.style.display = 'none';
+      startGame();
     }
 
     // Ensure the game resizes properly when the window size changes
@@ -546,7 +603,7 @@
     updateGameStats();
 
     // Show the start button when the page loads
-    document.getElementById('startButton').style.display = 'block';
+    startButton.style.display = 'block';
   </script>
 </body>
 </html>
