@@ -44,7 +44,22 @@
     }
     /* Active state for cursor animation */
     #customCursor.active {
-      transform: translate(-50%, -50%) scale(1.75); /* Scale up by 25% */
+      transform: translate(-50%, -50%) scale(1.75); /* Scale up by 75% (1.75x) */
+    }
+    /* Big Heart for Mobile Taps */
+    .big-heart {
+      position: absolute;
+      pointer-events: none;
+      z-index: 1001; /* Above the custom cursor */
+      font-size: 600%; /* Approximately 10x larger if original is 60px */
+      opacity: 1;
+      transition: opacity 0.5s, transform 0.5s;
+      transform: translate(-50%, -50%) scale(1);
+      user-select: none;
+    }
+    .big-heart.animate {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(1.5); /* Scale up further during animation */
     }
     #heartCursor {
       position: absolute;
@@ -421,6 +436,9 @@
       heartCursor.style.top = touchY + 'px';
       heartCursor.style.transform = 'translate(-50%, -50%) scale(1)';
 
+      // Show a large heart at the tap location
+      showBigHeart(touchX, touchY);
+
       entities.forEach(entity => {
         const dx = entity.x - touchX;
         const dy = entity.y - touchY;
@@ -527,6 +545,27 @@
         customCursor.classList.remove('active');
         customCursor.textContent = '🩷';
       }, 200); // Match the CSS transition duration
+    }
+
+    function showBigHeart(x, y) {
+      // Create a new div element for the big heart
+      const bigHeart = document.createElement('div');
+      bigHeart.classList.add('big-heart');
+      bigHeart.textContent = '🩷';
+      bigHeart.style.left = x + 'px';
+      bigHeart.style.top = y + 'px';
+      document.body.appendChild(bigHeart);
+
+      // Trigger the animation
+      // Slight delay to ensure the element is rendered before adding the 'animate' class
+      setTimeout(() => {
+        bigHeart.classList.add('animate');
+      }, 10); // 10ms delay
+
+      // Remove the element after the animation completes (0.5s)
+      setTimeout(() => {
+        bigHeart.remove();
+      }, 510); // 500ms for animation + 10ms buffer
     }
 
     function update() {
