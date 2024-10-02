@@ -12,10 +12,11 @@
       margin: 0;
       overflow: hidden;
       touch-action: none;
-      cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="120" width="120"><text y="90" x="60" text-anchor="middle" font-size="90">❤️</text></svg>') 60 60, auto;
+      cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="120" width="120"><text y="90" x="60" text-anchor="middle" font-size="90">🩷</text></svg>') 60 60, auto;
       position: relative;
       height: 100vh;
       width: 100vw;
+      transition: cursor 0.1s; /* Smooth transition for cursor change */
     }
     canvas {
       position: absolute;
@@ -142,7 +143,7 @@
   <canvas id="gameCanvas"></canvas>
   
   <!-- Heart cursor for mobile devices -->
-  <img id="heartCursor" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><text y='50%' x='50%' dominant-baseline='middle' text-anchor='middle' font-size='100%'>❤️</text></svg>" alt="Heart Cursor">
+  <img id="heartCursor" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><text y='50%' x='50%' dominant-baseline='middle' text-anchor='middle' font-size='100%'>🩷</text></svg>" alt="Heart Cursor">
   
   <!-- Game Statistics and Controls -->
   <div id="gameStats">
@@ -170,6 +171,10 @@
     const ctx = canvas.getContext('2d');
     const heartCursor = document.getElementById('heartCursor');
     const waveOverlay = document.getElementById('waveOverlay');
+
+    // Define cursor URLs
+    const originalCursor = "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"120\" width=\"120\"><text y=\"90\" x=\"60\" text-anchor=\"middle\" font-size=\"90\">🩷</text></svg>') 60 60, auto";
+    const clickCursor = "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"120\" width=\"120\"><text y=\"90\" x=\"60\" text-anchor=\"middle\" font-size=\"90\">💖</text></svg>') 60 60, auto";
 
     let width = window.innerWidth;
     let height = window.innerHeight;
@@ -201,8 +206,8 @@
       canvas.width = width;
       canvas.height = height;
 
-      faceSize = Math.min(width, height) / 15;
-      faceSize = Math.max(Math.min(faceSize, 60), 30);
+      faceSize = Math.min(width, height) / 10; // Increased size by 50%
+      faceSize = Math.max(Math.min(faceSize, 90), 30); // Adjusted max size to 90 to accommodate increased faceSize
 
       heartCursor.style.width = faceSize * 2 + 'px';
       heartCursor.style.height = faceSize * 2 + 'px';
@@ -257,11 +262,11 @@
           this.vy += gravity * delta;
 
           // Increase erraticness
-          this.vx += (Math.random() - 0.5) * 0.6 * delta * speedMultiplier; // Increased random horizontal acceleration
-          this.vy += (Math.random() - 0.5) * 0.4 * delta * speedMultiplier; // Increased random vertical acceleration
+          this.vx += (Math.random() - 0.5) * 1.2 * delta * speedMultiplier; // Further increased randomness
+          this.vy += (Math.random() - 0.5) * 0.8 * delta * speedMultiplier; // Further increased randomness
 
           // Increase max speed
-          let maxSpeed = 8 * speedMultiplier;
+          let maxSpeed = 10 * speedMultiplier; // Increased max speed to accommodate higher randomness
           let speed = Math.hypot(this.vx, this.vy);
           if (speed > maxSpeed) {
             this.vx = (this.vx / speed) * maxSpeed;
@@ -294,11 +299,11 @@
         } else {
           // Happy faces movement
           // Increase erraticness
-          this.vx += (Math.random() - 0.5) * 0.3 * delta * speedMultiplier;
-          this.vy += (Math.random() - 0.5) * 0.3 * delta * speedMultiplier;
+          this.vx += (Math.random() - 0.5) * 0.6 * delta * speedMultiplier; // Increased randomness
+          this.vy += (Math.random() - 0.5) * 0.6 * delta * speedMultiplier; // Increased randomness
 
           // Increase max speed
-          let maxSpeed = 7 * speedMultiplier;
+          let maxSpeed = 9 * speedMultiplier; // Increased max speed to accommodate higher randomness
           let speed = Math.hypot(this.vx, this.vy);
           if (speed > maxSpeed) {
             this.vx = (this.vx / speed) * maxSpeed;
@@ -362,8 +367,8 @@
       const size = faceSize;
       const x = Math.random() * (width - size) + size / 2;
       const y = -size;
-      const vx = (Math.random() - 0.5) * 1.5 * speedMultiplier;
-      const vy = (Math.random() * 2.0 + 3.0) * speedMultiplier; // Increased vy
+      const vx = (Math.random() - 0.5) * 2.5 * speedMultiplier; // Increased horizontal velocity range
+      const vy = (Math.random() * 3.0 + 4.0) * speedMultiplier; // Further increased vy
       entities.push(new Entity(x, y, vx, vy, true));
     }
 
@@ -419,6 +424,14 @@
     canvas.addEventListener('touchend', handleTouchEnd);
 
     canvas.addEventListener('mousedown', function(e) {
+      // Change cursor to 💖
+      if (!isMobileDevice()) {
+        document.body.style.cursor = clickCursor;
+        setTimeout(() => {
+          document.body.style.cursor = originalCursor;
+        }, 200); // Change back after 200ms
+      }
+
       touchX = e.clientX;
       touchY = e.clientY;
 
