@@ -371,7 +371,7 @@
   </div>
 
   <!-- Audio Elements -->
-  <audio id="bonkSound" src="bonk.mp3" preload="auto"></audio>
+  <!-- Removed the bonkSound element to handle audio differently -->
 
   <script>
     // Constants for base sizes
@@ -393,7 +393,6 @@
     const emojiSizeInput = document.getElementById('emojiSize');
     const tracersCheckbox = document.getElementById('tracers');
     const soundToggle = document.getElementById('soundToggle');
-    const bonkSound = document.getElementById('bonkSound');
     const menuRestartButton = document.getElementById('menuRestartButton');
 
     let width = window.innerWidth;
@@ -422,8 +421,7 @@
     let gameStarted = false; // Flag to check if the game has started
 
     // Evasion parameters
-    const baseEvasionRadius = 200; // Increased base evasion radius
-    const evasionRadiusIncreasePerLevel = 50; // Increased evasion radius per level
+    const baseEvasionRadius = 200; // Base evasion radius
     const maxEvasionForce = 1; // Maximum steering force
 
     // Grid Animation Variables
@@ -437,6 +435,8 @@
 
     // Sound Variables
     let soundEnabled = soundToggle.checked;
+    const bonkSounds = [];
+    let bonkSoundIndex = 0;
 
     function resizeGame() {
       width = window.innerWidth;
@@ -554,7 +554,7 @@
             const distance = Math.hypot(dx, dy);
 
             // Adjust evasion radius based on current wave
-            const evasionRadius = baseEvasionRadius + evasionRadiusIncreasePerLevel * (waveNumber - 1);
+            const evasionRadius = baseEvasionRadius; // Evasion radius is constant
 
             if (distance < evasionRadius) {
               isEvading = true;
@@ -570,7 +570,7 @@
 
               // Limit steering force
               const steerMag = Math.hypot(steerX, steerY);
-              const maxForce = maxEvasionForce * speedMultiplier;
+              const maxForce = maxEvasionForce; // Evasion force is constant
               if (steerMag > maxForce) {
                 steerX = (steerX / steerMag) * maxForce;
                 steerY = (steerY / steerMag) * maxForce;
@@ -714,7 +714,7 @@
       }
 
       getMaxSpeed() {
-        return 10 * speedMultiplier; // Adjusted max speed
+        return 10; // Evasion speed is constant
       }
 
       draw() {
@@ -841,9 +841,11 @@
     function playBonkSound() {
       if (!soundEnabled) return;
 
-      // Clone the audio element to allow overlapping sounds
-      const bonkClone = bonkSound.cloneNode();
-      bonkClone.play();
+      const bonkSound = bonkSounds[bonkSoundIndex];
+      bonkSound.currentTime = 0; // Reset to start
+      bonkSound.play();
+
+      bonkSoundIndex = (bonkSoundIndex + 1) % bonkSounds.length;
     }
 
     function update() {
@@ -862,15 +864,18 @@
 
       // Draw tracer if enabled
       if (tracerEnabled && tracerPath.length > 1) {
-        ctx.beginPath();
-        ctx.moveTo(tracerPath[0].x, tracerPath[0].y);
         for (let i = 1; i < tracerPath.length; i++) {
-          ctx.lineTo(tracerPath[i].x, tracerPath[i].y);
+          const start = tracerPath[i - 1];
+          const end = tracerPath[i];
+          const alpha = (tracerPath.length - i) / tracerPath.length;
+          ctx.beginPath();
+          ctx.moveTo(start.x, start.y);
+          ctx.lineTo(end.x, end.y);
+          ctx.strokeStyle = `rgba(255, 0, 255, ${alpha})`; // Magenta with varying opacity
+          ctx.lineWidth = faceSize / 5; // Wider tracer
+          ctx.lineCap = 'round';
+          ctx.stroke();
         }
-        ctx.strokeStyle = 'rgba(255, 0, 255, 0.5)'; // Magenta with opacity
-        ctx.lineWidth = faceSize / 5; // Wider tracer
-        ctx.lineCap = 'round';
-        ctx.stroke();
       }
 
       if (now - lastWaveSpawnTime > waveSpawnInterval) {
@@ -973,6 +978,15 @@
       showWaveOverlay(waveNumber);
       isPaused = false;
       gameStarted = true;
+
+      // Initialize audio elements upon user interaction
+      if (bonkSounds.length === 0) {
+        for (let i = 0; i < 5; i++) {
+          const audio = new Audio('bonk.mp3');
+          bonkSounds.push(audio);
+        }
+      }
+
       update();
     }
 
