@@ -242,23 +242,6 @@
       transform: scale(1.5);
       margin-top: 10px;
     }
-    /* Restart Button in Menu */
-    #menuRestartButton {
-      margin-top: 40px;
-      background-color: transparent;
-      color: magenta;
-      padding: 15px 30px;
-      border: 3px solid magenta;
-      border-radius: 5px;
-      cursor: pointer;
-      font-family: 'Press Start 2P', cursive;
-      font-size: 1.5rem;
-      display: inline-block;
-      user-select: none;
-    }
-    #menuRestartButton:hover {
-      background-color: rgba(255, 255, 255, 0.1);
-    }
     /* Wave Selector */
     #waveSelector {
       display: flex;
@@ -326,10 +309,6 @@
       }
       .menu-option input[type="range"] {
         width: 100%;
-      }
-      #menuRestartButton {
-        font-size: 1rem;
-        padding: 10px 20px;
       }
       .wave-button {
         font-size: 1.5rem;
@@ -410,8 +389,10 @@
         <label for="nightModeToggle">night mode</label>
         <input type="checkbox" id="nightModeToggle">
       </div>
-      <!-- Restart Button in Menu -->
-      <div id="menuRestartButton" onclick="restartGame()">restart game</div>
+      <div class="menu-option">
+        <label for="clickModeToggle">click/tap mode</label>
+        <input type="checkbox" id="clickModeToggle" checked>
+      </div>
     </div>
   </div>
 
@@ -439,7 +420,7 @@
     const soundToggle = document.getElementById('soundToggle');
     const volumeSlider = document.getElementById('volumeSlider');
     const nightModeToggle = document.getElementById('nightModeToggle');
-    const menuRestartButton = document.getElementById('menuRestartButton');
+    const clickModeToggle = document.getElementById('clickModeToggle');
 
     // Wave selector elements
     const decreaseWaveButton = document.getElementById('decreaseWave');
@@ -486,6 +467,7 @@
     let isPaused = false;
     let animationFrameId;
     let gameStarted = false; // Flag to check if the game has started
+    let clickModeEnabled = true; // Click mode enabled by default
 
     // Evasion parameters
     const baseEvasionRadius = 200; // Base evasion radius
@@ -532,11 +514,13 @@
         customCursor.style.width = faceSize * 2 + 'px';
         customCursor.style.height = faceSize * 2 + 'px';
         customCursor.style.fontSize = faceSize * 2 + 'px';
+        customCursor.style.lineHeight = faceSize * 2 + 'px';
         cursorCollisionRadius = faceSize * 2;
       } else {
         customCursor.style.width = faceSize + 'px';
         customCursor.style.height = faceSize + 'px';
         customCursor.style.fontSize = faceSize + 'px';
+        customCursor.style.lineHeight = faceSize + 'px';
         cursorCollisionRadius = faceSize;
       }
 
@@ -545,7 +529,6 @@
         entity.size = faceSize;
       });
     }
-    resizeGame();
 
     function isMobileDevice() {
       return typeof window.orientation !== 'undefined' || navigator.userAgent.indexOf('IEMobile') !== -1;
@@ -553,6 +536,15 @@
 
     // Show custom cursor on both desktop and mobile
     customCursor.style.display = 'block';
+
+    // Set initial emoji size based on device
+    if (isMobileDevice()) {
+      emojiSizeInput.value = emojiSizeInput.min;
+    } else {
+      emojiSizeInput.value = '100'; // default value
+    }
+
+    resizeGame();
 
     class Entity {
       constructor(x, y, vx, vy, isSad) {
@@ -571,15 +563,16 @@
         this.movementDuration = Math.random() * 100 + 50; // Duration for each movement type
         this.movementTime = 0;
 
-        this.amplitude = Math.random() * 10 + 5; // Amplitude between 5 and 15
-        this.frequency = Math.random() * 0.1 + 0.05; // Frequency between 0.05 and 0.15
+        // Adjusted amplitude to allow for larger movements
+        this.amplitude = Math.random() < 0.5 ? (Math.random() * 20 + 10) : (Math.random() * 10 + 5);
+        this.frequency = Math.random() * 0.1 + 0.02; // Adjusted frequency for larger movements
 
         // Adjust frequency for loop movement to ensure at least two full loops
         if (this.movementTypes[this.currentMovementIndex] === 'loop' || this.movementTypes[this.currentMovementIndex] === 'circle') {
           const totalVerticalDistance = height + this.size * 2; // From y = -size to y = height + size
           const averageVy = Math.abs(this.baseVy) + this.amplitude * speedMultiplier; // Approximate average vertical speed
           const totalTimeOnScreen = totalVerticalDistance / averageVy;
-          const numberOfLoops = 2;
+          const numberOfLoops = Math.random() < 0.5 ? 1 : 2; // Randomly 1 or 2 loops
           this.frequency = (2 * numberOfLoops * Math.PI) / totalTimeOnScreen;
         }
 
@@ -601,6 +594,7 @@
 
         // Tracer for this entity
         this.tracerPath = [];
+        this.hasPaused = false; // To ensure straight emojis pause once
       }
 
       update(delta) {
@@ -614,16 +608,16 @@
 
           // Randomize new duration, amplitude, and frequency
           this.movementDuration = Math.random() * 100 + 50;
-          this.amplitude = Math.random() * 10 + 5;
+          this.amplitude = Math.random() < 0.5 ? (Math.random() * 20 + 10) : (Math.random() * 10 + 5);
 
           if (this.movementTypes[this.currentMovementIndex] === 'loop' || this.movementTypes[this.currentMovementIndex] === 'circle') {
             const totalVerticalDistance = height + this.size * 2; // From y = -size to y = height + size
             const averageVy = Math.abs(this.baseVy) + this.amplitude * speedMultiplier; // Approximate average vertical speed
             const totalTimeOnScreen = totalVerticalDistance / averageVy;
-            const numberOfLoops = 2;
+            const numberOfLoops = Math.random() < 0.5 ? 1 : 2; // Randomly 1 or 2 loops
             this.frequency = (2 * numberOfLoops * Math.PI) / totalTimeOnScreen;
           } else {
-            this.frequency = Math.random() * 0.1 + 0.05;
+            this.frequency = Math.random() * 0.1 + 0.02;
           }
 
           if (this.movementTypes[this.currentMovementIndex] === 'diagonal') {
@@ -668,42 +662,58 @@
             }
           }
 
-          // Apply movement patterns only if not evading
-          if (!isEvading) {
-            switch(this.movementTypes[this.currentMovementIndex]) {
-              case 'zigzag':
-                this.vx = Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier;
-                break;
-              case 'circle':
-                this.vx = Math.cos(this.time * this.frequency) * this.amplitude * speedMultiplier;
-                this.vy = Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier + this.baseVy;
-                break;
-              case 'diagonal':
-                this.vx = this.diagonalDirection * this.amplitude * speedMultiplier;
-                break;
-              case 'zigzig':
-                this.vx = Math.sin(this.time * this.frequency * 2) * this.amplitude * speedMultiplier;
-                break;
-              case 'loop':
-                this.vx = Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier;
-                this.vy = Math.cos(this.time * this.frequency) * this.amplitude * speedMultiplier + this.baseVy;
-                break;
-              case 'random':
-                // Randomly adjust vx and vy
-                this.vx += (Math.random() - 0.5) * this.amplitude * delta * speedMultiplier;
-                this.vy += (Math.random() - 0.5) * this.amplitude * delta * speedMultiplier;
-                break;
-            }
-
-            // Apply acceleration
-            if (this.hasAcceleration) {
-              this.vy += this.acceleration * delta;
-            }
-
-            // Add gravity
-            const gravity = 0.2 * speedMultiplier;
-            this.vy += gravity * delta;
+          // Apply movement patterns
+          switch(this.movementTypes[this.currentMovementIndex]) {
+            case 'zigzag':
+              this.vx = Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier;
+              break;
+            case 'circle':
+              this.vx = Math.cos(this.time * this.frequency) * this.amplitude * speedMultiplier;
+              this.vy = Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier + this.baseVy;
+              break;
+            case 'diagonal':
+              this.vx = this.diagonalDirection * this.amplitude * speedMultiplier;
+              break;
+            case 'zigzig':
+              this.vx = Math.sin(this.time * this.frequency * 2) * this.amplitude * speedMultiplier;
+              break;
+            case 'loop':
+              this.vx = Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier;
+              this.vy = Math.cos(this.time * this.frequency) * this.amplitude * speedMultiplier + this.baseVy;
+              break;
+            case 'random':
+              // Randomly adjust vx and vy
+              this.vx += (Math.random() - 0.5) * this.amplitude * delta * speedMultiplier;
+              this.vy += (Math.random() - 0.5) * this.amplitude * delta * speedMultiplier;
+              break;
+            case 'straight':
+              this.vx = 0;
+              this.vy = this.baseVy;
+              // Ensure it pauses within the first half of the screen
+              if (!this.hasPaused && this.y >= height / 2) {
+                this.currentMovementIndex = (this.currentMovementIndex + 1) % this.movementTypes.length;
+                this.movementTime = 0;
+                this.hasPaused = true;
+              }
+              break;
+            case 'variableSpeed':
+              this.vx = 0;
+              this.vy = this.baseVy + Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier;
+              break;
+            case 'pause':
+              this.vx = 0;
+              this.vy = 0;
+              break;
           }
+
+          // Apply acceleration
+          if (this.hasAcceleration) {
+            this.vy += this.acceleration * delta;
+          }
+
+          // Add gravity
+          const gravity = 0.2 * speedMultiplier;
+          this.vy += gravity * delta;
 
           // Update position
           this.x += this.vx * delta;
@@ -723,13 +733,13 @@
             this.y = this.size / 2 + 10;
           }
 
-          // Boundary checks
+          // Boundary checks for x
           if (this.x < this.size / 2) {
             this.x = this.size / 2;
-            this.vx = Math.abs(this.vx); // Move right
+            if (this.vx <= 0) this.vx = Math.abs(this.vx) + 1 * speedMultiplier; // Bounce right with minimum speed
           } else if (this.x > width - this.size / 2) {
             this.x = width - this.size / 2;
-            this.vx = -Math.abs(this.vx); // Move left
+            if (this.vx >= 0) this.vx = -Math.abs(this.vx) - 1 * speedMultiplier; // Bounce left with minimum speed
           }
 
           if (this.y > height + this.size) {
@@ -738,7 +748,7 @@
           }
 
           // Update tracer path
-          if (tracerEnabled) {
+          if (tracerEnabled && (!clickModeEnabled || !isMobileDevice())) {
             this.tracerPath.push({ x: this.x, y: this.y, face: this.getFace() });
             if (this.tracerPath.length > 10) {
               this.tracerPath.shift();
@@ -805,7 +815,7 @@
 
       draw() {
         // Draw tracer if enabled
-        if (tracerEnabled && this.tracerPath.length > 0) {
+        if (this.tracerPath.length > 0) {
           for (let i = 0; i < this.tracerPath.length; i++) {
             const point = this.tracerPath[i];
             const alpha = (i + 1) / this.tracerPath.length;
@@ -828,12 +838,29 @@
     }
 
     function getRandomMovementTypes() {
-      const types = ['zigzag', 'circle', 'diagonal', 'zigzig', 'loop', 'random'];
-      const numberOfTypes = Math.floor(Math.random() * 3) + 1; // Between 1 and 3 movement types
+      const movementTypes = ['zigzag', 'circle', 'diagonal', 'zigzig', 'loop', 'random', 'variableSpeed'];
       const selectedTypes = [];
-      for (let i = 0; i < numberOfTypes; i++) {
-        selectedTypes.push(types[Math.floor(Math.random() * types.length)]);
+
+      const randomNumber = Math.random();
+
+      if (randomNumber < 0.2) { // 20% chance of 'straightThenOther'
+        // Start with 'straight', then switch to another movement type
+        selectedTypes.push('straight');
+        selectedTypes.push('pause');
+        const otherType = movementTypes[Math.floor(Math.random() * movementTypes.length)];
+        selectedTypes.push(otherType);
+      } else if (randomNumber < 0.4) { // 20% chance to have 'straight' with a 'pause'
+        selectedTypes.push('straight');
+        selectedTypes.push('pause');
+        selectedTypes.push('straight');
+      } else {
+        const numberOfTypes = Math.floor(Math.random() * 3) + 1; // Between 1 and 3 movement types
+        for (let i = 0; i < numberOfTypes; i++) {
+          const type = movementTypes[Math.floor(Math.random() * movementTypes.length)];
+          selectedTypes.push(type);
+        }
       }
+
       return selectedTypes;
     }
 
@@ -861,6 +888,12 @@
       touchY = touch.clientY;
       customCursor.style.left = touchX + 'px';
       customCursor.style.top = touchY + 'px';
+      customCursor.style.opacity = '1';
+
+      if (clickModeEnabled) {
+        handleInteraction(touch.clientX, touch.clientY);
+        animateCursor();
+      }
     }
 
     function handleTouchMove(e) {
@@ -869,12 +902,14 @@
       touchY = touch.clientY;
       customCursor.style.left = touchX + 'px';
       customCursor.style.top = touchY + 'px';
+      customCursor.style.opacity = '1';
     }
 
     function handleTouchEnd(e) {
       isTouching = false;
       touchX = undefined;
       touchY = undefined;
+      customCursor.style.opacity = '0';
     }
 
     canvas.addEventListener('touchstart', handleTouchStart);
@@ -888,10 +923,14 @@
       touchY = e.clientY;
       customCursor.style.left = touchX + 'px';
       customCursor.style.top = touchY + 'px';
+
+      if (clickModeEnabled) {
+        handleInteraction(e.clientX, e.clientY);
+        animateCursor();
+      }
     });
 
     canvas.addEventListener('mousemove', function(e) {
-      if (isTouching) return;
       touchX = e.clientX;
       touchY = e.clientY;
       customCursor.style.left = touchX + 'px';
@@ -935,6 +974,37 @@
       bonkSoundIndex = (bonkSoundIndex + 1) % bonkSounds.length;
     }
 
+    function handleInteraction(x, y) {
+      const clickScale = 1.75; // Scale factor from CSS
+      const clickRadius = cursorCollisionRadius * clickScale;
+
+      entities.forEach(entity => {
+        const dx = entity.x - x;
+        const dy = entity.y - y;
+        const distance = Math.hypot(dx, dy);
+
+        if (entity.isSad && !entity.hit && distance <= entity.size / 2 + clickRadius) {
+          entity.isSad = false;
+          entity.vx = (Math.random() - 0.5) * 4 * speedMultiplier;
+          entity.vy = -(Math.random() * 5 + 5) * speedMultiplier;
+          score++;
+          updateGameStats();
+
+          // Play bonk sound
+          playBonkSound();
+
+          // Check if it's time to increase the wave
+          if (score % 10 === 0) {
+            waveNumber++;
+            speedMultiplier += 0.1;
+            waveSpawnInterval = Math.max(200, 1000 - (waveNumber - 1) * 50);
+            updateGameStats();
+            showWaveOverlay(waveNumber);
+          }
+        }
+      });
+    }
+
     function update() {
       if (gameOver) return;
 
@@ -950,7 +1020,7 @@
       ctx.clearRect(0, 0, width, height);
 
       // Draw tracer if enabled
-      if (tracerEnabled && tracerPath.length > 1) {
+      if (tracerEnabled && tracerPath.length > 1 && (!clickModeEnabled || !isMobileDevice())) {
         for (let i = 1; i < tracerPath.length; i++) {
           const start = tracerPath[i - 1];
           const end = tracerPath[i];
@@ -984,41 +1054,45 @@
 
       // Collision detection between cursor and entities
       if (typeof touchX !== 'undefined' && typeof touchY !== 'undefined') {
-        entities.forEach(entity => {
-          const dx = entity.x - touchX;
-          const dy = entity.y - touchY;
-          const distance = Math.hypot(dx, dy);
+        if (!clickModeEnabled) {
+          entities.forEach(entity => {
+            const dx = entity.x - touchX;
+            const dy = entity.y - touchY;
+            const distance = Math.hypot(dx, dy);
 
-          if (entity.isSad && !entity.hit && distance <= entity.size / 2 + cursorCollisionRadius) {
-            entity.isSad = false;
-            entity.vx = (Math.random() - 0.5) * 4 * speedMultiplier;
-            entity.vy = -(Math.random() * 5 + 5) * speedMultiplier;
-            score++;
-            updateGameStats();
-
-            // Trigger cursor animation
-            animateCursor();
-
-            // Play bonk sound
-            playBonkSound();
-
-            // Check if it's time to increase the wave
-            if (score % 10 === 0) {
-              waveNumber++;
-              speedMultiplier += 0.1;
-              waveSpawnInterval = Math.max(200, 1000 - (waveNumber - 1) * 50);
+            if (entity.isSad && !entity.hit && distance <= entity.size / 2 + cursorCollisionRadius) {
+              entity.isSad = false;
+              entity.vx = (Math.random() - 0.5) * 4 * speedMultiplier;
+              entity.vy = -(Math.random() * 5 + 5) * speedMultiplier;
+              score++;
               updateGameStats();
-              showWaveOverlay(waveNumber);
+
+              // Trigger cursor animation
+              animateCursor();
+
+              // Play bonk sound
+              playBonkSound();
+
+              // Check if it's time to increase the wave
+              if (score % 10 === 0) {
+                waveNumber++;
+                speedMultiplier += 0.1;
+                waveSpawnInterval = Math.max(200, 1000 - (waveNumber - 1) * 50);
+                updateGameStats();
+                showWaveOverlay(waveNumber);
+              }
             }
-          }
-        });
+          });
+        }
 
         // Update tracer path
-        if (tracerEnabled) {
+        if (tracerEnabled && (!clickModeEnabled || !isMobileDevice())) {
           tracerPath.push({ x: touchX, y: touchY });
           if (tracerPath.length > 20) {
             tracerPath.shift();
           }
+        } else {
+          tracerPath = [];
         }
       } else {
         tracerPath = [];
@@ -1052,6 +1126,8 @@
 
     function startGame() {
       startButton.style.display = 'none';
+      gameOverText.style.display = 'none';
+      restartButton.style.display = 'none';
       lastTime = Date.now(); // Reset lastTime
       lastWaveSpawnTime = Date.now(); // Reset lastWaveSpawnTime
       gameOver = false;
@@ -1083,8 +1159,6 @@
     }
 
     function restartGame() {
-      gameOverText.style.display = 'none';
-      restartButton.style.display = 'none';
       startGame();
     }
 
@@ -1099,6 +1173,7 @@
       tracerEnabled = tracersCheckbox.checked;
       soundEnabled = soundToggle.checked;
       volumeLevel = parseFloat(volumeSlider.value);
+      clickModeEnabled = clickModeToggle.checked;
 
       // Update volume for all sounds
       bonkSounds.forEach(sound => {
@@ -1125,18 +1200,19 @@
 
       lastTime = Date.now(); // Reset lastTime to avoid large delta
 
-      if (gameStarted) {
-        startGame(); // Restart the game at the selected wave
-      }
-
       isPaused = false;
-    }
 
-    // Restart game from menu
-    menuRestartButton.addEventListener('click', () => {
-      closeMenu();
-      restartGame();
-    });
+      // Ensure custom cursor is visible after closing the menu
+      customCursor.style.opacity = '1';
+
+      // Check if wave number has changed
+      if (waveNumber !== selectedWaveNumber) {
+        gameStarted = false;
+        startButton.style.display = 'block';
+      } else if (!gameStarted) {
+        startGame(); // Start the game if it hasn't started yet
+      }
+    }
 
     // Event listeners for volume and night mode
     volumeSlider.addEventListener('input', () => {
