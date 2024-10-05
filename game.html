@@ -27,6 +27,12 @@
       background-position: 0px 0px;
       background-repeat: repeat;
     }
+    body.nightmode {
+      background-color: #000000;
+      background-image:
+        linear-gradient(rgba(100, 100, 100, 0.5) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100, 100, 100, 0.5) 1px, transparent 1px);
+    }
     canvas {
       position: absolute;
       top: 0;
@@ -176,6 +182,9 @@
       overflow: auto;
       cursor: default; /* Ensure cursor is visible in menu */
     }
+    body.nightmode #menuOverlay {
+      background-color: black;
+    }
     /* Close Button */
     #menuCloseButton {
       position: absolute;
@@ -250,6 +259,23 @@
     #menuRestartButton:hover {
       background-color: rgba(255, 255, 255, 0.1);
     }
+    /* Wave Selector */
+    #waveSelector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .wave-button {
+      font-size: 2rem;
+      cursor: pointer;
+      user-select: none;
+      margin: 0 10px;
+    }
+    #waveNumber {
+      font-size: 1.5rem;
+      width: 50px;
+      text-align: center;
+    }
     /* Media Query for Mobile Devices */
     @media only screen and (max-width: 768px) {
       #title {
@@ -305,6 +331,13 @@
         font-size: 1rem;
         padding: 10px 20px;
       }
+      .wave-button {
+        font-size: 1.5rem;
+      }
+      #waveNumber {
+        font-size: 1rem;
+        width: 40px;
+      }
     }
   </style>
 </head>
@@ -350,8 +383,12 @@
       <h1>options</h1>
       <!-- Menu Options -->
       <div class="menu-option">
-        <label for="startLevel">level</label>
-        <input type="number" id="startLevel" min="1" max="20" value="1">
+        <label>wave</label>
+        <div id="waveSelector">
+          <span id="decreaseWave" class="wave-button">[</span>
+          <span id="waveNumber">1</span>
+          <span id="increaseWave" class="wave-button">]</span>
+        </div>
       </div>
       <div class="menu-option">
         <label for="emojiSize">emoji size</label>
@@ -364,6 +401,14 @@
       <div class="menu-option">
         <label for="soundToggle">sound</label>
         <input type="checkbox" id="soundToggle" checked>
+      </div>
+      <div class="menu-option">
+        <label for="volumeSlider">volume</label>
+        <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="1">
+      </div>
+      <div class="menu-option">
+        <label for="nightModeToggle">night mode</label>
+        <input type="checkbox" id="nightModeToggle">
       </div>
       <!-- Restart Button in Menu -->
       <div id="menuRestartButton" onclick="restartGame()">restart game</div>
@@ -389,11 +434,33 @@
     const menuIcon = document.getElementById('menuIcon');
     const menuOverlay = document.getElementById('menuOverlay');
     const menuCloseButton = document.getElementById('menuCloseButton');
-    const startLevelInput = document.getElementById('startLevel');
     const emojiSizeInput = document.getElementById('emojiSize');
     const tracersCheckbox = document.getElementById('tracers');
     const soundToggle = document.getElementById('soundToggle');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const nightModeToggle = document.getElementById('nightModeToggle');
     const menuRestartButton = document.getElementById('menuRestartButton');
+
+    // Wave selector elements
+    const decreaseWaveButton = document.getElementById('decreaseWave');
+    const increaseWaveButton = document.getElementById('increaseWave');
+    const waveNumberDisplay = document.getElementById('waveNumber');
+
+    let selectedWaveNumber = 1; // Initialize selected wave number
+
+    decreaseWaveButton.addEventListener('click', () => {
+      if (selectedWaveNumber > 1) {
+        selectedWaveNumber--;
+        waveNumberDisplay.textContent = selectedWaveNumber;
+      }
+    });
+
+    increaseWaveButton.addEventListener('click', () => {
+      if (selectedWaveNumber < 20) {
+        selectedWaveNumber++;
+        waveNumberDisplay.textContent = selectedWaveNumber;
+      }
+    });
 
     let width = window.innerWidth;
     let height = window.innerHeight;
@@ -435,6 +502,7 @@
 
     // Sound Variables
     let soundEnabled = soundToggle.checked;
+    let volumeLevel = parseFloat(volumeSlider.value);
     const bonkSounds = [];
     let bonkSoundIndex = 0;
 
@@ -506,6 +574,15 @@
         this.amplitude = Math.random() * 10 + 5; // Amplitude between 5 and 15
         this.frequency = Math.random() * 0.1 + 0.05; // Frequency between 0.05 and 0.15
 
+        // Adjust frequency for loop movement to ensure at least two full loops
+        if (this.movementTypes[this.currentMovementIndex] === 'loop' || this.movementTypes[this.currentMovementIndex] === 'circle') {
+          const totalVerticalDistance = height + this.size * 2; // From y = -size to y = height + size
+          const averageVy = Math.abs(this.baseVy) + this.amplitude * speedMultiplier; // Approximate average vertical speed
+          const totalTimeOnScreen = totalVerticalDistance / averageVy;
+          const numberOfLoops = 2;
+          this.frequency = (2 * numberOfLoops * Math.PI) / totalTimeOnScreen;
+        }
+
         // Variable speed
         this.hasAcceleration = Math.random() < 0.5; // 50% chance
         if (this.hasAcceleration) {
@@ -538,7 +615,16 @@
           // Randomize new duration, amplitude, and frequency
           this.movementDuration = Math.random() * 100 + 50;
           this.amplitude = Math.random() * 10 + 5;
-          this.frequency = Math.random() * 0.1 + 0.05;
+
+          if (this.movementTypes[this.currentMovementIndex] === 'loop' || this.movementTypes[this.currentMovementIndex] === 'circle') {
+            const totalVerticalDistance = height + this.size * 2; // From y = -size to y = height + size
+            const averageVy = Math.abs(this.baseVy) + this.amplitude * speedMultiplier; // Approximate average vertical speed
+            const totalTimeOnScreen = totalVerticalDistance / averageVy;
+            const numberOfLoops = 2;
+            this.frequency = (2 * numberOfLoops * Math.PI) / totalTimeOnScreen;
+          } else {
+            this.frequency = Math.random() * 0.1 + 0.05;
+          }
 
           if (this.movementTypes[this.currentMovementIndex] === 'diagonal') {
             this.diagonalDirection = Math.random() < 0.5 ? -1 : 1;
@@ -843,6 +929,7 @@
 
       const bonkSound = bonkSounds[bonkSoundIndex];
       bonkSound.currentTime = 0; // Reset to start
+      bonkSound.volume = volumeLevel;
       bonkSound.play();
 
       bonkSoundIndex = (bonkSoundIndex + 1) % bonkSounds.length;
@@ -970,7 +1057,7 @@
       gameOver = false;
       score = 0;
       missed = 0;
-      waveNumber = parseInt(startLevelInput.value) || 1; // Use the selected start level
+      waveNumber = selectedWaveNumber; // Use the selected start wave
       speedMultiplier = 0.8 + (waveNumber - 1) * 0.1; // Adjust speed based on starting wave
       waveSpawnInterval = Math.max(200, 1000 - (waveNumber - 1) * 50); // Adjust spawn rate
       entities = [];
@@ -986,6 +1073,11 @@
           bonkSounds.push(audio);
         }
       }
+
+      // Set initial volume
+      bonkSounds.forEach(sound => {
+        sound.volume = volumeLevel;
+      });
 
       update();
     }
@@ -1006,7 +1098,27 @@
       // Update settings based on menu inputs
       tracerEnabled = tracersCheckbox.checked;
       soundEnabled = soundToggle.checked;
+      volumeLevel = parseFloat(volumeSlider.value);
+
+      // Update volume for all sounds
+      bonkSounds.forEach(sound => {
+        sound.volume = volumeLevel;
+      });
+
+      // Toggle night mode
+      if (nightModeToggle.checked) {
+        document.body.classList.add('nightmode');
+      } else {
+        document.body.classList.remove('nightmode');
+      }
+
       resizeGame(); // Adjust sizes based on new settings
+
+      // Reset tracer paths when tracers are toggled
+      tracerPath = [];
+      entities.forEach(entity => {
+        entity.tracerPath = [];
+      });
 
       menuOverlay.style.display = 'none';
       document.body.style.cursor = 'none'; // Hide cursor when returning to game
@@ -1014,7 +1126,7 @@
       lastTime = Date.now(); // Reset lastTime to avoid large delta
 
       if (gameStarted) {
-        startGame(); // Restart the game at the selected level
+        startGame(); // Restart the game at the selected wave
       }
 
       isPaused = false;
@@ -1024,6 +1136,22 @@
     menuRestartButton.addEventListener('click', () => {
       closeMenu();
       restartGame();
+    });
+
+    // Event listeners for volume and night mode
+    volumeSlider.addEventListener('input', () => {
+      volumeLevel = parseFloat(volumeSlider.value);
+      bonkSounds.forEach(sound => {
+        sound.volume = volumeLevel;
+      });
+    });
+
+    nightModeToggle.addEventListener('change', () => {
+      if (nightModeToggle.checked) {
+        document.body.classList.add('nightmode');
+      } else {
+        document.body.classList.remove('nightmode');
+      }
     });
 
     // Ensure the game resizes properly when the window size changes
