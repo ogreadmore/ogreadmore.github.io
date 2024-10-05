@@ -17,11 +17,11 @@
       height: 100vh;
       width: 100vw;
       transition: background-color 0.5s;
-      
+
       /* Grid Background */
       background-color: #ffffff;
-      background-image: 
-        linear-gradient(rgba(211, 211, 211, 0.5) 1px, transparent 1px), 
+      background-image:
+        linear-gradient(rgba(211, 211, 211, 0.5) 1px, transparent 1px),
         linear-gradient(90deg, rgba(211, 211, 211, 0.5) 1px, transparent 1px);
       background-size: 100px 100px;
       background-position: 0px 0px;
@@ -33,7 +33,6 @@
       left: 0;
       width: 100%;
       height: 100%;
-      /* Removed background-color to allow grid to show */
       z-index: 5; /* Positioned below gameStats */
     }
     /* Custom Cursor */
@@ -41,12 +40,12 @@
       position: absolute;
       pointer-events: none;
       z-index: 1000;
-      width: 60px; /* Original size */
-      height: 60px;
+      width: 90px; /* Adjusted size */
+      height: 90px;
       transform: translate(-50%, -50%) scale(1);
       transition: transform 0.2s ease;
-      font-size: 60px;
-      line-height: 60px;
+      font-size: 90px;
+      line-height: 90px;
       text-align: center;
       user-select: none;
       opacity: 1;
@@ -75,12 +74,12 @@
       pointer-events: none;
       display: none;
       z-index: 10;
-      width: 60px; /* Original size */
-      height: 60px;
+      width: 90px; /* Adjusted size */
+      height: 90px;
       transform: translate(-50%, -50%) scale(1);
       transition: transform 0.2s ease;
-      font-size: 60px;
-      line-height: 60px;
+      font-size: 90px;
+      line-height: 90px;
       text-align: center;
       user-select: none;
     }
@@ -135,22 +134,6 @@
       font-size: 2vh;
       margin-top: 1vh; /* Blank line */
     }
-    #controls {
-      margin-top: 1vh; /* Blank line */
-      display: flex;
-      gap: 10px;
-    }
-    #pauseText {
-      display: inline-block;
-      padding: 5px 10px;
-      border: 2px solid magenta;
-      color: magenta;
-      cursor: inherit; /* Inherit cursor from body */
-      font-size: 1.5vh;
-      font-family: 'Press Start 2P', cursive;
-      user-select: none;
-      pointer-events: none; /* Prevents interference with gameplay */
-    }
     #waveOverlay {
       position: absolute;
       top: 50%;
@@ -163,7 +146,110 @@
       z-index: 20;
       pointer-events: none;
     }
-
+    /* Menu Icon */
+    #menuIcon {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 30px;
+      height: 25px;
+      cursor: pointer;
+      z-index: 15;
+    }
+    /* Hamburger Icon Lines */
+    #menuIcon div {
+      width: 100%;
+      height: 4px;
+      background-color: magenta;
+      margin: 5px 0;
+    }
+    /* Menu Overlay */
+    #menuOverlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: white;
+      display: none;
+      z-index: 20;
+      overflow: auto;
+      cursor: default; /* Ensure cursor is visible in menu */
+    }
+    /* Close Button */
+    #menuCloseButton {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 30px;
+      height: 25px;
+      cursor: pointer;
+    }
+    /* X Icon Lines */
+    #menuCloseButton:before, #menuCloseButton:after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 4px;
+      background-color: magenta;
+      top: 10px;
+      left: 0;
+    }
+    #menuCloseButton:before {
+      transform: rotate(45deg);
+    }
+    #menuCloseButton:after {
+      transform: rotate(-45deg);
+    }
+    /* Menu Content */
+    #menuContent {
+      margin-top: 80px;
+      text-align: center;
+      color: magenta;
+      font-family: 'Press Start 2P', cursive;
+    }
+    #menuContent h1 {
+      font-size: 3rem;
+      margin-bottom: 40px;
+    }
+    .menu-option {
+      margin: 20px auto;
+      max-width: 300px;
+    }
+    .menu-option label {
+      display: block;
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+    }
+    .menu-option input[type="range"] {
+      width: 100%; /* Adjusted to be narrower */
+    }
+    .menu-option input[type="number"] {
+      width: 80px;
+      font-size: 1.5rem;
+      text-align: center;
+    }
+    .menu-option input[type="checkbox"] {
+      transform: scale(1.5);
+      margin-top: 10px;
+    }
+    /* Restart Button in Menu */
+    #menuRestartButton {
+      margin-top: 40px;
+      background-color: transparent;
+      color: magenta;
+      padding: 15px 30px;
+      border: 3px solid magenta;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 1.5rem;
+      display: inline-block;
+      user-select: none;
+    }
+    #menuRestartButton:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
     /* Media Query for Mobile Devices */
     @media only screen and (max-width: 768px) {
       #title {
@@ -180,19 +266,44 @@
         font-size: 1rem; /* Half of 2rem */
         padding: 10px 20px; /* Half padding */
       }
-      #pauseText {
-        font-size: 0.75vh; /* Half of 1.5vh */
-      }
       #waveOverlay {
         font-size: 2.5vh; /* Half of 5vh */
       }
-      /* Hide custom cursor on mobile */
+      /* Show custom cursor on mobile */
       #customCursor {
-        display: none;
+        display: block;
       }
       /* Hide heartCursor on mobile to remove tiny heart */
       #heartCursor {
         display: none;
+      }
+      /* Adjust menu icon size */
+      #menuIcon, #menuCloseButton {
+        top: 10px;
+        right: 10px;
+        width: 25px;
+        height: 20px;
+      }
+      #menuIcon div, #menuCloseButton:before, #menuCloseButton:after {
+        height: 3px;
+      }
+      /* Adjust menu content */
+      #menuContent h1 {
+        font-size: 2rem;
+      }
+      .menu-option label {
+        font-size: 1.2rem;
+      }
+      .menu-option input[type="number"] {
+        width: 60px;
+        font-size: 1.2rem;
+      }
+      .menu-option input[type="range"] {
+        width: 100%;
+      }
+      #menuRestartButton {
+        font-size: 1rem;
+        padding: 10px 20px;
       }
     }
   </style>
@@ -201,7 +312,7 @@
   <!-- Game Canvas -->
   <canvas id="gameCanvas"></canvas>
 
-  <!-- Custom Cursor for Desktop -->
+  <!-- Custom Cursor for Desktop and Mobile -->
   <div id="customCursor">🩷</div>
 
   <!-- Heart cursor for mobile devices -->
@@ -215,9 +326,6 @@
       lives left: 3<br>
       wave: 1
     </div>
-    <div id="controls">
-      <!-- Removed pause and reset buttons as per request -->
-    </div>
   </div>
 
   <!-- Start and Restart Buttons -->
@@ -228,7 +336,48 @@
   <!-- Wave Overlay -->
   <div id="waveOverlay">wave 1!</div>
 
+  <!-- Menu Icon -->
+  <div id="menuIcon" onclick="openMenu()">
+    <div></div>
+    <div></div>
+    <div></div>
+  </div>
+
+  <!-- Menu Overlay -->
+  <div id="menuOverlay">
+    <div id="menuCloseButton" onclick="closeMenu()"></div>
+    <div id="menuContent">
+      <h1>options</h1>
+      <!-- Menu Options -->
+      <div class="menu-option">
+        <label for="startLevel">level</label>
+        <input type="number" id="startLevel" min="1" max="20" value="1">
+      </div>
+      <div class="menu-option">
+        <label for="emojiSize">emoji size</label>
+        <input type="range" id="emojiSize" min="50" max="150" value="100">
+      </div>
+      <div class="menu-option">
+        <label for="tracers">tracers</label>
+        <input type="checkbox" id="tracers">
+      </div>
+      <div class="menu-option">
+        <label for="soundToggle">sound</label>
+        <input type="checkbox" id="soundToggle" checked>
+      </div>
+      <!-- Restart Button in Menu -->
+      <div id="menuRestartButton" onclick="restartGame()">restart game</div>
+    </div>
+  </div>
+
+  <!-- Audio Elements -->
+  <audio id="bonkSound" src="bonk.mp3" preload="auto"></audio>
+
   <script>
+    // Constants for base sizes
+    const baseFaceSizeDesktop = 90; // Adjusted size for desktop
+    const baseFaceSizeMobile = 60;   // Original size for mobile
+
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const heartCursor = document.getElementById('heartCursor');
@@ -237,6 +386,15 @@
     const startButton = document.getElementById('startButton');
     const gameOverText = document.getElementById('gameOver');
     const restartButton = document.getElementById('restartButton');
+    const menuIcon = document.getElementById('menuIcon');
+    const menuOverlay = document.getElementById('menuOverlay');
+    const menuCloseButton = document.getElementById('menuCloseButton');
+    const startLevelInput = document.getElementById('startLevel');
+    const emojiSizeInput = document.getElementById('emojiSize');
+    const tracersCheckbox = document.getElementById('tracers');
+    const soundToggle = document.getElementById('soundToggle');
+    const bonkSound = document.getElementById('bonkSound');
+    const menuRestartButton = document.getElementById('menuRestartButton');
 
     let width = window.innerWidth;
     let height = window.innerHeight;
@@ -256,16 +414,29 @@
     let touchY = undefined;
 
     let waveNumber = 1;
-    let speedMultiplier = 0.8; // Start a bit slower
-    let waveSpawnInterval = 1000;
+    let speedMultiplier = 0.8; // Start slower
+    let waveSpawnInterval = 1000; // Spawn less frequently
     let lastWaveSpawnTime = Date.now();
     let isPaused = false;
     let animationFrameId;
+    let gameStarted = false; // Flag to check if the game has started
+
+    // Evasion parameters
+    const baseEvasionRadius = 200; // Increased base evasion radius
+    const evasionRadiusIncreasePerLevel = 50; // Increased evasion radius per level
+    const maxEvasionForce = 1; // Maximum steering force
 
     // Grid Animation Variables
     let gridOffsetY = 0;
     const gridSize = 100; // Must match background-size in CSS
     const gridScrollFactor = 1; // Adjust this to match emoji speed
+
+    // Tracer Variables
+    let tracerEnabled = tracersCheckbox.checked;
+    let tracerPath = [];
+
+    // Sound Variables
+    let soundEnabled = soundToggle.checked;
 
     function resizeGame() {
       width = window.innerWidth;
@@ -273,28 +444,38 @@
       canvas.width = width;
       canvas.height = height;
 
-      faceSize = Math.min(width, height) / 10; // Base face size
-      if (isMobileDevice()) {
-        faceSize *= 0.66; // Reduce the face size to two-thirds on mobile
-      }
-      faceSize = Math.max(Math.min(faceSize, 90), 30); // Adjusted max size to 90 to accommodate faceSize
+      let sliderValue = parseInt(emojiSizeInput.value); // Use the value from the slider
 
+      // Calculate faceSize based on device and slider value
+      if (isMobileDevice()) {
+        faceSize = (sliderValue / 100) * baseFaceSizeMobile;
+      } else {
+        faceSize = (sliderValue / 100) * baseFaceSizeDesktop;
+      }
+
+      // Update cursor sizes
       heartCursor.style.width = faceSize * 2 + 'px';
       heartCursor.style.height = faceSize * 2 + 'px';
       heartCursor.style.marginLeft = -faceSize + 'px';
       heartCursor.style.marginTop = -faceSize + 'px';
 
-      // Adjust cursorCollisionRadius based on device
       if (isMobileDevice()) {
-        cursorCollisionRadius = faceSize * 3; // Match big heart size (600% font-size implies ~6x scaling)
+        // On mobile devices, make the custom cursor 2x larger
+        customCursor.style.width = faceSize * 2 + 'px';
+        customCursor.style.height = faceSize * 2 + 'px';
+        customCursor.style.fontSize = faceSize * 2 + 'px';
+        cursorCollisionRadius = faceSize * 2;
       } else {
+        customCursor.style.width = faceSize + 'px';
+        customCursor.style.height = faceSize + 'px';
+        customCursor.style.fontSize = faceSize + 'px';
         cursorCollisionRadius = faceSize;
       }
 
-      // Update custom cursor size
-      customCursor.style.width = faceSize + 'px';
-      customCursor.style.height = faceSize + 'px';
-      customCursor.style.fontSize = faceSize + 'px';
+      // Update sizes of existing entities
+      entities.forEach(entity => {
+        entity.size = faceSize;
+      });
     }
     resizeGame();
 
@@ -302,60 +483,153 @@
       return typeof window.orientation !== 'undefined' || navigator.userAgent.indexOf('IEMobile') !== -1;
     }
 
-    if (isMobileDevice()) {
-      // heartCursor.style.display = 'block'; // Disabled to remove tiny heart
-    } else {
-      customCursor.style.display = 'block';
-    }
+    // Show custom cursor on both desktop and mobile
+    customCursor.style.display = 'block';
 
     class Entity {
       constructor(x, y, vx, vy, isSad) {
         this.size = faceSize;
         this.x = x;
         this.y = y;
-        this.vx = vx * speedMultiplier;
-        this.vy = vy * speedMultiplier;
         this.isSad = isSad;
         this.hit = false;
+        this.time = 0;
+
+        this.baseVy = vy * speedMultiplier;
+
+        // Movement variations
+        this.movementTypes = getRandomMovementTypes();
+        this.currentMovementIndex = 0;
+        this.movementDuration = Math.random() * 100 + 50; // Duration for each movement type
+        this.movementTime = 0;
+
+        this.amplitude = Math.random() * 10 + 5; // Amplitude between 5 and 15
+        this.frequency = Math.random() * 0.1 + 0.05; // Frequency between 0.05 and 0.15
+
+        // Variable speed
+        this.hasAcceleration = Math.random() < 0.5; // 50% chance
+        if (this.hasAcceleration) {
+          this.vx = vx * speedMultiplier;
+          this.vy = (vy * speedMultiplier) * 0.5; // Start at half speed
+          this.acceleration = (Math.random() * 0.1 + 0.05) * speedMultiplier; // Acceleration between 0.05 and 0.15
+        } else {
+          this.vx = vx * speedMultiplier;
+          this.vy = vy * speedMultiplier;
+          this.acceleration = 0;
+        }
+
+        if (this.movementTypes[this.currentMovementIndex] === 'diagonal') {
+          this.diagonalDirection = Math.random() < 0.5 ? -1 : 1;
+        }
+
+        // Tracer for this entity
+        this.tracerPath = [];
       }
 
       update(delta) {
-        if (this.isSad) {
-          // Touch avoidance logic
-          if (typeof touchX !== 'undefined' && typeof touchY !== 'undefined') {
-            let dx = this.x - touchX;
-            let dy = this.y - touchY;
-            let distance = Math.hypot(dx, dy);
-            let detectionRadius = 200;
+        this.time += delta;
+        this.movementTime += delta;
 
-            if (distance < detectionRadius) {
-              let nx = dx / distance;
-              let ny = dy / distance;
-              let avoidSpeed = ((detectionRadius - distance) / detectionRadius) * 2 * speedMultiplier;
-              this.vx += nx * avoidSpeed * delta;
-              this.vy += ny * avoidSpeed * delta;
+        if (this.movementTime > this.movementDuration) {
+          // Switch to next movement type
+          this.currentMovementIndex = (this.currentMovementIndex + 1) % this.movementTypes.length;
+          this.movementTime = 0;
+
+          // Randomize new duration, amplitude, and frequency
+          this.movementDuration = Math.random() * 100 + 50;
+          this.amplitude = Math.random() * 10 + 5;
+          this.frequency = Math.random() * 0.1 + 0.05;
+
+          if (this.movementTypes[this.currentMovementIndex] === 'diagonal') {
+            this.diagonalDirection = Math.random() < 0.5 ? -1 : 1;
+          }
+        }
+
+        if (this.isSad) {
+          // Evasion behavior
+          let isEvading = false;
+          if (typeof touchX !== 'undefined' && typeof touchY !== 'undefined') {
+            const dx = this.x - touchX;
+            const dy = this.y - touchY;
+            const distance = Math.hypot(dx, dy);
+
+            // Adjust evasion radius based on current wave
+            const evasionRadius = baseEvasionRadius + evasionRadiusIncreasePerLevel * (waveNumber - 1);
+
+            if (distance < evasionRadius) {
+              isEvading = true;
+
+              // Calculate desired velocity away from cursor
+              const desiredSpeed = this.getMaxSpeed();
+              const desiredVx = (dx / distance) * desiredSpeed;
+              const desiredVy = (dy / distance) * desiredSpeed;
+
+              // Calculate steering force
+              let steerX = desiredVx - this.vx;
+              let steerY = desiredVy - this.vy;
+
+              // Limit steering force
+              const steerMag = Math.hypot(steerX, steerY);
+              const maxForce = maxEvasionForce * speedMultiplier;
+              if (steerMag > maxForce) {
+                steerX = (steerX / steerMag) * maxForce;
+                steerY = (steerY / steerMag) * maxForce;
+              }
+
+              // Apply steering force
+              this.vx += steerX * delta;
+              this.vy += steerY * delta;
             }
           }
 
-          // Add gravity
-          const gravity = 0.2 * speedMultiplier;
-          this.vy += gravity * delta;
+          // Apply movement patterns only if not evading
+          if (!isEvading) {
+            switch(this.movementTypes[this.currentMovementIndex]) {
+              case 'zigzag':
+                this.vx = Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier;
+                break;
+              case 'circle':
+                this.vx = Math.cos(this.time * this.frequency) * this.amplitude * speedMultiplier;
+                this.vy = Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier + this.baseVy;
+                break;
+              case 'diagonal':
+                this.vx = this.diagonalDirection * this.amplitude * speedMultiplier;
+                break;
+              case 'zigzig':
+                this.vx = Math.sin(this.time * this.frequency * 2) * this.amplitude * speedMultiplier;
+                break;
+              case 'loop':
+                this.vx = Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier;
+                this.vy = Math.cos(this.time * this.frequency) * this.amplitude * speedMultiplier + this.baseVy;
+                break;
+              case 'random':
+                // Randomly adjust vx and vy
+                this.vx += (Math.random() - 0.5) * this.amplitude * delta * speedMultiplier;
+                this.vy += (Math.random() - 0.5) * this.amplitude * delta * speedMultiplier;
+                break;
+            }
 
-          // Increase erraticness
-          this.vx += (Math.random() - 0.5) * 1.2 * delta * speedMultiplier; // Further increased randomness
-          this.vy += (Math.random() - 0.5) * 0.8 * delta * speedMultiplier; // Further increased randomness
+            // Apply acceleration
+            if (this.hasAcceleration) {
+              this.vy += this.acceleration * delta;
+            }
 
-          // Increase max speed
-          let maxSpeed = 10 * speedMultiplier; // Increased max speed to accommodate higher randomness
-          let speed = Math.hypot(this.vx, this.vy);
-          if (speed > maxSpeed) {
-            this.vx = (this.vx / speed) * maxSpeed;
-            this.vy = (this.vy / speed) * maxSpeed;
+            // Add gravity
+            const gravity = 0.2 * speedMultiplier;
+            this.vy += gravity * delta;
           }
 
           // Update position
           this.x += this.vx * delta;
           this.y += this.vy * delta;
+
+          // Limit speed
+          let speed = Math.hypot(this.vx, this.vy);
+          const maxSpeed = this.getMaxSpeed();
+          if (speed > maxSpeed) {
+            this.vx = (this.vx / speed) * maxSpeed;
+            this.vy = (this.vy / speed) * maxSpeed;
+          }
 
           // Prevent faces from staying at the top
           if (this.y < this.size / 2 + 10) {
@@ -366,25 +640,35 @@
           // Boundary checks
           if (this.x < this.size / 2) {
             this.x = this.size / 2;
-            this.vx = -this.vx;
+            this.vx = Math.abs(this.vx); // Move right
           } else if (this.x > width - this.size / 2) {
             this.x = width - this.size / 2;
-            this.vx = -this.vx;
+            this.vx = -Math.abs(this.vx); // Move left
           }
 
           if (this.y > height + this.size) {
             missed++;
             this.hit = true;
           }
+
+          // Update tracer path
+          if (tracerEnabled) {
+            this.tracerPath.push({ x: this.x, y: this.y, face: this.getFace() });
+            if (this.tracerPath.length > 10) {
+              this.tracerPath.shift();
+            }
+          } else {
+            this.tracerPath = [];
+          }
         } else {
           // Happy faces movement
           // Increase erraticness
-          this.vx += (Math.random() - 0.5) * 0.6 * delta * speedMultiplier; // Increased randomness
-          this.vy += (Math.random() - 0.5) * 0.6 * delta * speedMultiplier; // Increased randomness
+          this.vx += (Math.random() - 0.5) * 0.6 * delta * speedMultiplier;
+          this.vy += (Math.random() - 0.5) * 0.6 * delta * speedMultiplier;
 
-          // Increase max speed
-          let maxSpeed = 9 * speedMultiplier; // Increased max speed to accommodate higher randomness
+          // Limit speed
           let speed = Math.hypot(this.vx, this.vy);
+          const maxSpeed = 9 * speedMultiplier;
           if (speed > maxSpeed) {
             this.vx = (this.vx / speed) * maxSpeed;
             this.vy = (this.vy / speed) * maxSpeed;
@@ -406,6 +690,9 @@
           if (this.y < -this.size) {
             this.hit = true;
           }
+
+          // Clear tracer path for happy faces
+          this.tracerPath = [];
         }
       }
 
@@ -426,13 +713,42 @@
         }
       }
 
+      getMaxSpeed() {
+        return 10 * speedMultiplier; // Adjusted max speed
+      }
+
       draw() {
+        // Draw tracer if enabled
+        if (tracerEnabled && this.tracerPath.length > 0) {
+          for (let i = 0; i < this.tracerPath.length; i++) {
+            const point = this.tracerPath[i];
+            const alpha = (i + 1) / this.tracerPath.length;
+            ctx.globalAlpha = alpha * 0.6; // Adjust opacity
+            ctx.font = `${this.size}px "Press Start 2P", cursive`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = 'magenta';
+            ctx.fillText(point.face, point.x, point.y);
+          }
+          ctx.globalAlpha = 1.0; // Reset opacity
+        }
+
         ctx.font = `${this.size}px "Press Start 2P", cursive`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = 'magenta';
         ctx.fillText(this.getFace(), this.x, this.y);
       }
+    }
+
+    function getRandomMovementTypes() {
+      const types = ['zigzag', 'circle', 'diagonal', 'zigzig', 'loop', 'random'];
+      const numberOfTypes = Math.floor(Math.random() * 3) + 1; // Between 1 and 3 movement types
+      const selectedTypes = [];
+      for (let i = 0; i < numberOfTypes; i++) {
+        selectedTypes.push(types[Math.floor(Math.random() * types.length)]);
+      }
+      return selectedTypes;
     }
 
     function showWaveOverlay(waveNumber) {
@@ -457,54 +773,20 @@
       const touch = e.touches[0];
       touchX = touch.clientX;
       touchY = touch.clientY;
-      // Removed heartCursor display to eliminate tiny heart
-      // heartCursor.style.display = 'block';
-      // heartCursor.style.left = touchX + 'px';
-      // heartCursor.style.top = touchY + 'px';
-      // heartCursor.style.transform = 'translate(-50%, -50%) scale(1)';
-
-      // Show a large heart at the tap location
-      showBigHeart(touchX, touchY);
-
-      entities.forEach(entity => {
-        const dx = entity.x - touchX;
-        const dy = entity.y - touchY;
-        const distance = Math.hypot(dx, dy);
-        if (entity.isSad && !entity.hit && distance <= entity.size / 2 + cursorCollisionRadius) {
-          entity.isSad = false;
-          entity.vx = (Math.random() - 0.5) * 4 * speedMultiplier;
-          entity.vy = -(Math.random() * 5 + 5) * speedMultiplier;
-          score++;
-          updateGameStats();
-
-          // Trigger cursor animation
-          animateCursor();
-
-          // Check if it's time to increase the wave
-          if (score % 10 === 0) {
-            waveNumber++;
-            speedMultiplier += 0.1;
-            waveSpawnInterval = Math.max(200, waveSpawnInterval - 50);
-            updateGameStats();
-            showWaveOverlay(waveNumber);
-          }
-        }
-      });
+      customCursor.style.left = touchX + 'px';
+      customCursor.style.top = touchY + 'px';
     }
 
     function handleTouchMove(e) {
       const touch = e.touches[0];
       touchX = touch.clientX;
       touchY = touch.clientY;
-      // Removed heartCursor positioning to eliminate tiny heart
-      // heartCursor.style.left = touchX + 'px';
-      // heartCursor.style.top = touchY + 'px';
+      customCursor.style.left = touchX + 'px';
+      customCursor.style.top = touchY + 'px';
     }
 
     function handleTouchEnd(e) {
       isTouching = false;
-      // Removed heartCursor hide to eliminate tiny heart
-      // heartCursor.style.display = 'none';
       touchX = undefined;
       touchY = undefined;
     }
@@ -515,71 +797,29 @@
 
     canvas.addEventListener('mousedown', function(e) {
       if (isMobileDevice()) return; // Ignore mouse events on mobile
-
-      // Trigger cursor animation
-      animateCursor();
-
+      isTouching = true;
       touchX = e.clientX;
       touchY = e.clientY;
-
-      entities.forEach(entity => {
-        const dx = entity.x - touchX;
-        const dy = entity.y - touchY;
-        const distance = Math.hypot(dx, dy);
-        if (entity.isSad && !entity.hit && distance <= entity.size / 2 + cursorCollisionRadius) {
-          entity.isSad = false;
-          entity.vx = (Math.random() - 0.5) * 4 * speedMultiplier;
-          entity.vy = -(Math.random() * 5 + 5) * speedMultiplier; // Corrected 'this.vy' to 'entity.vy'
-          score++;
-          updateGameStats();
-
-          // Trigger cursor animation
-          animateCursor();
-
-          // Check if it's time to increase the wave
-          if (score % 10 === 0) {
-            waveNumber++;
-            speedMultiplier += 0.1;
-            waveSpawnInterval = Math.max(200, waveSpawnInterval - 50);
-            updateGameStats();
-            showWaveOverlay(waveNumber);
-          }
-        }
-      });
+      customCursor.style.left = touchX + 'px';
+      customCursor.style.top = touchY + 'px';
     });
 
     canvas.addEventListener('mousemove', function(e) {
       if (isTouching) return;
-      customCursor.style.left = e.clientX + 'px';
-      customCursor.style.top = e.clientY + 'px';
-
       touchX = e.clientX;
       touchY = e.clientY;
+      customCursor.style.left = touchX + 'px';
+      customCursor.style.top = touchY + 'px';
+    });
 
-      // Update the touchX and touchY values inside the mousemove event handler
-      entities.forEach(entity => {
-        const dx = entity.x - touchX;
-        const dy = entity.y - touchY;
-        const distance = Math.hypot(dx, dy);
-        const detectionRadius = 200; // Detection radius for evasion
-
-        if (entity.isSad && !entity.hit && distance < detectionRadius) {
-          // Calculate normalized direction vector
-          const nx = dx / distance;
-          const ny = dy / distance;
-
-          // Calculate avoidance force based on distance
-          const avoidForce = (detectionRadius - distance) / detectionRadius; 
-
-          // Apply avoidance force to vx and vy
-          entity.vx += nx * avoidForce * 2 * speedMultiplier; // Increased force multiplier
-          entity.vy += ny * avoidForce * 2 * speedMultiplier; // Increased force multiplier
-        }
-      });
+    canvas.addEventListener('mouseup', function(e) {
+      isTouching = false;
     });
 
     canvas.addEventListener('mouseleave', function() {
       customCursor.style.opacity = '0';
+      touchX = undefined;
+      touchY = undefined;
     });
 
     canvas.addEventListener('mouseenter', function() {
@@ -587,8 +827,6 @@
     });
 
     function animateCursor() {
-      if (isMobileDevice()) return; // Only animate custom cursor on desktop
-
       // Add 'active' class to scale up and change to sparkly heart
       customCursor.classList.add('active');
       customCursor.textContent = '💖';
@@ -600,34 +838,40 @@
       }, 200); // Match the CSS transition duration
     }
 
-    function showBigHeart(x, y) {
-      // Create a new div element for the big heart
-      const bigHeart = document.createElement('div');
-      bigHeart.classList.add('big-heart');
-      bigHeart.textContent = '🩷';
-      bigHeart.style.left = x + 'px';
-      bigHeart.style.top = y + 'px';
-      document.body.appendChild(bigHeart);
+    function playBonkSound() {
+      if (!soundEnabled) return;
 
-      // Trigger the animation
-      // Slight delay to ensure the element is rendered before adding the 'animate' class
-      setTimeout(() => {
-        bigHeart.classList.add('animate');
-      }, 10); // 10ms delay
-
-      // Remove the element after the animation completes (0.5s)
-      setTimeout(() => {
-        bigHeart.remove();
-      }, 510); // 500ms for animation + 10ms buffer
+      // Clone the audio element to allow overlapping sounds
+      const bonkClone = bonkSound.cloneNode();
+      bonkClone.play();
     }
 
     function update() {
-      if (gameOver || isPaused) return;
+      if (gameOver) return;
+
+      if (isPaused) {
+        requestAnimationFrame(update);
+        return;
+      }
 
       const now = Date.now();
       const delta = (now - lastTime) / 16;
 
+      // Clear the canvas
       ctx.clearRect(0, 0, width, height);
+
+      // Draw tracer if enabled
+      if (tracerEnabled && tracerPath.length > 1) {
+        ctx.beginPath();
+        ctx.moveTo(tracerPath[0].x, tracerPath[0].y);
+        for (let i = 1; i < tracerPath.length; i++) {
+          ctx.lineTo(tracerPath[i].x, tracerPath[i].y);
+        }
+        ctx.strokeStyle = 'rgba(255, 0, 255, 0.5)'; // Magenta with opacity
+        ctx.lineWidth = faceSize / 5; // Wider tracer
+        ctx.lineCap = 'round';
+        ctx.stroke();
+      }
 
       if (now - lastWaveSpawnTime > waveSpawnInterval) {
         spawnEntity();
@@ -642,31 +886,51 @@
       document.body.style.backgroundPosition = `0px ${gridOffsetY}px`;
 
       entities.forEach(entity => {
-        // Touch avoidance logic (now outside of isTouching)
-        if (typeof touchX !== 'undefined' && typeof touchY !== 'undefined') {
-          let dx = entity.x - touchX;
-          let dy = entity.y - touchY;
-          let distance = Math.hypot(dx, dy);
-          let detectionRadius = 200; // Reduced detection radius for stronger evasion
-
-          if (distance < detectionRadius) {
-            // Calculate normalized direction vector
-            let nx = dx / distance;
-            let ny = dy / distance;
-
-            // Calculate avoidance force based on distance
-            let avoidForce = (detectionRadius - distance) / detectionRadius; 
-
-            // Apply stronger avoidance force to vx and vy
-            entity.vx += nx * avoidForce * 2 * speedMultiplier; // Increased force multiplier
-            entity.vy += ny * avoidForce * 2 * speedMultiplier; // Increased force multiplier
-          }
-        }
-
-        // Apply the updated velocity to the entity before update()
         entity.update(delta);
         entity.draw();
       });
+
+      // Collision detection between cursor and entities
+      if (typeof touchX !== 'undefined' && typeof touchY !== 'undefined') {
+        entities.forEach(entity => {
+          const dx = entity.x - touchX;
+          const dy = entity.y - touchY;
+          const distance = Math.hypot(dx, dy);
+
+          if (entity.isSad && !entity.hit && distance <= entity.size / 2 + cursorCollisionRadius) {
+            entity.isSad = false;
+            entity.vx = (Math.random() - 0.5) * 4 * speedMultiplier;
+            entity.vy = -(Math.random() * 5 + 5) * speedMultiplier;
+            score++;
+            updateGameStats();
+
+            // Trigger cursor animation
+            animateCursor();
+
+            // Play bonk sound
+            playBonkSound();
+
+            // Check if it's time to increase the wave
+            if (score % 10 === 0) {
+              waveNumber++;
+              speedMultiplier += 0.1;
+              waveSpawnInterval = Math.max(200, 1000 - (waveNumber - 1) * 50);
+              updateGameStats();
+              showWaveOverlay(waveNumber);
+            }
+          }
+        });
+
+        // Update tracer path
+        if (tracerEnabled) {
+          tracerPath.push({ x: touchX, y: touchY });
+          if (tracerPath.length > 20) {
+            tracerPath.shift();
+          }
+        }
+      } else {
+        tracerPath = [];
+      }
 
       entities = entities.filter(entity => !entity.hit);
 
@@ -688,6 +952,7 @@
 
     function endGame() {
       gameOver = true;
+      gameStarted = false;
       cancelAnimationFrame(animationFrameId);
       gameOverText.style.display = 'block';
       restartButton.style.display = 'block';
@@ -700,12 +965,14 @@
       gameOver = false;
       score = 0;
       missed = 0;
-      waveNumber = 1;
-      speedMultiplier = 0.8;
-      waveSpawnInterval = 1000;
+      waveNumber = parseInt(startLevelInput.value) || 1; // Use the selected start level
+      speedMultiplier = 0.8 + (waveNumber - 1) * 0.1; // Adjust speed based on starting wave
+      waveSpawnInterval = Math.max(200, 1000 - (waveNumber - 1) * 50); // Adjust spawn rate
       entities = [];
       updateGameStats();
       showWaveOverlay(waveNumber);
+      isPaused = false;
+      gameStarted = true;
       update();
     }
 
@@ -714,6 +981,36 @@
       restartButton.style.display = 'none';
       startGame();
     }
+
+    function openMenu() {
+      isPaused = true;
+      menuOverlay.style.display = 'block';
+      document.body.style.cursor = 'default'; // Show cursor in menu
+    }
+
+    function closeMenu() {
+      // Update settings based on menu inputs
+      tracerEnabled = tracersCheckbox.checked;
+      soundEnabled = soundToggle.checked;
+      resizeGame(); // Adjust sizes based on new settings
+
+      menuOverlay.style.display = 'none';
+      document.body.style.cursor = 'none'; // Hide cursor when returning to game
+
+      lastTime = Date.now(); // Reset lastTime to avoid large delta
+
+      if (gameStarted) {
+        startGame(); // Restart the game at the selected level
+      }
+
+      isPaused = false;
+    }
+
+    // Restart game from menu
+    menuRestartButton.addEventListener('click', () => {
+      closeMenu();
+      restartGame();
+    });
 
     // Ensure the game resizes properly when the window size changes
     window.addEventListener('resize', () => {
