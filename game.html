@@ -414,7 +414,6 @@
     const restartButton = document.getElementById('restartButton');
     const menuIcon = document.getElementById('menuIcon');
     const menuOverlay = document.getElementById('menuOverlay');
-    const menuCloseButton = document.getElementById('menuCloseButton');
     const emojiSizeInput = document.getElementById('emojiSize');
     const tracersCheckbox = document.getElementById('tracers');
     const soundToggle = document.getElementById('soundToggle');
@@ -594,7 +593,9 @@
 
         // Tracer for this entity
         this.tracerPath = [];
-        this.hasPaused = false; // To ensure straight emojis pause once
+        this.hasPaused = false; // To ensure it pauses only once
+        this.isPaused = false;
+        this.pauseDuration = 0;
       }
 
       update(delta) {
@@ -605,6 +606,10 @@
           // Switch to next movement type
           this.currentMovementIndex = (this.currentMovementIndex + 1) % this.movementTypes.length;
           this.movementTime = 0;
+
+          // Reset pause flag
+          this.hasPaused = false;
+          this.isPaused = false;
 
           // Randomize new duration, amplitude, and frequency
           this.movementDuration = Math.random() * 100 + 50;
@@ -664,6 +669,27 @@
 
           // Apply movement patterns
           switch(this.movementTypes[this.currentMovementIndex]) {
+            case 'variableSpeed':
+              if (!this.isPaused && !this.hasPaused && this.y >= height / 2) {
+                this.isPaused = true;
+                this.pauseDuration = 500; // Pause for 500ms
+                this.vx = 0;
+                this.vy = 0;
+                this.hasPaused = true;
+              }
+
+              if (this.isPaused) {
+                this.pauseDuration -= delta * 16; // Convert delta to milliseconds
+                if (this.pauseDuration <= 0) {
+                  this.isPaused = false;
+                }
+                this.vx = 0;
+                this.vy = 0;
+              } else {
+                this.vx = 0;
+                this.vy = this.baseVy + Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier;
+              }
+              break;
             case 'zigzag':
               this.vx = Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier;
               break;
@@ -695,10 +721,6 @@
                 this.movementTime = 0;
                 this.hasPaused = true;
               }
-              break;
-            case 'variableSpeed':
-              this.vx = 0;
-              this.vy = this.baseVy + Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier;
               break;
             case 'pause':
               this.vx = 0;
