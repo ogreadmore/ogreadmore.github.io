@@ -58,7 +58,7 @@
     }
     /* Active state for cursor animation */
     #customCursor.active {
-      transform: translate(-50%, -50%) scale(1.75); /* Scale up by 75% (1.75x) */
+      transform: translate(-50%, -50%) scale(1.5); /* Adjusted scale */
     }
     /* Big Heart for Mobile Taps */
     .big-heart {
@@ -514,13 +514,13 @@
         customCursor.style.height = faceSize * 2 + 'px';
         customCursor.style.fontSize = faceSize * 2 + 'px';
         customCursor.style.lineHeight = faceSize * 2 + 'px';
-        cursorCollisionRadius = faceSize * 2;
+        cursorCollisionRadius = (faceSize * 2) / 2 + 10; // Half of cursor size plus 10px margin
       } else {
         customCursor.style.width = faceSize + 'px';
         customCursor.style.height = faceSize + 'px';
         customCursor.style.fontSize = faceSize + 'px';
         customCursor.style.lineHeight = faceSize + 'px';
-        cursorCollisionRadius = faceSize;
+        cursorCollisionRadius = faceSize / 2 + 10; // Half of cursor size plus 10px margin
       }
 
       // Update sizes of existing entities
@@ -573,6 +573,12 @@
           const totalTimeOnScreen = totalVerticalDistance / averageVy;
           const numberOfLoops = Math.random() < 0.5 ? 1 : 2; // Randomly 1 or 2 loops
           this.frequency = (2 * numberOfLoops * Math.PI) / totalTimeOnScreen;
+        } else {
+          this.frequency = Math.random() * 0.1 + 0.02;
+        }
+
+        if (this.movementTypes[this.currentMovementIndex] === 'diagonal') {
+          this.diagonalDirection = Math.random() < 0.5 ? -1 : 1;
         }
 
         // Variable speed
@@ -606,10 +612,6 @@
           // Switch to next movement type
           this.currentMovementIndex = (this.currentMovementIndex + 1) % this.movementTypes.length;
           this.movementTime = 0;
-
-          // Reset pause flag
-          this.hasPaused = false;
-          this.isPaused = false;
 
           // Randomize new duration, amplitude, and frequency
           this.movementDuration = Math.random() * 100 + 50;
@@ -997,7 +999,7 @@
     }
 
     function handleInteraction(x, y) {
-      const clickScale = 1.75; // Scale factor from CSS
+      const clickScale = 1.2; // Reduced scale factor
       const clickRadius = cursorCollisionRadius * clickScale;
 
       entities.forEach(entity => {
