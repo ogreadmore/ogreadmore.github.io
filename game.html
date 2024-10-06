@@ -608,43 +608,43 @@
         this.time += delta;
         this.movementTime += delta;
 
-        // Evasion behavior
-        let isEvading = false;
-        if (typeof touchX !== 'undefined' && typeof touchY !== 'undefined') {
-          const dx = this.x - touchX;
-          const dy = this.y - touchY;
-          const distance = Math.hypot(dx, dy);
-
-          // Adjust evasion radius based on current wave
-          const evasionRadius = baseEvasionRadius; // Evasion radius is constant
-
-          if (distance < evasionRadius) {
-            isEvading = true;
-
-            // Calculate desired velocity away from cursor
-            const desiredSpeed = this.getMaxSpeed();
-            const desiredVx = (dx / distance) * desiredSpeed;
-            const desiredVy = (dy / distance) * desiredSpeed;
-
-            // Calculate steering force
-            let steerX = desiredVx - this.vx;
-            let steerY = desiredVy - this.vy;
-
-            // Limit steering force
-            const steerMag = Math.hypot(steerX, steerY);
-            const maxForce = maxEvasionForce; // Evasion force is constant
-            if (steerMag > maxForce) {
-              steerX = (steerX / steerMag) * maxForce;
-              steerY = (steerY / steerMag) * maxForce;
-            }
-
-            // Apply steering force
-            this.vx += steerX * delta;
-            this.vy += steerY * delta;
-          }
-        }
-
         if (this.isSad) {
+          // Evasion behavior
+          let isEvading = false;
+          if (typeof touchX !== 'undefined' && typeof touchY !== 'undefined') {
+            const dx = this.x - touchX;
+            const dy = this.y - touchY;
+            const distance = Math.hypot(dx, dy);
+
+            // Adjust evasion radius based on current wave
+            const evasionRadius = baseEvasionRadius; // Evasion radius is constant
+
+            if (distance < evasionRadius) {
+              isEvading = true;
+
+              // Calculate desired velocity away from cursor
+              const desiredSpeed = this.getMaxSpeed();
+              const desiredVx = (dx / distance) * desiredSpeed;
+              const desiredVy = (dy / distance) * desiredSpeed;
+
+              // Calculate steering force
+              let steerX = desiredVx - this.vx;
+              let steerY = desiredVy - this.vy;
+
+              // Limit steering force
+              const steerMag = Math.hypot(steerX, steerY);
+              const maxForce = maxEvasionForce; // Evasion force is constant
+              if (steerMag > maxForce) {
+                steerX = (steerX / steerMag) * maxForce;
+                steerY = (steerY / steerMag) * maxForce;
+              }
+
+              // Apply steering force
+              this.vx += steerX * delta;
+              this.vy += steerY * delta;
+            }
+          }
+
           if (!isEvading) {
             // Apply movement patterns
             switch(this.movementTypes[this.currentMovementIndex]) {
@@ -784,31 +784,23 @@
           }
         } else {
           // Happy faces movement
-          // Increase erraticness
-          this.vx += (Math.random() - 0.5) * 0.6 * delta * speedMultiplier;
-          this.vy += (Math.random() - 0.5) * 0.6 * delta * speedMultiplier;
-
-          // Limit speed
-          let speed = Math.hypot(this.vx, this.vy);
-          const maxSpeed = 9 * speedMultiplier;
-          if (speed > maxSpeed) {
-            this.vx = (this.vx / speed) * maxSpeed;
-            this.vy = (this.vy / speed) * maxSpeed;
-          }
+          this.vx = Math.sin(this.time * 0.1) * 2; // Mild zig-zag
+          this.vy = -5 * speedMultiplier; // Constant upward speed
 
           // Update position
           this.x += this.vx * delta;
           this.y += this.vy * delta;
 
-          // Boundary checks
+          // Boundary checks for x
           if (this.x < this.size / 2) {
             this.x = this.size / 2;
-            this.vx = -this.vx;
+            this.vx = Math.abs(this.vx); // Bounce right
           } else if (this.x > width - this.size / 2) {
             this.x = width - this.size / 2;
-            this.vx = -this.vx;
+            this.vx = -Math.abs(this.vx); // Bounce left
           }
 
+          // Remove the entity if it goes off the top of the screen
           if (this.y < -this.size) {
             this.hit = true;
           }
@@ -1011,8 +1003,9 @@
 
         if (entity.isSad && !entity.hit && distance <= entity.size / 2 + clickRadius) {
           entity.isSad = false;
-          entity.vx = (Math.random() - 0.5) * 4 * speedMultiplier;
-          entity.vy = -(Math.random() * 5 + 5) * speedMultiplier;
+          // Set upward movement for happy emoji
+          entity.vx = Math.sin(entity.time * 0.1) * 2; // Mild zig-zag
+          entity.vy = -5 * speedMultiplier; // Upward speed
           score++;
           updateGameStats();
 
@@ -1088,8 +1081,9 @@
 
             if (entity.isSad && !entity.hit && distance <= entity.size / 2 + cursorCollisionRadius) {
               entity.isSad = false;
-              entity.vx = (Math.random() - 0.5) * 4 * speedMultiplier;
-              entity.vy = -(Math.random() * 5 + 5) * speedMultiplier;
+              // Set upward movement for happy emoji
+              entity.vx = Math.sin(entity.time * 0.1) * 2; // Mild zig-zag
+              entity.vy = -5 * speedMultiplier; // Upward speed
               score++;
               updateGameStats();
 
