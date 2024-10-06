@@ -470,7 +470,7 @@
 
     // Evasion parameters
     const baseEvasionRadius = 200; // Base evasion radius
-    const maxEvasionForce = 1; // Maximum steering force
+    const maxEvasionForce = 200; // Maximum steering force
 
     // Grid Animation Variables
     let gridOffsetY = 0;
@@ -608,126 +608,128 @@
         this.time += delta;
         this.movementTime += delta;
 
-        if (this.movementTime > this.movementDuration) {
-          // Switch to next movement type
-          this.currentMovementIndex = (this.currentMovementIndex + 1) % this.movementTypes.length;
-          this.movementTime = 0;
+        // Evasion behavior
+        let isEvading = false;
+        if (typeof touchX !== 'undefined' && typeof touchY !== 'undefined') {
+          const dx = this.x - touchX;
+          const dy = this.y - touchY;
+          const distance = Math.hypot(dx, dy);
 
-          // Randomize new duration, amplitude, and frequency
-          this.movementDuration = Math.random() * 100 + 50;
-          this.amplitude = Math.random() < 0.5 ? (Math.random() * 20 + 10) : (Math.random() * 10 + 5);
+          // Adjust evasion radius based on current wave
+          const evasionRadius = baseEvasionRadius; // Evasion radius is constant
 
-          if (this.movementTypes[this.currentMovementIndex] === 'loop' || this.movementTypes[this.currentMovementIndex] === 'circle') {
-            const totalVerticalDistance = height + this.size * 2; // From y = -size to y = height + size
-            const averageVy = Math.abs(this.baseVy) + this.amplitude * speedMultiplier; // Approximate average vertical speed
-            const totalTimeOnScreen = totalVerticalDistance / averageVy;
-            const numberOfLoops = Math.random() < 0.5 ? 1 : 2; // Randomly 1 or 2 loops
-            this.frequency = (2 * numberOfLoops * Math.PI) / totalTimeOnScreen;
-          } else {
-            this.frequency = Math.random() * 0.1 + 0.02;
-          }
+          if (distance < evasionRadius) {
+            isEvading = true;
 
-          if (this.movementTypes[this.currentMovementIndex] === 'diagonal') {
-            this.diagonalDirection = Math.random() < 0.5 ? -1 : 1;
+            // Calculate desired velocity away from cursor
+            const desiredSpeed = this.getMaxSpeed();
+            const desiredVx = (dx / distance) * desiredSpeed;
+            const desiredVy = (dy / distance) * desiredSpeed;
+
+            // Calculate steering force
+            let steerX = desiredVx - this.vx;
+            let steerY = desiredVy - this.vy;
+
+            // Limit steering force
+            const steerMag = Math.hypot(steerX, steerY);
+            const maxForce = maxEvasionForce; // Evasion force is constant
+            if (steerMag > maxForce) {
+              steerX = (steerX / steerMag) * maxForce;
+              steerY = (steerY / steerMag) * maxForce;
+            }
+
+            // Apply steering force
+            this.vx += steerX * delta;
+            this.vy += steerY * delta;
           }
         }
 
         if (this.isSad) {
-          // Evasion behavior
-          let isEvading = false;
-          if (typeof touchX !== 'undefined' && typeof touchY !== 'undefined') {
-            const dx = this.x - touchX;
-            const dy = this.y - touchY;
-            const distance = Math.hypot(dx, dy);
+          if (!isEvading) {
+            // Apply movement patterns
+            switch(this.movementTypes[this.currentMovementIndex]) {
+              case 'variableSpeed':
+                if (!this.isPaused && !this.hasPaused && this.y >= height / 2) {
+                  this.isPaused = true;
+                  this.pauseDuration = 500; // Pause for 500ms
+                  this.vx = 0;
+                  this.vy = 0;
+                  this.hasPaused = true;
+                }
 
-            // Adjust evasion radius based on current wave
-            const evasionRadius = baseEvasionRadius; // Evasion radius is constant
-
-            if (distance < evasionRadius) {
-              isEvading = true;
-
-              // Calculate desired velocity away from cursor
-              const desiredSpeed = this.getMaxSpeed();
-              const desiredVx = (dx / distance) * desiredSpeed;
-              const desiredVy = (dy / distance) * desiredSpeed;
-
-              // Calculate steering force
-              let steerX = desiredVx - this.vx;
-              let steerY = desiredVy - this.vy;
-
-              // Limit steering force
-              const steerMag = Math.hypot(steerX, steerY);
-              const maxForce = maxEvasionForce; // Evasion force is constant
-              if (steerMag > maxForce) {
-                steerX = (steerX / steerMag) * maxForce;
-                steerY = (steerY / steerMag) * maxForce;
-              }
-
-              // Apply steering force
-              this.vx += steerX * delta;
-              this.vy += steerY * delta;
+                if (this.isPaused) {
+                  this.pauseDuration -= delta * 16; // Convert delta to milliseconds
+                  if (this.pauseDuration <= 0) {
+                    this.isPaused = false;
+                  }
+                  this.vx = 0;
+                  this.vy = 0;
+                } else {
+                  this.vx = 0;
+                  this.vy = this.baseVy + Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier;
+                }
+                break;
+              case 'zigzag':
+                this.vx = Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier;
+                break;
+              case 'circle':
+                this.vx = Math.cos(this.time * this.frequency) * this.amplitude * speedMultiplier;
+                this.vy = Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier + this.baseVy;
+                break;
+              case 'diagonal':
+                this.vx = this.diagonalDirection * this.amplitude * speedMultiplier;
+                break;
+              case 'zigzig':
+                this.vx = Math.sin(this.time * this.frequency * 2) * this.amplitude * speedMultiplier;
+                break;
+              case 'loop':
+                this.vx = Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier;
+                this.vy = Math.cos(this.time * this.frequency) * this.amplitude * speedMultiplier + this.baseVy;
+                break;
+              case 'random':
+                // Randomly adjust vx and vy
+                this.vx += (Math.random() - 0.5) * this.amplitude * delta * speedMultiplier;
+                this.vy += (Math.random() - 0.5) * this.amplitude * delta * speedMultiplier;
+                break;
+              case 'straight':
+                this.vx = 0;
+                this.vy = this.baseVy;
+                // Ensure it pauses within the first half of the screen
+                if (!this.hasPaused && this.y >= height / 2) {
+                  this.currentMovementIndex = (this.currentMovementIndex + 1) % this.movementTypes.length;
+                  this.movementTime = 0;
+                  this.hasPaused = true;
+                }
+                break;
+              case 'pause':
+                this.vx = 0;
+                this.vy = 0;
+                break;
             }
           }
 
-          // Apply movement patterns
-          switch(this.movementTypes[this.currentMovementIndex]) {
-            case 'variableSpeed':
-              if (!this.isPaused && !this.hasPaused && this.y >= height / 2) {
-                this.isPaused = true;
-                this.pauseDuration = 500; // Pause for 500ms
-                this.vx = 0;
-                this.vy = 0;
-                this.hasPaused = true;
-              }
+          if (this.movementTime > this.movementDuration) {
+            // Switch to next movement type
+            this.currentMovementIndex = (this.currentMovementIndex + 1) % this.movementTypes.length;
+            this.movementTime = 0;
 
-              if (this.isPaused) {
-                this.pauseDuration -= delta * 16; // Convert delta to milliseconds
-                if (this.pauseDuration <= 0) {
-                  this.isPaused = false;
-                }
-                this.vx = 0;
-                this.vy = 0;
-              } else {
-                this.vx = 0;
-                this.vy = this.baseVy + Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier;
-              }
-              break;
-            case 'zigzag':
-              this.vx = Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier;
-              break;
-            case 'circle':
-              this.vx = Math.cos(this.time * this.frequency) * this.amplitude * speedMultiplier;
-              this.vy = Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier + this.baseVy;
-              break;
-            case 'diagonal':
-              this.vx = this.diagonalDirection * this.amplitude * speedMultiplier;
-              break;
-            case 'zigzig':
-              this.vx = Math.sin(this.time * this.frequency * 2) * this.amplitude * speedMultiplier;
-              break;
-            case 'loop':
-              this.vx = Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier;
-              this.vy = Math.cos(this.time * this.frequency) * this.amplitude * speedMultiplier + this.baseVy;
-              break;
-            case 'random':
-              // Randomly adjust vx and vy
-              this.vx += (Math.random() - 0.5) * this.amplitude * delta * speedMultiplier;
-              this.vy += (Math.random() - 0.5) * this.amplitude * delta * speedMultiplier;
-              break;
-            case 'straight':
-              this.vx = 0;
-              this.vy = this.baseVy;
-              // Ensure it pauses within the first half of the screen
-              if (!this.hasPaused && this.y >= height / 2) {
-                this.currentMovementIndex = (this.currentMovementIndex + 1) % this.movementTypes.length;
-                this.movementTime = 0;
-                this.hasPaused = true;
-              }
-              break;
-            case 'pause':
-              this.vx = 0;
-              this.vy = 0;
-              break;
+            // Randomize new duration, amplitude, and frequency
+            this.movementDuration = Math.random() * 100 + 50;
+            this.amplitude = Math.random() < 0.5 ? (Math.random() * 20 + 10) : (Math.random() * 10 + 5);
+
+            if (this.movementTypes[this.currentMovementIndex] === 'loop' || this.movementTypes[this.currentMovementIndex] === 'circle') {
+              const totalVerticalDistance = height + this.size * 2; // From y = -size to y = height + size
+              const averageVy = Math.abs(this.baseVy) + this.amplitude * speedMultiplier; // Approximate average vertical speed
+              const totalTimeOnScreen = totalVerticalDistance / averageVy;
+              const numberOfLoops = Math.random() < 0.5 ? 1 : 2; // Randomly 1 or 2 loops
+              this.frequency = (2 * numberOfLoops * Math.PI) / totalTimeOnScreen;
+            } else {
+              this.frequency = Math.random() * 0.1 + 0.02;
+            }
+
+            if (this.movementTypes[this.currentMovementIndex] === 'diagonal') {
+              this.diagonalDirection = Math.random() < 0.5 ? -1 : 1;
+            }
           }
 
           // Apply acceleration
