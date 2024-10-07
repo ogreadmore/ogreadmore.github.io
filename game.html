@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <!-- Viewport meta tag for responsive design -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Open Graph meta tags -->
-  <meta property="og:title" content="Spread Love Game">
-  <meta property="og:description" content="Catch falling hearts and spread love in this fun game!">
+  <!-- Open Graph meta tags -->
+  <meta property="og:title" content="spread love">
+  <meta property="og:description" content="the most wholesame game I could think of">
   <meta property="og:image" content="/spreadlove-og.png">
   <meta property="og:url" content="https://tayloroliphant.com/game.html"> 
   <meta property="og:type" content="website">
-   <!-- End Open Graph meta tags -->
+  <!-- End Open Graph meta tags -->
   <title>spread love</title>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
@@ -149,7 +149,7 @@
     }
     #waveOverlay {
       position: absolute;
-      top: 50%;
+      top: 30%; /* Adjusted to appear higher */
       left: 50%;
       transform: translate(-50%, -50%);
       color: magenta;
@@ -284,6 +284,7 @@
       }
       #waveOverlay {
         font-size: 2.5vh; /* Half of 5vh */
+        top: 25%; /* Adjusted for mobile */
       }
       /* Show custom cursor on mobile */
       #customCursor {
@@ -1174,6 +1175,7 @@
       cancelAnimationFrame(animationFrameId);
       gameOverText.style.display = 'block';
       restartButton.style.display = 'block';
+      startButton.style.display = 'none'; // Ensure start button is hidden
     }
 
     function startGame() {
@@ -1275,8 +1277,23 @@
 
       // Check if wave number has changed
       if (waveNumber !== selectedWaveNumber) {
+        // The wave number has changed, so reset the game
+        waveNumber = selectedWaveNumber;
+        gameOver = false;
         gameStarted = false;
+        cancelAnimationFrame(animationFrameId);
+        entities = [];
+        score = 0;
+        missed = 0;
+        speedMultiplier = 0.8 + (waveNumber - 1) * 0.1;
+        waveSpawnInterval = Math.max(200, 1000 - (waveNumber - 1) * 50);
+        updateGameStats();
+        showWaveOverlay(waveNumber);
+
+        // Ensure only the start button is displayed
         startButton.style.display = 'block';
+        gameOverText.style.display = 'none';
+        restartButton.style.display = 'none';
       } else if (!gameStarted) {
         startGame(); // Start the game if it hasn't started yet
       }
