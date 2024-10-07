@@ -298,24 +298,24 @@
       }
       /* Adjust menu content */
       #menuContent h1 {
-        font-size: 2rem;
+        font-size: 1.2rem; /* Reduced further */
       }
       .menu-option label {
-        font-size: 1.2rem;
+        font-size: 0.8rem; /* Reduced further */
       }
       .menu-option input[type="number"] {
-        width: 60px;
-        font-size: 1.2rem;
+        width: 50px;
+        font-size: 0.8rem;
       }
       .menu-option input[type="range"] {
         width: 100%;
       }
       .wave-button {
-        font-size: 1.5rem;
+        font-size: 1rem; /* Reduced further */
       }
       #waveNumber {
-        font-size: 1rem;
-        width: 40px;
+        font-size: 0.8rem; /* Reduced further */
+        width: 35px;
       }
     }
   </style>
@@ -393,6 +393,14 @@
         <label for="clickModeToggle">click/tap mode</label>
         <input type="checkbox" id="clickModeToggle" checked>
       </div>
+      <div class="menu-option">
+        <label for="evasionRadius">evasion radius</label>
+        <input type="range" id="evasionRadius" min="50" max="300" value="200">
+      </div>
+      <div class="menu-option">
+        <label for="evasionForce">evasion force</label>
+        <input type="range" id="evasionForce" min="0" max="20" value="10">
+      </div>
     </div>
   </div>
 
@@ -420,6 +428,10 @@
     const volumeSlider = document.getElementById('volumeSlider');
     const nightModeToggle = document.getElementById('nightModeToggle');
     const clickModeToggle = document.getElementById('clickModeToggle');
+
+    // Evasion inputs
+    const evasionRadiusInput = document.getElementById('evasionRadius');
+    const evasionForceInput = document.getElementById('evasionForce');
 
     // Wave selector elements
     const decreaseWaveButton = document.getElementById('decreaseWave');
@@ -469,8 +481,8 @@
     let clickModeEnabled = true; // Click mode enabled by default
 
     // Evasion parameters
-    const baseEvasionRadius = 200; // Base evasion radius
-    const maxEvasionForce = 10; // Maximum steering force
+    let baseEvasionRadius = isMobileDevice() ? 100 : 200; // Default value based on device
+    let maxEvasionForce = 10; // Default value
 
     // Grid Animation Variables
     let gridOffsetY = 0;
@@ -486,6 +498,10 @@
     let volumeLevel = parseFloat(volumeSlider.value);
     const bonkSounds = [];
     let bonkSoundIndex = 0;
+
+    function isMobileDevice() {
+      return typeof window.orientation !== 'undefined' || navigator.userAgent.indexOf('IEMobile') !== -1;
+    }
 
     function resizeGame() {
       width = window.innerWidth;
@@ -527,10 +543,6 @@
       entities.forEach(entity => {
         entity.size = faceSize;
       });
-    }
-
-    function isMobileDevice() {
-      return typeof window.orientation !== 'undefined' || navigator.userAgent.indexOf('IEMobile') !== -1;
     }
 
     // Show custom cursor on both desktop and mobile
@@ -611,13 +623,13 @@
         if (this.isSad) {
           // Evasion behavior
           let isEvading = false;
-          if (typeof touchX !== 'undefined' && typeof touchY !== 'undefined') {
+          if (maxEvasionForce > 0 && typeof touchX !== 'undefined' && typeof touchY !== 'undefined') {
             const dx = this.x - touchX;
             const dy = this.y - touchY;
             const distance = Math.hypot(dx, dy);
 
-            // Adjust evasion radius based on current wave
-            const evasionRadius = baseEvasionRadius; // Evasion radius is constant
+            // Adjust evasion radius based on current settings
+            const evasionRadius = baseEvasionRadius;
 
             if (distance < evasionRadius) {
               isEvading = true;
@@ -633,7 +645,7 @@
 
               // Limit steering force
               const steerMag = Math.hypot(steerX, steerY);
-              const maxForce = maxEvasionForce; // Evasion force is constant
+              const maxForce = maxEvasionForce;
               if (steerMag > maxForce) {
                 steerX = (steerX / steerMag) * maxForce;
                 steerY = (steerY / steerMag) * maxForce;
@@ -1175,6 +1187,8 @@
         sound.volume = volumeLevel;
       });
 
+      resizeGame(); // Ensure game is resized properly
+
       update();
     }
 
@@ -1186,6 +1200,16 @@
       isPaused = true;
       menuOverlay.style.display = 'block';
       document.body.style.cursor = 'default'; // Show cursor in menu
+
+      // Set slider values to current settings
+      evasionRadiusInput.value = baseEvasionRadius;
+      evasionForceInput.value = maxEvasionForce;
+      emojiSizeInput.value = isMobileDevice() ? (faceSize / baseFaceSizeMobile) * 100 : (faceSize / baseFaceSizeDesktop) * 100;
+      tracersCheckbox.checked = tracerEnabled;
+      soundToggle.checked = soundEnabled;
+      volumeSlider.value = volumeLevel;
+      nightModeToggle.checked = document.body.classList.contains('nightmode');
+      clickModeToggle.checked = clickModeEnabled;
     }
 
     function closeMenu() {
@@ -1206,6 +1230,10 @@
       } else {
         document.body.classList.remove('nightmode');
       }
+
+      // Update evasion parameters
+      baseEvasionRadius = parseInt(evasionRadiusInput.value);
+      maxEvasionForce = parseInt(evasionForceInput.value);
 
       resizeGame(); // Adjust sizes based on new settings
 
