@@ -605,10 +605,6 @@
           this.acceleration = 0;
         }
 
-        if (this.movementTypes[this.currentMovementIndex] === 'diagonal') {
-          this.diagonalDirection = Math.random() < 0.5 ? -1 : 1;
-        }
-
         // Tracer for this entity
         this.tracerPath = [];
         this.hasPaused = false; // To ensure it pauses only once
@@ -917,25 +913,31 @@
     function handleTouchStart(e) {
       isTouching = true;
       const touch = e.touches[0];
+      customCursor.style.left = touch.clientX + 'px';
+      customCursor.style.top = touch.clientY + 'px';
+      customCursor.style.opacity = '1';
+
       touchX = touch.clientX;
       touchY = touch.clientY;
-      customCursor.style.left = touchX + 'px';
-      customCursor.style.top = touchY + 'px';
-      customCursor.style.opacity = '1';
 
       if (clickModeEnabled) {
         handleInteraction(touch.clientX, touch.clientY);
         animateCursor();
+
+        // Clear touchX and touchY to prevent lingering evasion
+        touchX = undefined;
+        touchY = undefined;
       }
     }
 
     function handleTouchMove(e) {
       const touch = e.touches[0];
+      customCursor.style.left = touch.clientX + 'px';
+      customCursor.style.top = touch.clientY + 'px';
+      customCursor.style.opacity = '1';
+
       touchX = touch.clientX;
       touchY = touch.clientY;
-      customCursor.style.left = touchX + 'px';
-      customCursor.style.top = touchY + 'px';
-      customCursor.style.opacity = '1';
     }
 
     function handleTouchEnd(e) {
@@ -952,26 +954,34 @@
     canvas.addEventListener('mousedown', function(e) {
       if (isMobileDevice()) return; // Ignore mouse events on mobile
       isTouching = true;
+      customCursor.style.left = e.clientX + 'px';
+      customCursor.style.top = e.clientY + 'px';
+
       touchX = e.clientX;
       touchY = e.clientY;
-      customCursor.style.left = touchX + 'px';
-      customCursor.style.top = touchY + 'px';
 
       if (clickModeEnabled) {
         handleInteraction(e.clientX, e.clientY);
         animateCursor();
+
+        // Clear touchX and touchY to prevent lingering evasion
+        touchX = undefined;
+        touchY = undefined;
       }
     });
 
     canvas.addEventListener('mousemove', function(e) {
+      customCursor.style.left = e.clientX + 'px';
+      customCursor.style.top = e.clientY + 'px';
+
       touchX = e.clientX;
       touchY = e.clientY;
-      customCursor.style.left = touchX + 'px';
-      customCursor.style.top = touchY + 'px';
     });
 
     canvas.addEventListener('mouseup', function(e) {
       isTouching = false;
+      touchX = undefined;
+      touchY = undefined;
     });
 
     canvas.addEventListener('mouseleave', function() {
