@@ -683,6 +683,7 @@
                 break;
               case 'zigzag':
                 this.vx = Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier;
+                this.vy = this.baseVy; // Ensure vertical speed remains consistent
                 break;
               case 'circle':
                 this.vx = Math.cos(this.time * this.frequency) * this.amplitude * speedMultiplier;
@@ -690,9 +691,11 @@
                 break;
               case 'diagonal':
                 this.vx = this.diagonalDirection * this.amplitude * speedMultiplier;
+                this.vy = this.baseVy;
                 break;
               case 'zigzig':
                 this.vx = Math.sin(this.time * this.frequency * 2) * this.amplitude * speedMultiplier;
+                this.vy = this.baseVy;
                 break;
               case 'loop':
                 this.vx = Math.sin(this.time * this.frequency) * this.amplitude * speedMultiplier;
