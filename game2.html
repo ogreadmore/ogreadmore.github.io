@@ -6,11 +6,17 @@
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #000;
+            background-color: #ffffff;
             position: relative;
             height: 100vh;
             width: 100vw;
             /* Cursor visibility handled via 'playing' class */
+            transition: background-color 0.5s;
+        }
+
+        /* Night Mode */
+        body.nightmode {
+            background-color: #000000;
         }
 
         /* Hide cursor only when the game is playing */
@@ -22,7 +28,7 @@
             position: absolute;
             top: 0;
             left: 0;
-            background-color: #000;
+            background-color: transparent;
             z-index: 5;
         }
 
@@ -37,11 +43,14 @@
             user-select: none;
             z-index: 10;
             text-align: left;
+            pointer-events: none; /* Prevents interference with gameplay */
         }
 
         #scoreboard .title {
             font-size: 4vh; /* Bigger font for "Heart Centered" */
             margin-bottom: 10px; /* Increased space between title and score */
+            word-wrap: break-word; /* Ensure text wraps if too long */
+            max-width: 90vw; /* Prevent overflow by limiting width */
         }
 
         #scoreboard .score {
@@ -60,11 +69,12 @@
             z-index: 15;
             pointer-events: none;
             font-family: 'Press Start 2P', cursive;
+            margin-bottom: 40px; /* Adds more space between game over and restart */
         }
 
         #restartButton {
             position: absolute;
-            top: 55%; /* Positioned 15% below the GAME OVER message */
+            top: 50%; /* Positioned below the GAME OVER message */
             left: 50%;
             transform: translate(-50%, -50%);
             background-color: transparent;
@@ -100,6 +110,7 @@
             font-size: 2rem;
             user-select: none;
             z-index: 15;
+            display: none;
         }
 
         #startButton:hover {
@@ -135,10 +146,111 @@
             flex-direction: column;
         }
 
+        /* Menu Icon */
+        #menuIcon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 30px;
+            height: 25px;
+            cursor: pointer;
+            z-index: 15;
+        }
+
+        /* Hamburger Icon Lines */
+        #menuIcon div {
+            width: 100%;
+            height: 4px;
+            background-color: magenta;
+            margin: 5px 0;
+        }
+
+        /* Menu Overlay */
+        #menuOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            display: none;
+            z-index: 25;
+            overflow: auto;
+            cursor: default; /* Ensure cursor is visible in menu */
+        }
+
+        body.nightmode #menuOverlay {
+            background-color: black;
+        }
+
+        /* Close Button */
+        #menuCloseButton {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 30px;
+            height: 25px;
+            cursor: pointer;
+        }
+
+        /* X Icon Lines */
+        #menuCloseButton:before,
+        #menuCloseButton:after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 4px;
+            background-color: magenta;
+            top: 10px;
+            left: 0;
+        }
+
+        #menuCloseButton:before {
+            transform: rotate(45deg);
+        }
+
+        #menuCloseButton:after {
+            transform: rotate(-45deg);
+        }
+
+        /* Menu Content */
+        #menuContent {
+            margin-top: 80px;
+            text-align: center;
+            color: magenta;
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        #menuContent h1 {
+            font-size: 3rem;
+            margin-bottom: 40px;
+        }
+
+        .menu-option {
+            margin: 20px auto;
+            max-width: 400px;
+        }
+
+        .menu-option label {
+            display: block;
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .menu-option input[type="range"] {
+            width: 100%;
+        }
+
+        .menu-option input[type="checkbox"] {
+            transform: scale(1.5);
+            margin-top: 10px;
+        }
+
         /* Media Query for Mobile Devices */
         @media only screen and (max-width: 768px) {
             #scoreboard .title {
                 font-size: 3vh;
+                max-width: 90vw;
             }
 
             #scoreboard .score {
@@ -149,7 +261,8 @@
                 font-size: 4vh;
             }
 
-            #startButton, #restartButton {
+            #startButton,
+            #restartButton {
                 font-size: 1.5rem;
                 padding: 10px 20px;
             }
@@ -157,12 +270,89 @@
             #pausedOverlay {
                 font-size: 3vh;
             }
+
+            #menuIcon,
+            #menuCloseButton {
+                top: 10px;
+                right: 10px;
+                width: 25px;
+                height: 20px;
+            }
+
+            #menuIcon div,
+            #menuCloseButton:before,
+            #menuCloseButton:after {
+                height: 3px;
+            }
+
+            #menuContent h1 {
+                font-size: 2rem;
+            }
+
+            .menu-option label {
+                font-size: 1rem;
+            }
+
+            .menu-option input[type="range"] {
+                width: 100%;
+            }
         }
     </style>
     <!-- Include Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- Game Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Menu Icon -->
+    <div id="menuIcon" onclick="openMenu()">
+        <div></div>
+        <div></div>
+        <div></div>
+    </div>
+
+    <!-- Menu Overlay -->
+    <div id="menuOverlay">
+        <div id="menuCloseButton" onclick="closeMenu()"></div>
+        <div id="menuContent">
+            <h1>options</h1>
+            <!-- Menu Options -->
+            <div class="menu-option">
+                <label for="puckSpeed">puck speed</label>
+                <input type="range" id="puckSpeed" min="1" max="10" value="2.5" step="0.1">
+            </div>
+            <div class="menu-option">
+                <label for="paddleSpeed">paddle speed</label>
+                <input type="range" id="paddleSpeed" min="50" max="300" value="150" step="10">
+            </div>
+            <div class="menu-option">
+                <label for="twoPaddleMode">2 paddle mode</label>
+                <input type="checkbox" id="twoPaddleMode" checked>
+            </div>
+            <div class="menu-option">
+                <label for="aiSkillLevel">ai skill level</label>
+                <input type="range" id="aiSkillLevel" min="1" max="10" value="5" step="1">
+            </div>
+            <div class="menu-option">
+                <label for="tracersToggle">tracers</label>
+                <input type="checkbox" id="tracersToggle">
+            </div>
+            <div class="menu-option">
+                <label for="nightModeToggle">night mode</label>
+                <input type="checkbox" id="nightModeToggle" checked>
+            </div>
+            <div class="menu-option">
+                <label for="soundToggle">sound</label>
+                <input type="checkbox" id="soundToggle" checked>
+            </div>
+            <div class="menu-option">
+                <label for="volumeSlider">volume</label>
+                <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
+            </div>
+        </div>
+    </div>
+
     <!-- Scoreboard -->
     <div id="scoreboard">
         <div class="title">heart centered</div>
@@ -180,8 +370,17 @@
             <div style="font-size: 2vh; margin-top: 2vh;">Move your mouse back to resume</div>
         </div>
     </div>
-    <!-- Game Canvas -->
-    <canvas id="gameCanvas"></canvas>
+
+    <!-- Audio Element -->
+    <!-- Note: Ensure that 'bonk.mp3' is located in the same directory or adjust the path accordingly -->
+    <!-- We'll preload multiple instances of the sound to prevent lag -->
+    <!-- Preload multiple sounds for instant playback -->
+    <audio id="hitSound1" src="bonk.mp3" preload="auto"></audio>
+    <audio id="hitSound2" src="bonk.mp3" preload="auto"></audio>
+    <audio id="hitSound3" src="bonk.mp3" preload="auto"></audio>
+    <audio id="hitSound4" src="bonk.mp3" preload="auto"></audio>
+    <audio id="hitSound5" src="bonk.mp3" preload="auto"></audio>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             console.log("DOM fully loaded and parsed.");
@@ -201,8 +400,9 @@
             const desiredArcLength = 1; // Desired distance between points in pixels
             const paddlePixelLength = 400; // Desired physical paddle length in pixels
             let paddleLength = 0; // Number of points in the paddle, to be calculated
-            let paddleStartIndex = 0.0; // Allow floating point for smooth movement
-            let targetPaddleStartIndex = 0.0; // Target index for smooth paddle movement
+            let paddleStartIndex = 0.0; // Player's paddle
+            let computerPaddleStartIndex = 0.0; // Computer's paddle
+            let targetPaddleStartIndex = 0.0; // Target index for player's paddle movement
             let score = 0;
             let gameStarted = false;
             let gameOver = false;
@@ -231,8 +431,8 @@
             let keyboardControl = { left: false, right: false };
 
             // Paddle movement speeds
-            const paddleSpeed = 150; // Used for moving towards target
-            const keyboardMoveSpeed = 100; // Speed for keyboard controls (points per second)
+            let paddleSpeed = 150; // Used for moving towards target
+            let keyboardMoveSpeed = paddleSpeed; // Speed for keyboard controls (points per second)
 
             // Flag to track if the ball is currently outside the heart
             let isBallOutside = false;
@@ -247,10 +447,66 @@
             const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             console.log("Is mobile device:", isMobile);
 
+            // Sound Elements
+            const hitSounds = [
+                document.getElementById('hitSound1'),
+                document.getElementById('hitSound2'),
+                document.getElementById('hitSound3'),
+                document.getElementById('hitSound4'),
+                document.getElementById('hitSound5')
+            ];
+            let hitSoundIndex = 0;
+
+            // Menu Elements
+            let menuOpen = false;
+            const menuIcon = document.getElementById('menuIcon');
+            const menuOverlay = document.getElementById('menuOverlay');
+            const menuCloseButton = document.getElementById('menuCloseButton');
+            const puckSpeedSlider = document.getElementById('puckSpeed');
+            const nightModeToggle = document.getElementById('nightModeToggle');
+            const soundToggle = document.getElementById('soundToggle');
+            const volumeSlider = document.getElementById('volumeSlider');
+            const twoPaddleModeToggle = document.getElementById('twoPaddleMode');
+            const aiSkillLevelSlider = document.getElementById('aiSkillLevel');
+            const paddleSpeedSlider = document.getElementById('paddleSpeed');
+            const tracersToggle = document.getElementById('tracersToggle');
+
+            // Heart outline color
+            let heartOutlineColor = '#fff'; // Default to white
+
+            // Pre-game countdown variables
+            let preGameCountdown = 0;
+            let preGamePulsing = false;
+            let preGamePulseStartTime = 0;
+
+            // 2 Paddle Mode variables
+            let twoPaddleMode = true; // Start in two paddle mode by default
+            let isPlayerTurn = false; // Keep track of whose turn it is
+            let paddleThickness = 25; // Standard paddle thickness
+            let activePaddleThickness = 35; // Thicker paddle when it's active
+
+            // AI Skill Level
+            let aiSkillLevel = 5; // Default to middle
+
+            // Game Result
+            let gameResult = ""; // "win" or "lose" or ""
+
+            // Best of 3 scoring
+            let playerScore = 0;
+            let aiScore = 0;
+            let gamesToWin = 3;
+
+            // Tracers
+            let enableTracers = false;
+            const tracerCanvas = document.createElement('canvas');
+            tracerCanvas.width = canvas.width;
+            tracerCanvas.height = canvas.height;
+            const tracerCtx = tracerCanvas.getContext('2d');
+
             // Throttle function to limit the rate of function calls (optional, can help performance)
             function throttle(func, limit) {
                 let inThrottle;
-                return function() {
+                return function () {
                     const args = arguments;
                     const context = this;
                     if (!inThrottle) {
@@ -265,7 +521,7 @@
             canvas.addEventListener('mousemove', throttle(function (e) {
                 pointerPosition.x = e.clientX;
                 pointerPosition.y = e.clientY;
-                if (gameStarted && !gameOver && !gameEnding && !paused && !isMobile) {
+                if (gameStarted && !gameOver && !gameEnding && !paused && !menuOpen && !isMobile) {
                     updateTargetPaddleIndex();
                 }
             }, 16)); // Throttle to ~60fps
@@ -284,7 +540,7 @@
             }, 16), { passive: false }); // Throttle to ~60fps
 
             // Event listeners for keyboard
-            document.addEventListener('keydown', function(e) {
+            document.addEventListener('keydown', function (e) {
                 if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
                     keyboardControl.left = true;
                     console.log("Left key pressed.");
@@ -295,7 +551,7 @@
                 }
             });
 
-            document.addEventListener('keyup', function(e) {
+            document.addEventListener('keyup', function (e) {
                 if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
                     keyboardControl.left = false;
                     console.log("Left key released.");
@@ -308,20 +564,20 @@
 
             // Event listeners for mouse leaving and entering the canvas
             canvas.addEventListener('mouseleave', function (e) {
-                if (gameStarted && !gameOver && !gameEnding) {
+                if (gameStarted && !gameOver && !gameEnding && !menuOpen) {
                     pauseGame();
                 }
             });
 
             canvas.addEventListener('mouseenter', function (e) {
-                if (gameStarted && paused) {
+                if (gameStarted && paused && !menuOpen) {
                     resumeGame();
                 }
             });
 
             // Event listener for mouse entering the paused overlay to resume the game
             pausedOverlay.addEventListener('mouseenter', function (e) {
-                if (gameStarted && paused) {
+                if (gameStarted && paused && !menuOpen) {
                     resumeGame();
                 }
             });
@@ -330,6 +586,8 @@
             function resizeCanvas() {
                 canvas.width = window.innerWidth;
                 canvas.height = window.innerHeight;
+                tracerCanvas.width = canvas.width;
+                tracerCanvas.height = canvas.height;
                 console.log(`Canvas resized to ${canvas.width}x${canvas.height}`);
                 generateHeartPoints(); // Regenerate heart points to fit new size
                 if (!gameStarted) {
@@ -337,6 +595,7 @@
                 }
             }
             window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
 
             // Generate heart shape points with uniform arc-length spacing
             function generateHeartPoints() {
@@ -384,6 +643,7 @@
                 paddleLength = Math.round(paddlePixelLength / averageDistance);
                 console.log(`Paddle length set to ${paddleLength} points.`);
             }
+            generateHeartPoints();
 
             // Calculate a point on the heart for a given t
             function calculateHeartPoint(t) {
@@ -405,10 +665,17 @@
                     initializeBallVelocity();
                 }
             }
+            setBallStartingPosition();
 
             // Initialize ball velocity with a random angle
             function initializeBallVelocity() {
-                let angleDegrees = Math.random() * 120 + 30; // 30 to 150 degrees
+                let angleDegrees;
+                if (twoPaddleMode) {
+                    // Start with computer hitting the puck towards the player
+                    angleDegrees = Math.random() * 60 + 60; // 60 to 120 degrees
+                } else {
+                    angleDegrees = Math.random() * 360; // 0 to 360 degrees
+                }
                 let angleRadians = angleDegrees * (Math.PI / 180);
                 ball.velocity.x = ball.speed * Math.cos(angleRadians);
                 ball.velocity.y = ball.speed * Math.sin(angleRadians);
@@ -443,10 +710,10 @@
                 // Calculate the direction vector of the segment
                 let dx = segment.end.x - segment.start.x;
                 let dy = segment.end.y - segment.start.y;
-                
+
                 // Calculate the normal vector (perpendicular to the direction)
                 let normal = { x: -dy, y: dx };
-                
+
                 // Normalize the normal vector
                 let length = Math.hypot(normal.x, normal.y);
                 if (length === 0) return { x: 0, y: 0 };
@@ -455,45 +722,18 @@
 
             // Draw heart outline with dotted line
             function drawHeart() {
-                ctx.strokeStyle = '#fff';
+                ctx.strokeStyle = heartOutlineColor;
                 ctx.lineWidth = 2;
                 ctx.setLineDash([5, 5]); // Dotted line pattern
                 ctx.stroke(heartPath);
                 ctx.setLineDash([]); // Reset to solid for other drawings
-                // Optional: Draw filled heart for visibility
-                // ctx.fillStyle = 'rgba(255, 0, 0, 0.1)';
-                // ctx.fill(heartPath);
-                console.log("Heart drawn.");
             }
 
             // Draw paddle with increased thickness and consistent length
             function drawPaddle() {
-                ctx.beginPath();
-                ctx.strokeStyle = 'magenta';
-                ctx.lineWidth = 25; // Increased for better visibility
-                ctx.lineJoin = 'round';
-                ctx.shadowBlur = 20;
-                ctx.shadowColor = 'magenta';
-                let startIndex = Math.floor(paddleStartIndex) % heartPoints.length;
-                let endIndex = (startIndex + paddleLength) % heartPoints.length;
-
-                // Handle wrap-around
-                if (startIndex < endIndex) {
-                    ctx.moveTo(heartPoints[startIndex].x, heartPoints[startIndex].y);
-                    for (let i = startIndex + 1; i <= endIndex; i++) {
-                        ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
-                    }
-                } else {
-                    ctx.moveTo(heartPoints[startIndex].x, heartPoints[startIndex].y);
-                    for (let i = startIndex + 1; i < heartPoints.length; i++) {
-                        ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
-                    }
-                    for (let i = 0; i <= endIndex; i++) {
-                        ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
-                    }
-                }
-
-                ctx.stroke();
+                // Draw computer's paddle first so player's paddle is always on top
+                drawComputerPaddle();
+                drawPlayerPaddle();
 
                 // Add a brief glow effect if paddle was hit
                 if (isPaddleHit) {
@@ -502,27 +742,65 @@
                     ctx.lineWidth = 30; // Slightly thicker for glow effect
                     ctx.shadowBlur = 40;
                     ctx.shadowColor = 'yellow';
-                    if (startIndex < endIndex) {
-                        ctx.moveTo(heartPoints[startIndex].x, heartPoints[startIndex].y);
-                        for (let i = startIndex + 1; i <= endIndex; i++) {
-                            ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
-                        }
+                    if (twoPaddleMode) {
+                        drawPaddleSegment(isPlayerTurn ? paddleStartIndex : computerPaddleStartIndex);
                     } else {
-                        ctx.moveTo(heartPoints[startIndex].x, heartPoints[startIndex].y);
-                        for (let i = startIndex + 1; i < heartPoints.length; i++) {
-                            ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
-                        }
-                        for (let i = 0; i <= endIndex; i++) {
-                            ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
-                        }
+                        drawPaddleSegment(paddleStartIndex);
                     }
                     ctx.stroke();
                     ctx.shadowBlur = 0; // Reset shadow
                     isPaddleHit = false; // Reset the flag
                 }
+            }
 
-                ctx.shadowBlur = 0; // Reset shadow for other drawings
-                console.log(`Paddle drawn from index ${startIndex} to ${endIndex}`);
+            function drawPlayerPaddle() {
+                ctx.beginPath();
+                ctx.strokeStyle = 'magenta';
+                ctx.lineWidth = (isPlayerTurn || !twoPaddleMode) ? activePaddleThickness : paddleThickness;
+                ctx.lineJoin = 'round';
+                ctx.shadowBlur = (isPlayerTurn || !twoPaddleMode) ? 20 : 10;
+                ctx.shadowColor = 'magenta';
+                ctx.globalAlpha = (isPlayerTurn || !twoPaddleMode) ? 1 : 0.5; // Make inactive paddle semi-transparent
+                drawPaddleSegment(paddleStartIndex);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1;
+            }
+
+            function drawComputerPaddle() {
+                if (twoPaddleMode) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = 'cyan';
+                    ctx.lineWidth = !isPlayerTurn ? activePaddleThickness : paddleThickness;
+                    ctx.lineJoin = 'round';
+                    ctx.shadowBlur = !isPlayerTurn ? 20 : 10;
+                    ctx.shadowColor = 'cyan';
+                    ctx.globalAlpha = !isPlayerTurn ? 1 : 0.5; // Make inactive paddle semi-transparent
+                    drawPaddleSegment(computerPaddleStartIndex);
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                    ctx.globalAlpha = 1;
+                }
+            }
+
+            function drawPaddleSegment(startIndex) {
+                let sIndex = Math.floor(startIndex) % heartPoints.length;
+                let eIndex = (sIndex + paddleLength) % heartPoints.length;
+
+                if (sIndex <= eIndex) {
+                    ctx.moveTo(heartPoints[sIndex].x, heartPoints[sIndex].y);
+                    for (let i = sIndex + 1; i <= eIndex; i++) {
+                        ctx.lineTo(heartPoints[i % heartPoints.length].x, heartPoints[i % heartPoints.length].y);
+                    }
+                } else {
+                    ctx.moveTo(heartPoints[sIndex].x, heartPoints[sIndex].y);
+                    for (let i = sIndex + 1; i < heartPoints.length; i++) {
+                        ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
+                    }
+                    for (let i = 0; i <= eIndex; i++) {
+                        ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
+                    }
+                }
             }
 
             // Update target paddle index based on pointer position
@@ -539,7 +817,6 @@
                     }
                 }
                 targetPaddleStartIndex = newTargetPaddleStart;
-                console.log(`Desktop: Target paddle index updated to ${targetPaddleStartIndex}`);
             }
 
             // Directly set paddle target based on touch angle (for mobile devices)
@@ -551,7 +828,6 @@
                 const dy = centerY - pointerPosition.y; // Inverted y-axis for angle calculation
                 let angle = Math.atan2(dy, dx);
                 if (angle < 0) angle += 2 * Math.PI; // Normalize angle to [0, 2π]
-                console.log(`Touch angle: ${(angle * 180 / Math.PI).toFixed(2)} degrees`);
 
                 // Find the closest heart point based on angle
                 let closestIndex = 0;
@@ -571,7 +847,6 @@
                 }
 
                 targetPaddleStartIndex = closestIndex;
-                console.log(`Mobile: Target paddle index set to ${targetPaddleStartIndex} based on angle`);
             }
 
             // Update paddle based on keyboard input with time-based movement
@@ -585,7 +860,6 @@
                 }
                 targetPaddleStartIndex += movement;
                 targetPaddleStartIndex = (targetPaddleStartIndex + heartPoints.length) % heartPoints.length;
-                console.log(`Keyboard movement: ${movement.toFixed(2)}, new target index: ${targetPaddleStartIndex}`);
             }
 
             // Update paddle towards target index for smooth touch/mouse control
@@ -613,7 +887,60 @@
 
                 // Wrap around if necessary
                 paddleStartIndex = (paddleStartIndex + heartPoints.length) % heartPoints.length;
-                console.log(`Paddle moved to index ${paddleStartIndex.toFixed(2)}`);
+            }
+
+            // Update computer paddle
+            function updateComputerPaddle(deltaTime) {
+                // Adjust computer paddle speed based on AI skill level
+                let aiSpeed;
+                if (aiSkillLevel <= 5) {
+                    // Beginner to intermediate levels
+                    aiSpeed = (aiSkillLevel / 5) * 100; // Scale between 20 and 100
+                } else {
+                    // Advanced levels
+                    aiSpeed = 100 + ((aiSkillLevel - 5) / 5) * 150; // Scale between 100 and 250
+                }
+
+                let movement = aiSpeed * deltaTime;
+
+                // Simple AI: move towards the predicted position of the ball
+                let targetIndex = findClosestPointIndex(ball.x, ball.y);
+
+                let difference = targetIndex - computerPaddleStartIndex;
+
+                // Handle wrap-around difference
+                if (difference > heartPoints.length / 2) {
+                    difference -= heartPoints.length;
+                } else if (difference < -heartPoints.length / 2) {
+                    difference += heartPoints.length;
+                }
+
+                let direction = difference > 0 ? 1 : -1;
+
+                if (Math.abs(difference) < movement) {
+                    computerPaddleStartIndex = targetIndex;
+                } else {
+                    computerPaddleStartIndex += direction * movement;
+                }
+
+                // Wrap around if necessary
+                computerPaddleStartIndex = (computerPaddleStartIndex + heartPoints.length) % heartPoints.length;
+            }
+
+            // Helper function to find the closest point index on the heart to given x, y
+            function findClosestPointIndex(x, y) {
+                let minDistance = Infinity;
+                let closestIndex = 0;
+                for (let i = 0; i < heartPoints.length; i++) {
+                    let dx = x - heartPoints[i].x;
+                    let dy = y - heartPoints[i].y;
+                    let distance = dx * dx + dy * dy;
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestIndex = i;
+                    }
+                }
+                return closestIndex;
             }
 
             // Function to check if a circle (ball) intersects with a line segment
@@ -628,9 +955,6 @@
 
                 const fx = prevBall.x - x1;
                 const fy = prevBall.y - y1;
-
-                const segDx = x2 - x1;
-                const segDy = y2 - y1;
 
                 const a = dx * dx + dy * dy;
                 const b = 2 * (fx * dx + fy * dy);
@@ -663,27 +987,31 @@
             }
 
             // Function to retrieve all line segments of the paddle
-            function getPaddleSegments() {
+            function getPaddleSegments(startIndex) {
                 let segments = [];
-                let startIndex = Math.floor(paddleStartIndex) % heartPoints.length;
-                let endIndex = (startIndex + paddleLength) % heartPoints.length;
+                let sIndex = Math.floor(startIndex) % heartPoints.length;
+                let eIndex = (sIndex + paddleLength) % heartPoints.length;
 
-                if (startIndex < endIndex) {
-                    for (let i = startIndex; i < endIndex; i++) {
+                if (sIndex < eIndex) {
+                    for (let i = sIndex; i < eIndex; i++) {
                         segments.push({
                             start: heartPoints[i],
-                            end: heartPoints[i + 1]
+                            end: heartPoints[(i + 1) % heartPoints.length]
                         });
                     }
                 } else {
                     // Wrap-around case
-                    for (let i = startIndex; i < heartPoints.length - 1; i++) {
+                    for (let i = sIndex; i < heartPoints.length - 1; i++) {
                         segments.push({
                             start: heartPoints[i],
                             end: heartPoints[i + 1]
                         });
                     }
-                    for (let i = 0; i < endIndex; i++) {
+                    segments.push({
+                        start: heartPoints[heartPoints.length - 1],
+                        end: heartPoints[0]
+                    });
+                    for (let i = 0; i < eIndex; i++) {
                         segments.push({
                             start: heartPoints[i],
                             end: heartPoints[i + 1]
@@ -701,6 +1029,12 @@
                     if (!paused) {
                         ball.prevX = ball.x;
                         ball.prevY = ball.y;
+                        // Accelerate the ball off-screen
+                        if (gameEnding) {
+                            let speedIncrease = 1.05; // Adjust acceleration factor as needed
+                            ball.velocity.x *= speedIncrease;
+                            ball.velocity.y *= speedIncrease;
+                        }
                         ball.x += ball.velocity.x;
                         ball.y += ball.velocity.y;
 
@@ -710,10 +1044,10 @@
                             // End the game after the ball has flown off-screen
                             gameOver = true;
                             cancelAnimationFrame(animationFrameId);
-                            document.getElementById('gameOver').style.display = 'block';
-                            document.getElementById('restartButton').style.display = 'block';
+                            displayGameOver();
                             // Remove 'playing' class to show cursor again
                             document.body.classList.remove('playing');
+                            document.body.style.cursor = 'default'; // Ensure cursor is visible
                             console.log("Game over: Ball flew off-screen.");
                         }
                     }
@@ -727,7 +1061,6 @@
                 // Move the ball
                 ball.x += ball.velocity.x;
                 ball.y += ball.velocity.y;
-                console.log(`Ball position: (${ball.x.toFixed(2)}, ${ball.y.toFixed(2)})`);
 
                 // Check if the ball is outside the heart boundary
                 let isCurrentlyOutside = !ctx.isPointInPath(heartPath, ball.x, ball.y);
@@ -736,6 +1069,15 @@
                     // Ball has just moved outside - initiate game ending sequence
                     gameEnding = true;
                     console.log("Ball moved outside the heart boundary.");
+                    // Determine game result in 2 paddle mode
+                    if (twoPaddleMode) {
+                        gameResult = isPlayerTurn ? "lose" : "win";
+                        if (gameResult === "win") {
+                            playerScore++;
+                        } else if (gameResult === "lose") {
+                            aiScore++;
+                        }
+                    }
                     return;
                 }
 
@@ -746,7 +1088,11 @@
                 let collisionDetected = false;
                 let collisionPoint = null;
                 let collidedSegment = null;
-                let paddleSegments = getPaddleSegments();
+
+                // Determine whose paddle can cause collision
+                let activePaddleStartIndex = twoPaddleMode ? (isPlayerTurn ? paddleStartIndex : computerPaddleStartIndex) : paddleStartIndex;
+
+                let paddleSegments = getPaddleSegments(activePaddleStartIndex);
 
                 for (let segment of paddleSegments) {
                     let intersection = detectCircleLineSegmentIntersection(ball, { x: ball.prevX, y: ball.prevY }, segment);
@@ -754,7 +1100,6 @@
                         collisionDetected = true;
                         collisionPoint = intersection;
                         collidedSegment = segment;
-                        console.log(`Collision detected at (${collisionPoint.x.toFixed(2)}, ${collisionPoint.y.toFixed(2)})`);
                         break; // Exit loop after first collision
                     }
                 }
@@ -762,7 +1107,6 @@
                 if (collisionDetected && collisionPoint && collidedSegment) {
                     // Calculate the normal based on the paddle segment
                     let normalVector = calculateNormal(collidedSegment);
-                    console.log(`Normal Vector: (${normalVector.x.toFixed(2)}, ${normalVector.y.toFixed(2)})`);
 
                     // Reflect the velocity vector based on the normal vector
                     ball.velocity = reflectVelocity(ball.velocity, normalVector);
@@ -770,10 +1114,11 @@
                     // Adjust the ball's position to be just outside the paddle
                     ball.x = collisionPoint.x + normalVector.x * (ball.radius + 1);
                     ball.y = collisionPoint.y + normalVector.y * (ball.radius + 1);
-                    console.log(`Ball position adjusted to (${ball.x.toFixed(2)}, ${ball.y.toFixed(2)})`);
 
                     // Increase score
-                    score++;
+                    if (!twoPaddleMode) {
+                        score++;
+                    }
                     updateScoreboard();
 
                     // Increase ball speed slightly, ensuring it doesn't exceed MAX_BALL_SPEED
@@ -781,16 +1126,22 @@
                     let speedRatio = ball.speed / Math.hypot(ball.velocity.x, ball.velocity.y);
                     ball.velocity.x *= speedRatio;
                     ball.velocity.y *= speedRatio;
-                    console.log(`Ball speed updated to ${ball.speed}`);
 
                     // Set paddle hit flag for visual feedback
                     isPaddleHit = true;
-                    console.log(`Paddle hit via CCD! New velocity: (${ball.velocity.x.toFixed(2)}, ${ball.velocity.y.toFixed(2)})`);
+
+                    // Play sound if enabled
+                    playHitSound();
+
+                    // Switch turns in 2 paddle mode
+                    if (twoPaddleMode) {
+                        isPlayerTurn = !isPlayerTurn;
+                    }
                 }
 
                 // If collision wasn't detected via CCD, check for discrete collision as a fallback
-                if (!collisionDetected && isBallCollidingWithPaddle()) {
-                    let fallbackCollisionPoint = findCollisionPoint();
+                if (!collisionDetected && isBallCollidingWithPaddle(activePaddleStartIndex)) {
+                    let fallbackCollisionPoint = findCollisionPoint(activePaddleStartIndex);
                     if (fallbackCollisionPoint) {
                         let normalVector = { x: ball.x - fallbackCollisionPoint.x, y: ball.y - fallbackCollisionPoint.y };
                         ball.velocity = reflectVelocity(ball.velocity, normalVector);
@@ -798,10 +1149,11 @@
                         // Move the ball slightly away from paddle
                         ball.x += ball.velocity.x * 2;
                         ball.y += ball.velocity.y * 2;
-                        console.log(`Ball position after fallback adjustment to (${ball.x.toFixed(2)}, ${ball.y.toFixed(2)})`);
 
                         // Increase score
-                        score++;
+                        if (!twoPaddleMode) {
+                            score++;
+                        }
                         updateScoreboard();
 
                         // Increase ball speed slightly, ensuring it doesn't exceed MAX_BALL_SPEED
@@ -809,31 +1161,42 @@
                         let speedRatioFallback = ball.speed / Math.hypot(ball.velocity.x, ball.velocity.y);
                         ball.velocity.x *= speedRatioFallback;
                         ball.velocity.y *= speedRatioFallback;
-                        console.log(`Ball speed updated to ${ball.speed}`);
 
                         // Set paddle hit flag for visual feedback
                         isPaddleHit = true;
-                        console.log(`Paddle hit via fallback! New velocity: (${ball.velocity.x.toFixed(2)}, ${ball.velocity.y.toFixed(2)})`);
+
+                        // Play sound if enabled
+                        playHitSound();
+
+                        // Switch turns in 2 paddle mode
+                        if (twoPaddleMode) {
+                            isPlayerTurn = !isPlayerTurn;
+                        }
                     }
+                }
+
+                // Draw tracers if enabled
+                if (enableTracers) {
+                    drawTracers();
                 }
             }
 
             // Find the collision point between the ball and the paddle (discrete collision detection)
-            function findCollisionPoint() {
-                let startIndex = Math.floor(paddleStartIndex) % heartPoints.length;
-                let endIndex = (startIndex + paddleLength) % heartPoints.length;
+            function findCollisionPoint(startIndex) {
+                let sIndex = Math.floor(startIndex) % heartPoints.length;
+                let eIndex = (sIndex + paddleLength) % heartPoints.length;
 
                 // Gather paddle points
                 let paddlePoints = [];
-                if (startIndex < endIndex) {
-                    for (let i = startIndex; i <= endIndex; i++) {
-                        paddlePoints.push(heartPoints[i]);
+                if (sIndex < eIndex) {
+                    for (let i = sIndex; i <= eIndex; i++) {
+                        paddlePoints.push(heartPoints[i % heartPoints.length]);
                     }
                 } else {
-                    for (let i = startIndex; i < heartPoints.length; i++) {
+                    for (let i = sIndex; i < heartPoints.length; i++) {
                         paddlePoints.push(heartPoints[i]);
                     }
-                    for (let i = 0; i <= endIndex; i++) {
+                    for (let i = 0; i <= eIndex; i++) {
                         paddlePoints.push(heartPoints[i]);
                     }
                 }
@@ -858,26 +1221,102 @@
             }
 
             // Check if ball is colliding with paddle
-            function isBallCollidingWithPaddle() {
-                return findCollisionPoint() !== null;
+            function isBallCollidingWithPaddle(startIndex) {
+                return findCollisionPoint(startIndex) !== null;
             }
 
             // Draw ball
             function drawBall() {
+                ctx.save();
+                ctx.translate(ball.x, ball.y);
+
+                // Apply pulsing effect if in pre-game pulsing state
+                if (preGamePulsing) {
+                    let elapsedTime = performance.now() - preGamePulseStartTime;
+                    let scale = 1 + 0.3 * Math.sin((elapsedTime / 200) * Math.PI);
+                    ctx.scale(scale, scale);
+                }
+
                 ctx.beginPath();
-                ctx.arc(ball.x, ball.y, ball.radius, 0, 2 * Math.PI);
+                ctx.arc(0, 0, ball.radius, 0, 2 * Math.PI);
                 ctx.fillStyle = 'magenta';
                 ctx.shadowBlur = 20;
                 ctx.shadowColor = 'magenta';
                 ctx.fill();
                 ctx.shadowBlur = 0; // Reset shadow
-                console.log(`Ball drawn at (${ball.x.toFixed(2)}, ${ball.y.toFixed(2)})`);
+
+                ctx.restore();
+            }
+
+            // Draw tracers
+            function drawTracers() {
+                // Fade previous tracers slightly
+                tracerCtx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                tracerCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Draw ball tracer
+                tracerCtx.save();
+                tracerCtx.translate(ball.x, ball.y);
+                tracerCtx.beginPath();
+                tracerCtx.arc(0, 0, ball.radius, 0, 2 * Math.PI);
+                tracerCtx.fillStyle = 'rgba(255, 0, 255, 0.5)'; // Magenta with transparency
+                tracerCtx.fill();
+                tracerCtx.restore();
+
+                // Draw paddle tracers
+                // Player paddle
+                tracerCtx.beginPath();
+                tracerCtx.strokeStyle = 'rgba(255, 0, 255, 0.5)'; // Magenta with transparency
+                tracerCtx.lineWidth = paddleThickness;
+                tracerCtx.lineJoin = 'round'; // Ensure rounded joins
+                drawPaddleSegmentForTracers(paddleStartIndex, tracerCtx);
+                tracerCtx.stroke();
+
+                // Computer paddle
+                if (twoPaddleMode) {
+                    tracerCtx.beginPath();
+                    tracerCtx.strokeStyle = 'rgba(0, 255, 255, 0.5)'; // Cyan with transparency
+                    tracerCtx.lineWidth = paddleThickness;
+                    tracerCtx.lineJoin = 'round'; // Ensure rounded joins
+                    drawPaddleSegmentForTracers(computerPaddleStartIndex, tracerCtx);
+                    tracerCtx.stroke();
+                }
+            }
+
+            // Modified function to prevent spikes in tracers and match paddles exactly
+            function drawPaddleSegmentForTracers(startIndex, context) {
+                let sIndex = Math.floor(startIndex) % heartPoints.length;
+                let eIndex = (sIndex + paddleLength) % heartPoints.length;
+
+                let indices = [];
+                if (sIndex <= eIndex) {
+                    for (let i = sIndex; i <= eIndex; i++) {
+                        indices.push(i % heartPoints.length);
+                    }
+                } else {
+                    for (let i = sIndex; i < heartPoints.length; i++) {
+                        indices.push(i);
+                    }
+                    for (let i = 0; i <= eIndex; i++) {
+                        indices.push(i);
+                    }
+                }
+
+                context.moveTo(heartPoints[indices[0]].x, heartPoints[indices[0]].y);
+
+                for (let i = 1; i < indices.length; i++) {
+                    let currentIndex = indices[i];
+                    context.lineTo(heartPoints[currentIndex].x, heartPoints[currentIndex].y);
+                }
             }
 
             // Update scoreboard
             function updateScoreboard() {
-                document.querySelector('#scoreboard .score').innerText = `Score: ${score}`;
-                console.log(`Score updated to ${score}`);
+                if (twoPaddleMode) {
+                    document.querySelector('#scoreboard .score').innerText = `You: ${playerScore}  AI: ${aiScore}`;
+                } else {
+                    document.querySelector('#scoreboard .score').innerText = `score: ${score}`;
+                }
             }
 
             // Pause the game
@@ -885,7 +1324,6 @@
                 paused = true;
                 cancelAnimationFrame(animationFrameId);
                 pausedOverlay.style.display = 'flex';
-                console.log('Game paused.');
             }
 
             // Resume the game
@@ -893,19 +1331,49 @@
                 paused = false;
                 pausedOverlay.style.display = 'none';
                 lastFrameTime = performance.now(); // Reset the lastFrameTime to avoid large deltaTime
-                console.log('Game resumed.');
                 gameLoop(); // Restart the game loop
             }
 
-            // End game and show Game Over screen
-            function endGame() {
-                gameOver = true;
-                cancelAnimationFrame(animationFrameId);
+            // Display game over message
+            function displayGameOver() {
+                let gameOverMessage = "game over";
+                if (twoPaddleMode) {
+                    if (gameResult === "win") {
+                        gameOverMessage = "winner!";
+                    } else if (gameResult === "lose") {
+                        gameOverMessage = "gotcha";
+                    }
+                }
+
+                document.getElementById('gameOver').innerText = gameOverMessage;
                 document.getElementById('gameOver').style.display = 'block';
+
+                // Update scoreboard
+                updateScoreboard();
+
+                // Check if best of 3 is over
+                if (twoPaddleMode) {
+                    if (playerScore >= gamesToWin || aiScore >= gamesToWin) {
+                        // Best of 3 over, declare overall winner
+                        if (playerScore > aiScore) {
+                            document.getElementById('gameOver').innerText = "You win the match!";
+                        } else {
+                            document.getElementById('gameOver').innerText = "AI wins the match!";
+                        }
+                        document.getElementById('restartButton').innerText = 'reset';
+                    } else {
+                        // Next game
+                        document.getElementById('restartButton').innerText = 'next game';
+                    }
+                } else {
+                    // For single paddle mode
+                    document.getElementById('restartButton').innerText = 'restart';
+                }
+
                 document.getElementById('restartButton').style.display = 'block';
-                // Remove 'playing' class to show cursor again
-                document.body.classList.remove('playing');
-                console.log("Game over.");
+
+                // Ensure cursor is visible
+                document.body.style.cursor = 'default';
             }
 
             // Main game loop with deltaTime for smooth movement
@@ -917,19 +1385,39 @@
                 let deltaTime = (currentTime - lastFrameTime) / 1000;
                 lastFrameTime = currentTime;
 
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                if (enableTracers) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(tracerCanvas, 0, 0);
+                } else {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
 
                 drawHeart();
                 drawPaddle();
-                updateBall();
-                drawBall();
                 updateScoreboard();
+
+                // Handle pre-game pulsing
+                if (preGamePulsing) {
+                    drawBall();
+                    if (currentTime - preGamePulseStartTime >= 2000) {
+                        preGamePulsing = false;
+                        lastFrameTime = performance.now(); // Reset time to prevent jump
+                    }
+                } else {
+                    updateBall();
+                    drawBall();
+                }
 
                 // Handle keyboard input with deltaTime
                 updatePaddleKeyboard(deltaTime);
 
                 // Handle touch/mouse control towards target paddle index
                 updatePaddleTowardsTarget(deltaTime);
+
+                // Update computer paddle if in 2 Paddle Mode
+                if (twoPaddleMode) {
+                    updateComputerPaddle(deltaTime);
+                }
 
                 animationFrameId = requestAnimationFrame(gameLoop);
             }
@@ -949,15 +1437,21 @@
                 startButton.style.display = 'none';
                 // Add 'playing' class to hide cursor
                 document.body.classList.add('playing');
+                document.body.style.cursor = 'none';
                 // Reset variables
                 score = 0;
+                gameResult = "";
                 gameStarted = true;
                 gameOver = false;
                 gameEnding = false;
                 paused = false;
-                ball.speed = 2.5; // Slower starting speed
+                ball.speed = parseFloat(puckSpeedSlider.value); // Use slider value
+                paddleSpeed = parseFloat(paddleSpeedSlider.value);
+                keyboardMoveSpeed = paddleSpeed;
+                aiSkillLevel = parseInt(aiSkillLevelSlider.value);
+                enableTracers = tracersToggle.checked;
                 setBallStartingPosition();
-                initializeBallVelocity(); // Set random initial velocity
+                initializeBallVelocity(); // Set initial velocity
                 updateScoreboard();
                 // Reset lastFrameTime for consistent deltaTime
                 lastFrameTime = performance.now();
@@ -965,9 +1459,21 @@
                 pausedOverlay.style.display = 'none';
                 // Initialize target paddle index
                 targetPaddleStartIndex = paddleStartIndex;
+
+                // Start pre-game pulsing
+                preGamePulsing = true;
+                preGamePulseStartTime = performance.now();
+
+                // Set turn to computer if in 2 Paddle Mode
+                if (twoPaddleMode) {
+                    isPlayerTurn = false;
+                }
+
+                // Clear tracers
+                tracerCtx.clearRect(0, 0, canvas.width, canvas.height);
+
                 // Start game loop
                 gameLoop();
-                console.log('Game started.');
             }
 
             function restartGame() {
@@ -977,35 +1483,173 @@
                 restartButton.style.display = 'none';
                 // Add 'playing' class to hide cursor
                 document.body.classList.add('playing');
+                document.body.style.cursor = 'none';
+
+                // If best of 3 is over and button says 'reset', reset scores
+                if (twoPaddleMode && (playerScore >= gamesToWin || aiScore >= gamesToWin) && restartButton.innerText === 'reset') {
+                    playerScore = 0;
+                    aiScore = 0;
+                    updateScoreboard();
+                }
+
                 // Reset variables
-                score = 0;
+                gameResult = "";
                 gameStarted = true;
                 gameOver = false;
                 gameEnding = false;
                 paused = false;
-                ball.speed = 2.5; // Slower starting speed
+                ball.speed = parseFloat(puckSpeedSlider.value); // Use slider value
+                paddleSpeed = parseFloat(paddleSpeedSlider.value);
+                keyboardMoveSpeed = paddleSpeed;
+                aiSkillLevel = parseInt(aiSkillLevelSlider.value);
+                enableTracers = tracersToggle.checked;
                 setBallStartingPosition();
-                initializeBallVelocity(); // Set random initial velocity
-                updateScoreboard();
+                initializeBallVelocity(); // Set initial velocity
                 // Reset lastFrameTime for consistent deltaTime
                 lastFrameTime = performance.now();
                 // Hide paused overlay if visible
                 pausedOverlay.style.display = 'none';
                 // Initialize target paddle index
                 targetPaddleStartIndex = paddleStartIndex;
+
+                // Start pre-game pulsing
+                preGamePulsing = true;
+                preGamePulseStartTime = performance.now();
+
+                // Set turn to computer if in 2 Paddle Mode
+                if (twoPaddleMode) {
+                    isPlayerTurn = false;
+                }
+
+                // Clear tracers
+                tracerCtx.clearRect(0, 0, canvas.width, canvas.height);
+
                 // Start game loop
                 gameLoop();
-                console.log('Game restarted.');
             }
-
-            // Initialize game on page load
-            resizeCanvas();
-            generateHeartPoints();
-            setBallStartingPosition(); // Ensure ball starts inside the heart
 
             // Show start button
             startButton.style.display = 'block';
             console.log("Start Game button displayed.");
+
+            // Options Menu Logic
+
+            menuIcon.addEventListener('click', () => {
+                openMenu();
+            });
+
+            menuCloseButton.addEventListener('click', () => {
+                closeMenu();
+            });
+
+            function openMenu() {
+                menuOpen = true;
+                menuOverlay.style.display = 'block';
+                document.body.style.cursor = 'default'; // Show cursor in menu
+                if (gameStarted && !paused) {
+                    pauseGame();
+                }
+            }
+
+            function closeMenu() {
+                menuOpen = false;
+                menuOverlay.style.display = 'none';
+                if (!gameOver && !gameEnding) {
+                    document.body.style.cursor = 'none'; // Hide cursor when returning to game
+                }
+                if (gameStarted && paused) {
+                    resumeGame();
+                }
+            }
+
+            // Event listeners for Options
+            puckSpeedSlider.addEventListener('input', () => {
+                ball.speed = parseFloat(puckSpeedSlider.value);
+                let speedRatio = ball.speed / Math.hypot(ball.velocity.x, ball.velocity.y);
+                ball.velocity.x *= speedRatio;
+                ball.velocity.y *= speedRatio;
+            });
+
+            paddleSpeedSlider.addEventListener('input', () => {
+                paddleSpeed = parseFloat(paddleSpeedSlider.value);
+                keyboardMoveSpeed = paddleSpeed;
+            });
+
+            nightModeToggle.addEventListener('change', () => {
+                if (nightModeToggle.checked) {
+                    document.body.classList.add('nightmode');
+                    heartOutlineColor = '#fff';
+                } else {
+                    document.body.classList.remove('nightmode');
+                    heartOutlineColor = '#aaa'; // Light grey for visibility on white background
+                }
+                if (gameStarted) {
+                    restartGame();
+                }
+            });
+
+            // Set initial night mode based on checkbox
+            if (nightModeToggle.checked) {
+                document.body.classList.add('nightmode');
+                heartOutlineColor = '#fff';
+            } else {
+                document.body.classList.remove('nightmode');
+                heartOutlineColor = '#aaa'; // Light grey for visibility on white background
+            }
+
+            // Two Paddle Mode Toggle
+            twoPaddleModeToggle.addEventListener('change', () => {
+                twoPaddleMode = twoPaddleModeToggle.checked;
+                if (gameStarted) {
+                    // Reset scores
+                    playerScore = 0;
+                    aiScore = 0;
+                    updateScoreboard();
+                    restartGame();
+                }
+            });
+
+            aiSkillLevelSlider.addEventListener('input', () => {
+                aiSkillLevel = parseInt(aiSkillLevelSlider.value);
+                if (gameStarted) {
+                    restartGame();
+                }
+            });
+
+            tracersToggle.addEventListener('change', () => {
+                enableTracers = tracersToggle.checked;
+                if (enableTracers) {
+                    tracerCtx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            });
+
+            // Sound Logic
+            volumeSlider.addEventListener('input', () => {
+                hitSounds.forEach(sound => {
+                    sound.volume = parseFloat(volumeSlider.value);
+                });
+            });
+
+            soundToggle.addEventListener('change', () => {
+                if (!soundToggle.checked) {
+                    hitSounds.forEach(sound => {
+                        sound.muted = true;
+                    });
+                } else {
+                    hitSounds.forEach(sound => {
+                        sound.muted = false;
+                    });
+                }
+            });
+
+            function playHitSound() {
+                if (soundToggle.checked) {
+                    let sound = hitSounds[hitSoundIndex];
+                    sound.currentTime = 0;
+                    sound.play();
+                    hitSoundIndex = (hitSoundIndex + 1) % hitSounds.length;
+                }
+            }
         });
     </script>
 </body>
