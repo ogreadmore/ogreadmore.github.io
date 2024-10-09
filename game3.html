@@ -193,11 +193,188 @@
                 font-size: 4vh;
             }
         }
+
+        /* Menu Icon Styles */
+        #menuIcon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 30px;
+            height: 25px;
+            cursor: pointer;
+            z-index: 25;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .bar {
+            width: 100%;
+            height: 4px;
+            background-color: magenta;
+        }
+
+        /* Menu Overlay Styles */
+        #menuOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 1);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 30;
+            color: magenta;
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        #menuOverlay .closeButton {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 3rem;
+            cursor: pointer;
+        }
+
+        #menuOverlay h1 {
+            font-size: 4vh;
+            margin-bottom: 40px;
+        }
+
+        #menuOverlay .option {
+            display: flex;
+            align-items: center;
+            font-size: 2vh;
+            margin-bottom: 20px;
+        }
+
+        #menuOverlay .option input[type="checkbox"] {
+            margin-right: 10px;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        #menuOverlay .option input[type="range"] {
+            margin-left: 10px;
+            width: 200px;
+            cursor: pointer;
+        }
+
+        /* Level Picker Styles */
+        #levelPicker {
+            display: flex;
+            align-items: center;
+            font-size: 2vh;
+            margin-bottom: 20px;
+        }
+
+        #levelPicker span {
+            margin-right: 10px;
+        }
+
+        #levelPicker button {
+            background-color: transparent;
+            border: 2px solid magenta;
+            color: magenta;
+            padding: 5px 10px;
+            font-family: 'Press Start 2P', cursive;
+            cursor: pointer;
+            margin: 0 10px;
+        }
+
+        #levelPicker button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        #levelDisplay {
+            width: 30px;
+            text-align: center;
+        }
+
+        /* New Options Styles */
+        #autofireOption, #firingSpeedOption, #nightmodeOption {
+            display: flex;
+            align-items: center;
+            font-size: 2vh;
+            margin-bottom: 20px;
+        }
+
+        #autofireOption input[type="checkbox"],
+        #nightmodeOption input[type="checkbox"] {
+            margin-right: 10px;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        #firingSpeedOption label {
+            margin-right: 10px;
+        }
+
+        #firingSpeedSlider {
+            width: 200px;
+            cursor: pointer;
+        }
     </style>
     <!-- Include the Press Start 2P font -->
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- Menu Icon -->
+    <div id="menuIcon">
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+    </div>
+
+    <!-- Menu Overlay -->
+    <div id="menuOverlay">
+        <div class="closeButton">&times;</div>
+        <h1>Options</h1>
+        <!-- Level Picker at the Top -->
+        <div id="levelPicker">
+            <span>Level Number</span>
+            <button id="decreaseLevel">-</button>
+            <span id="levelDisplay">1</span>
+            <button id="increaseLevel">+</button>
+        </div>
+        <!-- Autofire Checkbox -->
+        <div id="autofireOption" class="option">
+            <input type="checkbox" id="autofireCheckbox">
+            <label for="autofireCheckbox">Autofire</label>
+        </div>
+        <!-- Firing Speed Slider -->
+        <div id="firingSpeedOption" class="option">
+            <label for="firingSpeedSlider">Firing Speed</label>
+            <input type="range" id="firingSpeedSlider" min="1" max="20" step="1" value="5">
+        </div>
+        <!-- Nightmode Checkbox -->
+        <div id="nightmodeOption" class="option">
+            <input type="checkbox" id="nightmodeCheckbox" checked>
+            <label for="nightmodeCheckbox">Nightmode</label>
+        </div>
+        <!-- Existing Options -->
+        <div class="option">
+            <input type="checkbox" id="starsCheckbox" checked>
+            <label for="starsCheckbox">Stars</label>
+        </div>
+        <div class="option">
+            <input type="checkbox" id="soundCheckbox" checked>
+            <label for="soundCheckbox">Sound</label>
+        </div>
+        <div class="option">
+            <label for="volumeSlider">Volume</label>
+            <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
+        </div>
+    </div>
+
+    <!-- Audio Element for Bonk Sound -->
+    <audio id="bonkSound" src="/bonk.mp3" preload="auto"></audio>
+
     <!-- Scoreboard -->
     <div id="scoreboard">
         <div class="title">space haters</div>
@@ -226,6 +403,14 @@
         // Initialize variables
         var gameStarted = false;
         var gameOver = false;
+        var showStars = true; // Controls the visibility of stars
+        var soundOn = true;   // Controls whether sound is enabled
+        var soundVolume = 1.0; // Controls the volume of sounds
+        var isPaused = false; // Controls game pause state
+        var levelChanged = false; // Tracks if level was changed during menu
+        var autofire = false; // Tracks if autofire is enabled
+        var firingSpeed = 5; // Default firing speed (updated from 10 to 5)
+        var autofireInterval = null; // Interval ID for autofire
 
         // Get the canvases and contexts
         var backgroundCanvas = document.getElementById('backgroundCanvas');
@@ -272,25 +457,38 @@
         }
 
         function drawStars() {
-            bgCtx.fillStyle = 'black';
-            bgCtx.fillRect(0, 0, backgroundCanvas.width, backgroundCanvas.height);
-            bgCtx.fillStyle = 'white';
-            for (var i = 0; i < stars.length; i++) {
-                var k = 128.0 / stars[i].z;
-                var x = (stars[i].x - backgroundCanvas.width / 2) * k + backgroundCanvas.width / 2;
-                var y = (stars[i].y - backgroundCanvas.height / 2) * k + backgroundCanvas.height / 2;
-                if (x >= 0 && x <= backgroundCanvas.width && y >= 0 && y <= backgroundCanvas.height) {
-                    var size = (1 - stars[i].z / backgroundCanvas.width) * 2;
-                    bgCtx.fillRect(x, y, size, size);
+            if (showStars && nightmode) {
+                bgCtx.fillStyle = 'black';
+                bgCtx.fillRect(0, 0, backgroundCanvas.width, backgroundCanvas.height);
+                bgCtx.fillStyle = 'white';
+                for (var i = 0; i < stars.length; i++) {
+                    var k = 128.0 / stars[i].z;
+                    var x = (stars[i].x - backgroundCanvas.width / 2) * k + backgroundCanvas.width / 2;
+                    var y = (stars[i].y - backgroundCanvas.height / 2) * k + backgroundCanvas.height / 2;
+                    if (x >= 0 && x <= backgroundCanvas.width && y >= 0 && y <= backgroundCanvas.height) {
+                        var size = (1 - stars[i].z / backgroundCanvas.width) * 2;
+                        bgCtx.fillRect(x, y, size, size);
+                    }
                 }
+            } else {
+                bgCtx.fillStyle = nightmode ? 'black' : 'white';
+                bgCtx.fillRect(0, 0, backgroundCanvas.width, backgroundCanvas.height);
             }
         }
 
+        var backgroundLoopRequest;
+
         function animateBackground() {
-            moveStars();
-            drawStars();
-            requestAnimationFrame(animateBackground);
+            if (!isPaused) {
+                if (showStars && nightmode) {
+                    moveStars();
+                }
+                drawStars();
+            }
+            backgroundLoopRequest = requestAnimationFrame(animateBackground);
         }
+
+        var nightmode = true; // Default nightmode
 
         initStars();
         animateBackground();
@@ -299,17 +497,17 @@
         var player = {
             x: canvas.width / 2,
             y: canvas.height / 2,
-            angle: 0,
+            angle: -Math.PI / 2, // Right side up initially
             shootAngle: 0,
             speed: 0,
             rotation: 0,
             score: 0,
             level: 1,
-            fireRate: 300, // milliseconds between shots
+            fireRate: 1000 / firingSpeed, // Initialized based on firingSpeed slider
             lastShotTime: 0,
             projectileSize: 60, // Increased size
             size: 100, // Increased player size
-            firepower: 1 // Number of heart-eye faces collected
+            firepower: 1 // Number of heart gun power-ups
         };
 
         var initialPlayerState = JSON.parse(JSON.stringify(player)); // For resetting weapon
@@ -348,6 +546,8 @@
 
         var largeAsteroidsDestroyed = 0; // Counter for large asteroids destroyed
 
+        var gameLoopRequest;
+
         // Event listeners for controls
         // Keyboard controls
         document.addEventListener('keydown', function(e) {
@@ -374,6 +574,7 @@
             e.preventDefault();
             if (e.button === 0) {
                 mouse.leftDown = true;
+                shoot(); // Immediate shoot on mouse down
             }
         });
 
@@ -521,9 +722,133 @@
             restartGame();
         });
 
+        // Menu functionality
+        var menuIcon = document.getElementById('menuIcon');
+        var menuOverlay = document.getElementById('menuOverlay');
+        var closeButton = document.querySelector('#menuOverlay .closeButton');
+        var starsCheckbox = document.getElementById('starsCheckbox');
+        var soundCheckbox = document.getElementById('soundCheckbox');
+        var volumeSlider = document.getElementById('volumeSlider');
+        var bonkSoundElement = document.getElementById('bonkSound');
+        var decreaseLevelButton = document.getElementById('decreaseLevel');
+        var increaseLevelButton = document.getElementById('increaseLevel');
+        var levelDisplay = document.getElementById('levelDisplay');
+        var autofireCheckbox = document.getElementById('autofireCheckbox');
+        var firingSpeedSlider = document.getElementById('firingSpeedSlider');
+        var nightmodeCheckbox = document.getElementById('nightmodeCheckbox');
+
+        menuIcon.addEventListener('click', function() {
+            openMenu();
+        });
+
+        closeButton.addEventListener('click', function() {
+            closeMenu();
+        });
+
+        starsCheckbox.addEventListener('change', function() {
+            showStars = starsCheckbox.checked;
+        });
+
+        soundCheckbox.addEventListener('change', function() {
+            soundOn = soundCheckbox.checked;
+        });
+
+        volumeSlider.addEventListener('input', function() {
+            soundVolume = parseFloat(volumeSlider.value);
+            bonkSoundElement.volume = soundVolume;
+        });
+
+        decreaseLevelButton.addEventListener('click', function() {
+            if (player.level > 1) {
+                player.level--;
+                levelChanged = true;
+                updateLevelDisplay();
+                updateLevelSettings();
+                updateUI();
+            }
+        });
+
+        increaseLevelButton.addEventListener('click', function() {
+            if (player.level < 10) { // Assuming max level 10
+                player.level++;
+                levelChanged = true;
+                updateLevelDisplay();
+                updateLevelSettings();
+                updateUI();
+            }
+        });
+
+        autofireCheckbox.addEventListener('change', function() {
+            autofire = autofireCheckbox.checked;
+            if (autofire) {
+                startAutofire();
+            } else {
+                stopAutofire();
+            }
+        });
+
+        firingSpeedSlider.addEventListener('input', function() {
+            firingSpeed = parseInt(firingSpeedSlider.value);
+            player.fireRate = 1000 / firingSpeed; // Update fire rate based on slider
+
+            if (autofire) {
+                stopAutofire();
+                startAutofire();
+            }
+        });
+
+        nightmodeCheckbox.addEventListener('change', function() {
+            nightmode = nightmodeCheckbox.checked;
+            if (nightmode) {
+                // Restore stars and dark background
+                showStars = starsCheckbox.checked;
+            }
+            drawStars(); // Redraw background based on nightmode
+        });
+
+        function openMenu() {
+            menuOverlay.style.display = 'flex';
+            menuIcon.style.display = 'none';
+            pauseGame();
+        }
+
+        function closeMenu() {
+            menuOverlay.style.display = 'none';
+            menuIcon.style.display = 'flex';
+            if (levelChanged) {
+                levelChanged = false;
+                restartGame();
+            } else {
+                resumeGame();
+            }
+        }
+
+        // Function to play the bonk sound with minimal latency
+        function playBonkSound() {
+            if (!soundOn) return;
+            var soundClone = bonkSoundElement.cloneNode();
+            soundClone.volume = soundVolume;
+            soundClone.play();
+        }
+
+        // Autofire Functions
+        function startAutofire() {
+            var intervalTime = 1000 / firingSpeed; // milliseconds between shots
+            autofireInterval = setInterval(function() {
+                shoot(true); // Pass true to indicate autofire shooting
+            }, intervalTime);
+        }
+
+        function stopAutofire() {
+            if (autofireInterval) {
+                clearInterval(autofireInterval);
+                autofireInterval = null;
+            }
+        }
+
         // Main game loop
         function gameLoop(timestamp) {
-            if (!gameStarted || gameOver) return;
+            if (!gameStarted || gameOver || isPaused) return;
 
             var deltaTime = (timestamp - lastTime) / 1000; // Convert to seconds
             lastTime = timestamp;
@@ -531,7 +856,7 @@
             update(deltaTime);
             render();
 
-            requestAnimationFrame(gameLoop);
+            gameLoopRequest = requestAnimationFrame(gameLoop);
         }
 
         // Update function
@@ -551,10 +876,12 @@
                 // Reset player's weapon
                 player.firepower = initialPlayerState.firepower;
                 player.projectileSize = initialPlayerState.projectileSize;
-                player.fireRate = initialPlayerState.fireRate;
+                // player.fireRate = initialPlayerState.fireRate; // Removed to maintain fire rate from slider
 
                 clearEnemies();
                 showLevelMessage(player.level);
+                updateLevelDisplay();
+                updateLevelSettings();
                 updateUI();
             }
         }
@@ -580,8 +907,8 @@
                 player.y += baseMoveSpeed * deltaTime;
                 player.angle = Math.PI / 2; // Down
             }
-            if (keys['Space']) {
-                shoot();
+            if (keys['Space'] && !autofire) {
+                shoot(false); // Pass false to indicate manual shooting
             }
 
             // Left joystick controls movement
@@ -619,15 +946,16 @@
                     // Set player shooting angle
                     player.shootAngle = Math.atan2(dy, dx);
 
-                    // Shoot
-                    shoot();
+                    // Shoot if not autofire
+                    if (!autofire) {
+                        shoot(false); // Pass false to indicate manual shooting
+                    }
                 }
             }
 
-            // Mouse controls for shooting
-            if (mouse.leftDown) {
-                // Shoot
-                shoot();
+            // Mouse controls for shooting if not autofire
+            if (mouse.leftDown && !autofire) {
+                shoot(false); // Pass false to indicate manual shooting
             }
 
             // Wrap around screen
@@ -638,38 +966,39 @@
         }
 
         // Shoot function
-        function shoot() {
+        // Parameter 'isAutofire' indicates if the shoot is triggered by autofire
+        function shoot(isAutofire) {
             var now = Date.now();
-            if (now - player.lastShotTime > player.fireRate) {
-                player.lastShotTime = now;
-
-                var maxFirepower = 20; // Maximum firepower level
-                var numProjectiles = Math.min(player.firepower, 10); // Increase projectiles directly with firepower
-                numProjectiles = Math.max(numProjectiles, 1); // Ensure at least 1 projectile
-
-                var maxSpreadAngle = Math.PI / 4; // Maximum spread angle (45 degrees)
-                var spreadAngle = (player.firepower - 1) * (maxSpreadAngle / (maxFirepower - 1));
-                spreadAngle = Math.min(spreadAngle, maxSpreadAngle);
-
-                var startAngle = player.shootAngle - spreadAngle / 2;
-                var angleIncrement = numProjectiles > 1 ? spreadAngle / (numProjectiles - 1) : 0;
-
-                for (var i = 0; i < numProjectiles; i++) {
-                    var angle = startAngle + i * angleIncrement;
-                    var projectileSpeed = 500 + player.firepower * 5; // Slightly increase speed with firepower
-                    projectiles.push({
-                        x: player.x,
-                        y: player.y,
-                        angle: angle,
-                        size: player.projectileSize,
-                        speed: projectileSpeed
-                    });
-                }
-
-                // Decrease fire rate with increased firepower
-                player.fireRate = 300 * Math.pow(0.95, player.firepower - 1);
-                player.fireRate = Math.max(player.fireRate, 50); // Minimum fire rate cap
+            if (!isAutofire && (now - player.lastShotTime < player.fireRate)) {
+                return; // Prevent manual shooting if fireRate hasn't elapsed
             }
+
+            player.lastShotTime = now;
+
+            var maxFirepower = 20; // Maximum firepower level
+            var numProjectiles = Math.min(player.firepower, 10); // Increase projectiles directly with firepower
+            numProjectiles = Math.max(numProjectiles, 1); // Ensure at least 1 projectile
+
+            var maxSpreadAngle = Math.PI / 4; // Maximum spread angle (45 degrees)
+            var spreadAngle = (player.firepower - 1) * (maxSpreadAngle / (maxFirepower - 1));
+            spreadAngle = Math.min(spreadAngle, maxSpreadAngle);
+
+            var startAngle = player.shootAngle - spreadAngle / 2;
+            var angleIncrement = numProjectiles > 1 ? spreadAngle / (numProjectiles - 1) : 0;
+
+            for (var i = 0; i < numProjectiles; i++) {
+                var angle = startAngle + i * angleIncrement;
+                var projectileSpeed = 500 + player.firepower * 5; // Slightly increase speed with firepower
+                projectiles.push({
+                    x: player.x,
+                    y: player.y,
+                    angle: angle,
+                    size: player.projectileSize,
+                    speed: projectileSpeed
+                });
+            }
+
+            // Play shooting sound or effect here if needed
         }
 
         // Update projectiles
@@ -874,7 +1203,7 @@
             }
         }
 
-        // Clear enemies when leveling up
+        // Clear enemies when leveling up or changing level
         function clearEnemies() {
             // Fade out and remove all enemies
             enemies.forEach(function(e) {
@@ -931,6 +1260,9 @@
                             e.size += e.originalSize * 0.05;
                         }
 
+                        // Play bonk sound
+                        playBonkSound();
+
                         if (e.hitPoints <= 0) {
                             if (e.type === 'angry' && e.state === 'normal') {
                                 // Change to 'exploding' state and display WOW emoji
@@ -972,7 +1304,7 @@
 
                 var heartSize = player.size;
                 if (isMobileDevice()) {
-                    heartSize = player.size * 1.5; // Slightly smaller on mobile
+                    heartSize = player.size * 1.5; // Slightly larger on mobile
                 }
 
                 var collisionDistance = (heartSize / 2) + (e.size / 2) * 0.9;
@@ -1007,7 +1339,7 @@
 
             var heartSize = player.size;
             if (isMobileDevice()) {
-                heartSize = player.size * 1.5; // Slightly smaller on mobile
+                heartSize = player.size * 1.5; // Slightly larger on mobile
             }
 
             ctx.font = heartSize + 'px Arial';
@@ -1077,45 +1409,112 @@
             player.score = 0;
             player.level = 1;
             largeAsteroidsDestroyed = 0;
+            autofire = false;
+            autofireCheckbox.checked = false;
+            stopAutofire();
 
             // Reset player's weapon
             player.firepower = initialPlayerState.firepower;
             player.projectileSize = initialPlayerState.projectileSize;
-            player.fireRate = initialPlayerState.fireRate;
+            player.fireRate = 1000 / firingSpeed; // Reset fire rate based on slider
 
             enemySpawnRate = 2000;
             enemySizeMultiplier = 1; // Reset enemy size multiplier
             enemies = [];
             projectiles = [];
             updateUI();
+            updateLevelDisplay();
+            updateLevelSettings();
             lastTime = performance.now();
             document.getElementById('startButton').style.display = 'none';
             document.getElementById('gameOver').style.display = 'none';
             document.getElementById('restartButton').style.display = 'none';
-            requestAnimationFrame(gameLoop);
+            isPaused = false;
+            gameLoopRequest = requestAnimationFrame(gameLoop);
         }
 
         // Restart the game
         function restartGame() {
             gameOver = false;
             player.score = 0;
-            player.level = 1;
             largeAsteroidsDestroyed = 0;
+            autofire = false;
+            autofireCheckbox.checked = false;
+            stopAutofire();
+
+            // Note: Do NOT reset player.level here to maintain the current level
+            // player.level = 1; // Removed to retain current level
 
             // Reset player's weapon
             player.firepower = initialPlayerState.firepower;
             player.projectileSize = initialPlayerState.projectileSize;
-            player.fireRate = initialPlayerState.fireRate;
+            player.fireRate = 1000 / firingSpeed; // Reset fire rate based on slider
 
-            enemySpawnRate = 2000;
-            enemySizeMultiplier = 1; // Reset enemy size multiplier
+            // Recalculate enemy parameters based on current level
+            updateLevelSettings();
+
             enemies = [];
             projectiles = [];
             updateUI();
+            // No need to update level display as level remains the same
+            clearEnemies();
             lastTime = performance.now();
             document.getElementById('gameOver').style.display = 'none';
             document.getElementById('restartButton').style.display = 'none';
-            requestAnimationFrame(gameLoop);
+            isPaused = false;
+            gameLoopRequest = requestAnimationFrame(gameLoop);
+        }
+
+        // Pause the game
+        function pauseGame() {
+            isPaused = true;
+            cancelAnimationFrame(gameLoopRequest);
+            if (autofire) {
+                stopAutofire();
+            }
+        }
+
+        // Resume the game
+        function resumeGame() {
+            if (!gameOver && gameStarted && !levelChanged) {
+                isPaused = false;
+                lastTime = performance.now();
+                gameLoopRequest = requestAnimationFrame(gameLoop);
+                if (autofire) {
+                    startAutofire();
+                }
+            }
+        }
+
+        // Update Level Display in Menu
+        function updateLevelDisplay() {
+            levelDisplay.innerText = player.level;
+        }
+
+        // Update Level Settings based on current level
+        function updateLevelSettings() {
+            enemySpawnRate = 2000 / player.level; // Example: faster spawn with higher levels
+            enemySizeMultiplier = 1 + (player.level - 1) * 0.1; // Example: larger enemies with higher levels
+        }
+
+        // Autofire Functions continued...
+        // (Already implemented above)
+
+        // Initial Level Settings
+        updateLevelDisplay();
+        updateLevelSettings();
+
+        // Main game loop (repeated to ensure functionality)
+        function gameLoop(timestamp) {
+            if (!gameStarted || gameOver || isPaused) return;
+
+            var deltaTime = (timestamp - lastTime) / 1000; // Convert to seconds
+            lastTime = timestamp;
+
+            update(deltaTime);
+            render();
+
+            gameLoopRequest = requestAnimationFrame(gameLoop);
         }
     </script>
 </body>
