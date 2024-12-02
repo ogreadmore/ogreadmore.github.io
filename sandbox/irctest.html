@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple IRC Client</title>
+    <style>
+        #messages {
+            width: 100%;
+            height: 300px;
+            border: 1px solid #ddd;
+            overflow-y: scroll;
+            margin-bottom: 10px;
+            padding: 5px;
+        }
+        #input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple IRC Client</h1>
+    <div id="messages"></div>
+    <input id="input" type="text" placeholder="Type a message..." />
+
+    <!-- Include the IRC framework -->
+    <script src="https://cdn.jsdelivr.net/npm/irc-framework/dist/irc-framework.min.js"></script>
+    <script>
+        const messagesDiv = document.getElementById('messages');
+        const inputField = document.getElementById('input');
+
+        // Create an IRC client instance
+        const irc = new IRC.Client();
+
+        // Connect to an IRC server
+        irc.connect({
+            host: 'irc.libera.chat', // Change to your preferred IRC server
+            port: 6667,
+            nick: 'SimpleJSClient' + Math.floor(Math.random() * 1000),
+            username: 'simpleuser',
+            gecos: 'Simple IRC Client'
+        });
+
+        // When the client connects
+        irc.on('connected', () => {
+            appendMessage('Connected to IRC server!');
+            irc.join('#test'); // Change to your preferred channel
+        });
+
+        // When a message is received
+        irc.on('message', (event) => {
+            appendMessage(`<strong>${event.nick}:</strong> ${event.message}`);
+        });
+
+        // When an error occurs
+        irc.on('error', (err) => {
+            appendMessage(`<em>Error: ${err}</em>`);
+        });
+
+        // Send a message when the Enter key is pressed
+        inputField.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                const message = inputField.value;
+                irc.say('#test', message); // Change to your preferred channel
+                appendMessage(`<strong>You:</strong> ${message}`);
+                inputField.value = '';
+            }
+        });
+
+        // Append a message to the message div
+        function appendMessage(message) {
+            messagesDiv.innerHTML += `<div>${message}</div>`;
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+    </script>
+</body>
+</html>
